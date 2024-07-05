@@ -1,4 +1,4 @@
-use ethereum_types::Address;
+use alloy_primitives::Address;
 
 use super::*;
 use crate::{
@@ -41,7 +41,7 @@ pub fn recompose_address_from_u32x5(value: [u32; 5]) -> Address {
     let w3 = value[3].to_be_bytes();
     let w4 = value[4].to_be_bytes();
 
-    let mut result = Address::zero();
+    let mut result = Address::ZERO;
     result.0.copy_from_slice(&[
         w4[0], w4[1], w4[2], w4[3], w3[0], w3[1], w3[2], w3[3], w2[0], w2[1], w2[2], w2[3], w1[0],
         w1[1], w1[2], w1[3], w0[0], w0[1], w0[2], w0[3],
@@ -53,7 +53,7 @@ pub fn recompose_address_from_u32x5(value: [u32; 5]) -> Address {
 impl<F: SmallField> CSAllocatable<F> for UInt160<F> {
     type Witness = Address;
     fn placeholder_witness() -> Self::Witness {
-        Address::zero()
+        Address::ZERO
     }
 
     #[inline(always)]
@@ -118,7 +118,7 @@ impl<F: SmallField> UInt160<F> {
 
     #[must_use]
     pub fn zero<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
-        Self::allocated_constant(cs, Address::zero())
+        Self::allocated_constant(cs, Address::ZERO)
     }
 
     /// # Safety

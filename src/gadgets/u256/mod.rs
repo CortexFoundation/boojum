@@ -1,4 +1,4 @@
-use ethereum_types::U256;
+use alloy_primitives::U256;
 
 use super::*;
 use crate::{
@@ -26,32 +26,32 @@ pub struct UInt256<F: SmallField> {
 }
 
 pub fn decompose_u256_as_u32x8(value: U256) -> [u32; 8] {
+    let value_limbs = value.as_limbs();
     [
-        value.0[0] as u32,
-        (value.0[0] >> 32) as u32,
-        value.0[1] as u32,
-        (value.0[1] >> 32) as u32,
-        value.0[2] as u32,
-        (value.0[2] >> 32) as u32,
-        value.0[3] as u32,
-        (value.0[3] >> 32) as u32,
+        value_limbs[0] as u32,
+        (value_limbs[0] >> 32) as u32,
+        value_limbs[1] as u32,
+        (value_limbs[1] >> 32) as u32,
+        value_limbs[2] as u32,
+        (value_limbs[2] >> 32) as u32,
+        value_limbs[3] as u32,
+        (value_limbs[3] >> 32) as u32,
     ]
 }
 
 pub fn recompose_u256_as_u32x8(value: [u32; 8]) -> U256 {
-    let mut result = U256::zero();
-    result.0[0] = (value[0] as u64) | ((value[1] as u64) << 32);
-    result.0[1] = (value[2] as u64) | ((value[3] as u64) << 32);
-    result.0[2] = (value[4] as u64) | ((value[5] as u64) << 32);
-    result.0[3] = (value[6] as u64) | ((value[7] as u64) << 32);
-
-    result
+    U256::from_limbs([
+        (value[0] as u64) | ((value[1] as u64) << 32),
+        (value[2] as u64) | ((value[3] as u64) << 32),
+        (value[4] as u64) | ((value[5] as u64) << 32),
+        (value[6] as u64) | ((value[7] as u64) << 32),
+    ])
 }
 
 impl<F: SmallField> CSAllocatable<F> for UInt256<F> {
     type Witness = U256;
     fn placeholder_witness() -> Self::Witness {
-        U256::zero()
+        U256::ZERO
     }
 
     #[inline(always)]
@@ -162,7 +162,7 @@ impl<F: SmallField> UInt256<F> {
 
     #[must_use]
     pub fn zero<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
-        Self::allocated_constant(cs, U256::zero())
+        Self::allocated_constant(cs, U256::ZERO)
     }
 
     #[must_use]

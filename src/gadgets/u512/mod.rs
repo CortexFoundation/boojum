@@ -1,4 +1,4 @@
-use ethereum_types::U256;
+use alloy_primitives::U256;
 
 use super::*;
 use crate::{
@@ -24,37 +24,41 @@ pub struct UInt512<F: SmallField> {
 }
 
 pub fn decompose_u512_as_u32x16(value: (U256, U256)) -> [u32; 16] {
+    let value_limbs = (value.0.as_limbs(), value.1.as_limbs());
+
     [
-        value.0.0[0] as u32,
-        (value.0.0[0] >> 32) as u32,
-        value.0.0[1] as u32,
-        (value.0.0[1] >> 32) as u32,
-        value.0.0[2] as u32,
-        (value.0.0[2] >> 32) as u32,
-        value.0.0[3] as u32,
-        (value.0.0[3] >> 32) as u32,
-        value.1.0[0] as u32,
-        (value.1.0[0] >> 32) as u32,
-        value.1.0[1] as u32,
-        (value.1.0[1] >> 32) as u32,
-        value.1.0[2] as u32,
-        (value.1.0[2] >> 32) as u32,
-        value.1.0[3] as u32,
-        (value.1.0[3] >> 32) as u32,
+        value_limbs.0[0] as u32,
+        (value_limbs.0[0] >> 32) as u32,
+        value_limbs.0[1] as u32,
+        (value_limbs.0[1] >> 32) as u32,
+        value_limbs.0[2] as u32,
+        (value_limbs.0[2] >> 32) as u32,
+        value_limbs.0[3] as u32,
+        (value_limbs.0[3] >> 32) as u32,
+        value_limbs.1[0] as u32,
+        (value_limbs.1[0] >> 32) as u32,
+        value_limbs.1[1] as u32,
+        (value_limbs.1[1] >> 32) as u32,
+        value_limbs.1[2] as u32,
+        (value_limbs.1[2] >> 32) as u32,
+        value_limbs.1[3] as u32,
+        (value_limbs.1[3] >> 32) as u32,
     ]
 }
 
 pub fn recompose_u512_as_u32x16(value: [u32; 16]) -> (U256, U256) {
-    let mut result_1 = U256::zero();
-    result_1.0[0] = (value[0] as u64) | ((value[1] as u64) << 32);
-    result_1.0[1] = (value[2] as u64) | ((value[3] as u64) << 32);
-    result_1.0[2] = (value[4] as u64) | ((value[5] as u64) << 32);
-    result_1.0[3] = (value[6] as u64) | ((value[7] as u64) << 32);
-    let mut result_2 = U256::zero();
-    result_2.0[0] = (value[8] as u64) | ((value[9] as u64) << 32);
-    result_2.0[1] = (value[10] as u64) | ((value[11] as u64) << 32);
-    result_2.0[2] = (value[12] as u64) | ((value[13] as u64) << 32);
-    result_2.0[3] = (value[14] as u64) | ((value[15] as u64) << 32);
+    let result_1 = U256::from_limbs([
+        (value[0] as u64) | ((value[1] as u64) << 32),
+        (value[2] as u64) | ((value[3] as u64) << 32),
+        (value[4] as u64) | ((value[5] as u64) << 32),
+        (value[6] as u64) | ((value[7] as u64) << 32),
+    ]);
+    let result_2 = U256::from_limbs([
+        (value[8] as u64) | ((value[9] as u64) << 32),
+        (value[10] as u64) | ((value[11] as u64) << 32),
+        (value[12] as u64) | ((value[13] as u64) << 32),
+        (value[14] as u64) | ((value[15] as u64) << 32),
+    ]);
 
     (result_1, result_2)
 }
@@ -62,7 +66,7 @@ pub fn recompose_u512_as_u32x16(value: [u32; 16]) -> (U256, U256) {
 impl<F: SmallField> CSAllocatable<F> for UInt512<F> {
     type Witness = (U256, U256);
     fn placeholder_witness() -> Self::Witness {
-        (U256::zero(), U256::zero())
+        (U256::ZERO, U256::ZERO)
     }
 
     #[inline(always)]
@@ -172,7 +176,7 @@ impl<F: SmallField> UInt512<F> {
 
     #[must_use]
     pub fn zero<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
-        Self::allocated_constant(cs, (U256::zero(), U256::zero()))
+        Self::allocated_constant(cs, (U256::ZERO, U256::ZERO))
     }
 
     #[must_use]

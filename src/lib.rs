@@ -70,7 +70,6 @@ pub mod worker;
 
 pub use blake2;
 pub use crypto_bigint;
-pub use ethereum_types;
 pub use pairing;
 pub use sha2;
 pub use sha3;
