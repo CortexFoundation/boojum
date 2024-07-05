@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::{resolution_window::RWConfig, ResolverCommonData, ResolverComms};
 use crate::{
     cs::{traits::cs::DstBuffer, Place},
     dag::{
@@ -10,8 +11,6 @@ use crate::{
     field::SmallField,
     utils::PipeOp as _,
 };
-
-use super::{resolution_window::RWConfig, ResolverCommonData, ResolverComms};
 
 pub mod sorter_live;
 pub mod sorter_playback;

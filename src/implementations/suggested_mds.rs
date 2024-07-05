@@ -1,6 +1,6 @@
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::Field;
 use unroll::unroll_for_loops;
+
+use crate::field::{goldilocks::GoldilocksField, Field};
 
 // even though we do not use vectorization here, we will resort to additions
 // instead of shifts to reduce register spills
@@ -57,8 +57,20 @@ fn block_mul(
 #[unroll_for_loops]
 #[inline(always)]
 pub(crate) fn suggested_mds_mul(state: &mut [GoldilocksField; 12]) {
-    let [mut x0, mut x1, mut x2, mut x3, mut x4, mut x5, mut x6, mut x7, mut x8, mut x9, mut x10, mut x11] =
-        *state;
+    let [
+        mut x0,
+        mut x1,
+        mut x2,
+        mut x3,
+        mut x4,
+        mut x5,
+        mut x6,
+        mut x7,
+        mut x8,
+        mut x9,
+        mut x10,
+        mut x11,
+    ] = *state;
 
     // precompute subblock results
 

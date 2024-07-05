@@ -2,7 +2,8 @@ use super::*;
 
 // a + b + carry_in = c + 2^32 * carry_out,
 // `carry_out` is boolean constrainted
-// but `c` is NOT. We will use reduction gate to perform decomposition of `c`, and separate range checks
+// but `c` is NOT. We will use reduction gate to perform decomposition of `c`, and separate range
+// checks
 
 const UNIQUE_IDENTIFIER: &str = "a + b + carry = c + 2^32 * carry";
 const PRINCIPAL_WIDTH: usize = 5;
@@ -38,10 +39,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for U32AddConstraintEvaluator {
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 1,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 1, num_quotient_terms: 2 }
     }
 
     #[inline]
@@ -253,13 +251,8 @@ impl U32AddGate {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                carry_in,
-                c: output_variables[0],
-                carry_out: output_variables[1],
-            };
+            let gate =
+                Self { a, b, carry_in, c: output_variables[0], carry_out: output_variables[1] };
 
             gate.add_to_cs(cs);
         }

@@ -1,20 +1,20 @@
-use crate::cs::gates::assert_no_placeholder_variables;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::gates::FmaGateInBaseFieldWithoutConstant;
-use crate::cs::gates::FmaGateInBaseWithoutConstantParams;
-use crate::cs::gates::ReductionGate;
-use crate::gadgets::blake2s::mixing_function::merge_byte_using_table;
-use crate::gadgets::blake2s::mixing_function::split_byte_using_table;
-use crate::gadgets::blake2s::mixing_function::xor_many;
-
-use crate::gadgets::num::Num;
-use crate::gadgets::tables::and8::And8Table;
-use crate::gadgets::traits::castable::WitnessCastable;
-
 use super::*;
+use crate::{
+    cs::gates::{
+        assert_no_placeholder_variables, ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
+        FmaGateInBaseWithoutConstantParams, ReductionGate,
+    },
+    gadgets::{
+        blake2s::mixing_function::{merge_byte_using_table, split_byte_using_table, xor_many},
+        num::Num,
+        tables::and8::And8Table,
+        traits::castable::WitnessCastable,
+    },
+};
 
 // we carry internal state as 5x5 matrix, and elements of matrix are 8 pieces of 8-bit chunks
-// (LE), even though Keccak256 doesn't have additions, so we basically do a lot of binary ops and that's it
+// (LE), even though Keccak256 doesn't have additions, so we basically do a lot of binary ops and
+// that's it
 
 pub fn keccak_256_round_function<F: SmallField, CS: ConstraintSystem<F>>(
     cs: &mut CS,
@@ -48,7 +48,8 @@ fn keccak_1600_round<F: SmallField, CS: ConstraintSystem<F>>(
     let one = cs.allocate_constant(F::ONE);
 
     let mut c_rot = [[Variable::placeholder(); BYTES_PER_WORD]; LANE_WIDTH];
-    // rotated C also becomes input to XOR, so we are ok to use unchecked aligned chunks strategy here
+    // rotated C also becomes input to XOR, so we are ok to use unchecked aligned chunks strategy
+    // here
     for i in 0..LANE_WIDTH {
         c_rot[i] = rotate_word(cs, &c[i], one, 1);
     }
@@ -70,8 +71,8 @@ fn keccak_1600_round<F: SmallField, CS: ConstraintSystem<F>>(
 
     // rho and pi step
 
-    // note: we get our intermediate rotations, that will go into xi-step, where each of those will be range checked,
-    // and we can do NOT(a) operation by just doing 1<<8 - a
+    // note: we get our intermediate rotations, that will go into xi-step, where each of those will
+    // be range checked, and we can do NOT(a) operation by just doing 1<<8 - a
 
     let (mut i, mut j) = (1, 0);
     let mut current = state[i][j];
@@ -91,13 +92,7 @@ fn keccak_1600_round<F: SmallField, CS: ConstraintSystem<F>>(
 
     // xi-step. Note order of `i` and `j`
     for j in 0..LANE_WIDTH {
-        let t = [
-            state[0][j],
-            state[1][j],
-            state[2][j],
-            state[3][j],
-            state[4][j],
-        ];
+        let t = [state[0][j], state[1][j], state[2][j], state[3][j], state[4][j]];
         for i in 0..LANE_WIDTH {
             let mut tmp = [Variable::placeholder(); BYTES_PER_WORD];
             for (dst, src) in tmp.iter_mut().zip(t[(i + 1) % LANE_WIDTH].iter()) {
@@ -195,7 +190,8 @@ fn rotate_word<F: SmallField, CS: ConstraintSystem<F>>(
     debug_assert!(rotate_by > 0);
     debug_assert!(rotate_by < 32);
 
-    // now we have a uniform procedure - we only chunk "unaligned" pieces, and declare presumable 8 bit
+    // now we have a uniform procedure - we only chunk "unaligned" pieces, and declare presumable 8
+    // bit
     let unalignment = rotate_by % 8;
     let aligned_shift_in_bytes_offset = (rotate_by / 8) + 1;
 
@@ -362,12 +358,7 @@ fn split_for_unaligned_rotation<F: SmallField, CS: ConstraintSystem<F>>(
     let t = ReductionGate::reduce_terms(
         cs,
         coeffs,
-        [
-            decompose_low,
-            aligned_variables[0],
-            aligned_variables[1],
-            aligned_variables[2],
-        ],
+        [decompose_low, aligned_variables[0], aligned_variables[1], aligned_variables[2]],
     );
 
     // use fma gate for rest
@@ -382,9 +373,9 @@ fn split_for_unaligned_rotation<F: SmallField, CS: ConstraintSystem<F>>(
     };
     gate.add_to_cs(cs);
 
-    // and range-check parts, because here are already prove decompostion and are ok with range check,
-    // while if we would try to merge them in byte on upper level of rotation we would need to also have
-    // split tables for splitting point > 4
+    // and range-check parts, because here are already prove decompostion and are ok with range
+    // check, while if we would try to merge them in byte on upper level of rotation we would
+    // need to also have split tables for splitting point > 4
     prove_split_byte_using_table_dyn(cs, decompose_low, decompose_high, low_chunk_size);
 
     (aligned_variables, decompose_low, decompose_high)

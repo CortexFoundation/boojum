@@ -36,10 +36,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for U32SubConstraintEvaluator {
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 1,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 1, num_quotient_terms: 2 }
     }
 
     #[inline]
@@ -259,13 +256,8 @@ impl U32SubGate {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                borrow_in,
-                c: output_variables[0],
-                borrow_out: output_variables[1],
-            };
+            let gate =
+                Self { a, b, borrow_in, c: output_variables[0], borrow_out: output_variables[1] };
 
             gate.add_to_cs(cs);
         }

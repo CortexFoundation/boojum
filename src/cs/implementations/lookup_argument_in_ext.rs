@@ -3,17 +3,19 @@ use super::{
     polynomial_storage::{SecondStageProductsStorage, SetupStorage, WitnessStorage},
     *,
 };
-use crate::cs::implementations::utils::*;
-use crate::field::traits::field_like::mul_assign_vectorized_in_extension;
-
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
-use crate::{cs::traits::GoodAllocator, field::PrimeField};
+use crate::{
+    cs::{implementations::utils::*, traits::GoodAllocator},
+    field::{
+        traits::field_like::mul_assign_vectorized_in_extension, ExtensionField, FieldExtension,
+        PrimeField,
+    },
+};
 
 // Evaluated over the extension field
 
 // we need polys for \sum (selector) / (value + beta) and \sum (multiplicity) / (lookup + beta),
-// so we need polys that elementwise agree on (selector) / (value + beta) and (multiplicity) / (lookup + beta) respectively
+// so we need polys that elementwise agree on (selector) / (value + beta) and (multiplicity) /
+// (lookup + beta) respectively
 
 // we also perform additional aggregation to batch together columns
 // and produce poly per each
@@ -43,8 +45,7 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //         Vec<GenericPolynomial<F, LagrangeForm, P, A>, B>, // involve multiplicities
 //     ),
 //     B,
-// >  {
-//     assert!(variables_columns.len() > 0);
+// > { assert!(variables_columns.len() > 0);
 
 //     let domain_size = variables_columns[0].domain_size();
 
@@ -59,9 +60,10 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 
 //     assert!(table_id_column_idxes.len() == 0 || table_id_column_idxes.len() == 1);
 
-//     // this is our lookup width, either counted by number of witness columns only, or if one includes setup
-//     let num_lookup_columns = column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
-//     assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
+//     // this is our lookup width, either counted by number of witness columns only, or if one
+// includes setup     let num_lookup_columns = column_elements_per_subargument +
+// ((table_id_column_idxes.len() == 1) as usize);     assert_eq!(lookup_tables_columns.len(),
+// num_lookup_columns);
 
 //     // now we can work on every individual argument
 
@@ -147,27 +149,27 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 
 //         // precomputed columns contribution
 
-//         let mut aggregated_lookup_columns = Vec::with_capacity_in(domain_size / P::SIZE_FACTOR, A::default());
-//         worker.scope(domain_size / P::SIZE_FACTOR, |scope, chunk_size| {
+//         let mut aggregated_lookup_columns = Vec::with_capacity_in(domain_size / P::SIZE_FACTOR,
+// A::default());         worker.scope(domain_size / P::SIZE_FACTOR, |scope, chunk_size| {
 //             let mut subiterators = Vec::new_in(B::default());
 
-//             for (idx, _) in aggregated_lookup_columns.spare_capacity_mut()[..domain_size / P::SIZE_FACTOR].chunks_mut(chunk_size).enumerate() {
-//                 let mut tmp = Vec::with_capacity_in(lookup_tables_columns.len(), B::default());
-//                 for src in lookup_tables_columns.iter() {
-//                     let chunk = src.storage.chunks(chunk_size).skip(idx).next().expect("next chunk").iter();
-//                     tmp.push(chunk);
-//                 }
+//             for (idx, _) in aggregated_lookup_columns.spare_capacity_mut()[..domain_size /
+// P::SIZE_FACTOR].chunks_mut(chunk_size).enumerate() {                 let mut tmp =
+// Vec::with_capacity_in(lookup_tables_columns.len(), B::default());                 for src in
+// lookup_tables_columns.iter() {                     let chunk =
+// src.storage.chunks(chunk_size).skip(idx).next().expect("next chunk").iter();                     
+// tmp.push(chunk);                 }
 //                 assert_eq!(tmp.len(), powers_of_gamma.len());
 //                 subiterators.push(tmp);
 //             }
 
 //             assert_eq!(
-//                 aggregated_lookup_columns.spare_capacity_mut()[..domain_size / P::SIZE_FACTOR].chunks_mut(chunk_size).len(),
-//                 subiterators.len()
+//                 aggregated_lookup_columns.spare_capacity_mut()[..domain_size /
+// P::SIZE_FACTOR].chunks_mut(chunk_size).len(),                 subiterators.len()
 //             );
 //             for (dst, src) in
-//                 aggregated_lookup_columns.spare_capacity_mut()[..domain_size / P::SIZE_FACTOR].chunks_mut(chunk_size)
-//                 .zip(subiterators.into_iter())
+//                 aggregated_lookup_columns.spare_capacity_mut()[..domain_size /
+// P::SIZE_FACTOR].chunks_mut(chunk_size)                 .zip(subiterators.into_iter())
 //             {
 //                 let mut ctx = *ctx;
 //                 let powers_of_gamma = &powers_of_gamma;
@@ -178,8 +180,8 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //                     for dst in dst.iter_mut() {
 //                         let mut acc = beta;
 //                         for (src, gamma) in src.iter_mut().zip(powers_of_gamma.iter()) {
-//                             P::mul_and_accumulate_into(&mut acc, src.next().expect("table column element"), gamma, &mut ctx);
-//                         }
+//                             P::mul_and_accumulate_into(&mut acc, src.next().expect("table column
+// element"), gamma, &mut ctx);                         }
 
 //                         dst.write(acc);
 //                     }
@@ -188,9 +190,10 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //         });
 
 //         unsafe {aggregated_lookup_columns.set_len(domain_size / P::SIZE_FACTOR)};
-//         let mut aggregated_lookup_columns_inversed = P::vec_into_base_vec(aggregated_lookup_columns);
-//         batch_inverse_inplace_parallel::<F, A>(&mut aggregated_lookup_columns_inversed, worker);
-//         let aggregated_lookup_columns_inversed = P::vec_from_base_vec(aggregated_lookup_columns_inversed);
+//         let mut aggregated_lookup_columns_inversed =
+// P::vec_into_base_vec(aggregated_lookup_columns);         batch_inverse_inplace_parallel::<F,
+// A>(&mut aggregated_lookup_columns_inversed, worker);         let
+// aggregated_lookup_columns_inversed = P::vec_from_base_vec(aggregated_lookup_columns_inversed);
 
 //         // we follow the same aproach as above - first prepare chunks, and then work over them
 
@@ -212,12 +215,13 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //                 for (idx, _) in selector.storage.chunks(chunk_size).enumerate() {
 //                     let mut tmp = Vec::with_capacity_in(num_lookup_columns, B::default());
 //                     for src in witness_columns.iter() {
-//                         let chunk = src.storage.chunks(chunk_size).skip(idx).next().expect("next chunk").iter();
-//                         tmp.push(chunk);
+//                         let chunk = src.storage.chunks(chunk_size).skip(idx).next().expect("next
+// chunk").iter();                         tmp.push(chunk);
 //                     }
 //                     if let Some(table_id_poly_idx) = table_id_column_idxes.get(0).copied() {
-//                         let chunk = constant_polys[table_id_poly_idx].storage.chunks(chunk_size).skip(idx).next().expect("next chunk").iter();
-//                         tmp.push(chunk);
+//                         let chunk =
+// constant_polys[table_id_poly_idx].storage.chunks(chunk_size).skip(idx).next().expect("next
+// chunk").iter();                         tmp.push(chunk);
 //                     }
 //                     assert_eq!(tmp.len(), powers_of_gamma.len());
 //                     subiterators.push(tmp);
@@ -226,13 +230,13 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //                 // work with A poly only, compute denominator
 
 //                 assert_eq!(
-//                     a_poly.spare_capacity_mut()[..domain_size / P::SIZE_FACTOR].chunks_mut(chunk_size).len(),
-//                     subiterators.len()
+//                     a_poly.spare_capacity_mut()[..domain_size /
+// P::SIZE_FACTOR].chunks_mut(chunk_size).len(),                     subiterators.len()
 //                 );
 
 //                 for (dst_a, src)
-//                         in a_poly.spare_capacity_mut()[..domain_size / P::SIZE_FACTOR].chunks_mut(chunk_size)
-//                         .zip(subiterators.into_iter())
+//                         in a_poly.spare_capacity_mut()[..domain_size /
+// P::SIZE_FACTOR].chunks_mut(chunk_size)                         .zip(subiterators.into_iter())
 //                 {
 //                     let powers_of_gamma = &powers_of_gamma[..];
 //                     let mut ctx = *ctx;
@@ -243,8 +247,8 @@ use crate::{cs::traits::GoodAllocator, field::PrimeField};
 //                         for dst_a in dst_a.iter_mut() {
 //                             let mut acc = beta;
 //                             for (src, gamma) in src.iter_mut().zip(powers_of_gamma.iter()) {
-//                                 P::mul_and_accumulate_into(&mut acc, src.next().expect("witness column element"), gamma, &mut ctx);
-//                             }
+//                                 P::mul_and_accumulate_into(&mut acc, src.next().expect("witness
+// column element"), gamma, &mut ctx);                             }
 
 //                             dst_a.write(acc);
 //                         }
@@ -355,14 +359,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
             width,
             num_repetitions,
             share_table_id: _,
-        } => (
-            false,
-            false,
-            width as usize,
-            width as usize + 1,
-            width as usize + 1,
-            num_repetitions,
-        ),
+        } => {
+            (false, false, width as usize, width as usize + 1, width as usize + 1, num_repetitions)
+        }
         LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
             width,
             num_repetitions,
@@ -370,14 +369,7 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
         } => {
             assert!(share_table_id);
 
-            (
-                true,
-                true,
-                width as usize,
-                width as usize,
-                width as usize + 1,
-                num_repetitions,
-            )
+            (true, true, width as usize, width as usize, width as usize + 1, num_repetitions)
         }
         _ => unreachable!(),
     };
@@ -638,26 +630,23 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
         let mut multiplicities_encoding_poly_c0 = aggregated_lookup_columns_inversed_c0.clone();
         let mut multiplicities_encoding_poly_c1 = aggregated_lookup_columns_inversed_c1.clone();
 
-        worker.scope(
-            multiplicities_encoding_poly_c0.len(),
-            |scope, chunk_size| {
-                for ((dst_c0, dst_c1), mults) in multiplicities_encoding_poly_c0
-                    .chunks_mut(chunk_size)
-                    .zip(multiplicities_encoding_poly_c1.chunks_mut(chunk_size))
-                    .zip(multiplicity_column.storage.chunks(chunk_size))
-                {
-                    let mut ctx = *ctx;
-                    scope.spawn(move |_| {
-                        for ((dst_c0, dst_c1), mults) in
-                            dst_c0.iter_mut().zip(dst_c1.iter_mut()).zip(mults.iter())
-                        {
-                            dst_c0.mul_assign(mults, &mut ctx);
-                            dst_c1.mul_assign(mults, &mut ctx);
-                        }
-                    });
-                }
-            },
-        );
+        worker.scope(multiplicities_encoding_poly_c0.len(), |scope, chunk_size| {
+            for ((dst_c0, dst_c1), mults) in multiplicities_encoding_poly_c0
+                .chunks_mut(chunk_size)
+                .zip(multiplicities_encoding_poly_c1.chunks_mut(chunk_size))
+                .zip(multiplicity_column.storage.chunks(chunk_size))
+            {
+                let mut ctx = *ctx;
+                scope.spawn(move |_| {
+                    for ((dst_c0, dst_c1), mults) in
+                        dst_c0.iter_mut().zip(dst_c1.iter_mut()).zip(mults.iter())
+                    {
+                        dst_c0.mul_assign(mults, &mut ctx);
+                        dst_c1.mul_assign(mults, &mut ctx);
+                    }
+                });
+            }
+        });
 
         // push the results
         let multiplicities_encoding_poly_c0 =
@@ -665,10 +654,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
         let multiplicities_encoding_poly_c1 =
             GenericPolynomial::from_storage(multiplicities_encoding_poly_c1);
 
-        subarguments_multiplicities_encoding_polys.push([
-            multiplicities_encoding_poly_c0,
-            multiplicities_encoding_poly_c1,
-        ]);
+        subarguments_multiplicities_encoding_polys
+            .push([multiplicities_encoding_poly_c0, multiplicities_encoding_poly_c1]);
     }
 
     assert_eq!(subarguments_witness_encoding_polys.len(), num_subarguments);
@@ -706,10 +693,7 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
         }
     }
 
-    (
-        subarguments_witness_encoding_polys,
-        subarguments_multiplicities_encoding_polys,
-    )
+    (subarguments_witness_encoding_polys, subarguments_multiplicities_encoding_polys)
 }
 
 // pub(crate) fn compute_quotient_terms_for_lookup_over_general_purpose_gates<
@@ -746,8 +730,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     assert!(table_id_column_idxes.len() == 0 || table_id_column_idxes.len() == 1);
 
-//     // this is our lookup width, either counted by number of witness columns only, or if one includes setup
-//     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
+//     // this is our lookup width, either counted by number of witness columns only, or if one
+// includes setup     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len()
+// == 1) as usize);
 
 //     let mut powers_of_gamma = Vec::with_capacity_in(capacity, B::default());
 //     let mut tmp = P::one(ctx);
@@ -766,8 +751,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //     let aggregated_lookup_columns = setup.lookup_tables_columns[0]
 //         .owned_subset_for_degree(quotient_degree);
 
-//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1, B::default());
-//         setup.lookup_tables_columns[1..].iter().map(|el| el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
+//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1,
+// B::default());         setup.lookup_tables_columns[1..].iter().map(|el|
+// el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
 
 //     // we access the memory exactly once
 //     let dst_chunks = aggregated_lookup_columns.compute_chunks_for_num_workers(worker.num_cores);
@@ -785,8 +771,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                     let (outer, inner) = lde_iter.current();
 //                     let mut tmp = beta;
 
-//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter()) {
-//                         P::mul_and_accumulate_into(
+//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter())
+// {                         P::mul_and_accumulate_into(
 //                             &mut tmp,
 //                             gamma,
 //                             &other.storage[outer].storage[inner],
@@ -794,8 +780,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         );
 //                     }
 
-//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1 * column_0,
-//                     // so we just add
+//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1
+// * column_0,                     // so we just add
 
 //                     unsafe {
 //                         std::sync::Arc::get_mut_unchecked(
@@ -813,14 +799,18 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     // now we can compute each term the same way, but identifying contributions
 //     let witness_encoding_poly_powers_of_alpha = &alphas[..num_subarguments];
-//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(), witness.variables_columns.chunks_exact(column_elements_per_subargument).len());
+//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(),
+// witness.variables_columns.chunks_exact(column_elements_per_subargument).len());
 
-//     for (idx, (alpha, vars_chunk)) in witness_encoding_poly_powers_of_alpha.iter().zip(witness.variables_columns.chunks_exact(column_elements_per_subargument)).enumerate() {
-//         let alpha = P::constant(*alpha, ctx);
-//         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == lookup_selector
+//     for (idx, (alpha, vars_chunk)) in
+// witness_encoding_poly_powers_of_alpha.iter().zip(witness.variables_columns.
+// chunks_exact(column_elements_per_subargument)).enumerate() {         let alpha =
+// P::constant(*alpha, ctx);         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n +
+// beta) == lookup_selector
 
 //         let flat_poly_idx_offset = num_subarguments * set_idx;
-//         let a_poly = &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
+//         let a_poly = &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);
 
 //         assert_eq!(selector_precomputed.outer_len(), a_poly.outer_len());
 //         assert_eq!(selector_precomputed.inner_len(), a_poly.inner_len());
@@ -831,9 +821,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         }
 
 //         if let Some(table_id_poly) = table_id_column_idxes.get(0).copied() {
-//             let subset = setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);
-//             columns.push(subset);
-//         }
+//             let subset =
+// setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);             
+// columns.push(subset);         }
 
 //         worker.scope(0, |scope, _| {
 //             // transpose other chunks
@@ -860,7 +850,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         // mul by A(X)
 //                         tmp.mul_assign(&a_poly.storage[outer].storage[inner], &mut ctx);
 //                         // subtract selectors
-//                         tmp.sub_assign(&selector_precomputed.storage[outer].storage[inner], &mut ctx);
+//                         tmp.sub_assign(&selector_precomputed.storage[outer].storage[inner], &mut
+// ctx);
 
 //                         // mul by alpha
 //                         tmp.mul_assign(&alpha, &mut ctx);
@@ -869,10 +860,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("A(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("A(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator
@@ -898,11 +889,11 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         let alpha = P::constant(*alpha, ctx);
 //         // B(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == multiplicity column
 //         let flat_poly_idx_offset = num_subarguments * set_idx;
-//         let b_poly = &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
-//         // columns are precomputed, so we need multiplicity
-//         let multiplicity =  witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);
-//         worker.scope(0, |scope, _| {
-//             // transpose other chunks
+//         let b_poly = &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);         // columns are precomputed, so we need
+// multiplicity         let multiplicity =
+// witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);         worker.
+// scope(0, |scope, _| {             // transpose other chunks
 //             for lde_iter in iterators.iter().cloned() {
 //                 let mut lde_iter = lde_iter;
 //                 let mut ctx = *ctx;
@@ -924,10 +915,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("B(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("B(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator
@@ -994,7 +985,8 @@ pub(crate) fn compute_quotient_terms_for_lookup_specialized<
         [variables_offset..(variables_offset + column_elements_per_subargument * num_subarguments)]
         .to_vec_in(B::default());
 
-    // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+    // this is our lookup width, either counted by number of witness columns only, or if one
+    // includes setup
     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
 
     let mut powers_of_gamma_c0 = Vec::with_capacity_in(capacity, B::default());
@@ -1078,8 +1070,8 @@ pub(crate) fn compute_quotient_terms_for_lookup_specialized<
                         );
                     }
 
-                    // our "base" value for `aggregated_lookup_columns` already contains a term 1 * column_0,
-                    // so we just add
+                    // our "base" value for `aggregated_lookup_columns` already contains a term 1 *
+                    // column_0, so we just add
 
                     unsafe {
                         std::sync::Arc::get_mut_unchecked(
@@ -1230,10 +1222,7 @@ pub(crate) fn compute_quotient_terms_for_lookup_specialized<
 
     // now B poly
     let multiplicities_encoding_poly_powers_of_alpha = &alphas[num_subarguments..];
-    assert_eq!(
-        multiplicities_encoding_poly_powers_of_alpha.len(),
-        num_multiplicities_polys
-    );
+    assert_eq!(multiplicities_encoding_poly_powers_of_alpha.len(), num_multiplicities_polys);
     for (idx, alpha) in multiplicities_encoding_poly_powers_of_alpha
         .iter()
         .enumerate()

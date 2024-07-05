@@ -2,15 +2,13 @@ use super::{
     polynomial::{GenericPolynomial, LagrangeForm},
     *,
 };
-
-use crate::cs::implementations::utils::*;
-
-use crate::cs::traits::GoodAllocator;
+use crate::cs::{implementations::utils::*, traits::GoodAllocator};
 
 // Evaluated over the main domain (no coset, no LDE)
 
 // we need polys for \sum (selector) / (value + beta) and \sum (multiplicity) / (lookup + beta),
-// so we need polys that elementwise agree on (selector) / (value + beta) and (multiplicity) / (lookup + beta) respectively
+// so we need polys that elementwise agree on (selector) / (value + beta) and (multiplicity) /
+// (lookup + beta) respectively
 
 // we also perform additional aggregation to batch together columns
 // and produce poly per each
@@ -56,7 +54,8 @@ pub(crate) fn compute_lookup_poly_pairs_over_general_purpose_columns<
 
     assert!(table_id_column_idxes.len() == 0 || table_id_column_idxes.len() == 1);
 
-    // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+    // this is our lookup width, either counted by number of witness columns only, or if one
+    // includes setup
     let num_lookup_columns =
         column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
     assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
@@ -121,10 +120,7 @@ pub(crate) fn compute_lookup_poly_pairs_over_general_purpose_columns<
             for (j, el) in selector.iter().copied().enumerate() {
                 let idx = idx * P::SIZE_FACTOR + j;
                 if el != F::ZERO && el != F::ONE {
-                    panic!(
-                        "Lookup selector is non-binary at index {} with value {:?}",
-                        idx, el
-                    );
+                    panic!("Lookup selector is non-binary at index {} with value {:?}", idx, el);
                 }
                 if el == F::ONE {
                     at_least_one_used = true;
@@ -401,14 +397,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
             width,
             num_repetitions,
             share_table_id: _,
-        } => (
-            false,
-            false,
-            width as usize,
-            width as usize + 1,
-            width as usize + 1,
-            num_repetitions,
-        ),
+        } => {
+            (false, false, width as usize, width as usize + 1, width as usize + 1, num_repetitions)
+        }
         LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
             width,
             num_repetitions,
@@ -416,14 +407,7 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
         } => {
             assert!(share_table_id);
 
-            (
-                true,
-                true,
-                width as usize,
-                width as usize,
-                width as usize + 1,
-                num_repetitions,
-            )
+            (true, true, width as usize, width as usize, width as usize + 1, num_repetitions)
         }
         _ => unreachable!(),
     };
@@ -710,8 +694,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     assert!(table_id_column_idxes.len() == 0 || table_id_column_idxes.len() == 1);
 
-//     // this is our lookup width, either counted by number of witness columns only, or if one includes setup
-//     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
+//     // this is our lookup width, either counted by number of witness columns only, or if one
+// includes setup     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len()
+// == 1) as usize);
 
 //     let mut powers_of_gamma = Vec::with_capacity_in(capacity, B::default());
 //     let mut tmp = P::one(ctx);
@@ -730,8 +715,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //     let aggregated_lookup_columns = setup.lookup_tables_columns[0]
 //         .owned_subset_for_degree(quotient_degree);
 
-//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1, B::default());
-//         setup.lookup_tables_columns[1..].iter().map(|el| el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
+//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1,
+// B::default());         setup.lookup_tables_columns[1..].iter().map(|el|
+// el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
 
 //     // we access the memory exactly once
 //     let dst_chunks = aggregated_lookup_columns.compute_chunks_for_num_workers(worker.num_cores);
@@ -749,8 +735,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                     let (outer, inner) = lde_iter.current();
 //                     let mut tmp = beta;
 
-//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter()) {
-//                         P::mul_and_accumulate_into(
+//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter())
+// {                         P::mul_and_accumulate_into(
 //                             &mut tmp,
 //                             gamma,
 //                             &other.storage[outer].storage[inner],
@@ -758,8 +744,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         );
 //                     }
 
-//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1 * column_0,
-//                     // so we just add
+//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1
+// * column_0,                     // so we just add
 
 //                     unsafe {
 //                         std::sync::Arc::get_mut_unchecked(
@@ -777,14 +763,18 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     // now we can compute each term the same way, but identifying contributions
 //     let witness_encoding_poly_powers_of_alpha = &alphas[..num_subarguments];
-//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(), witness.variables_columns.chunks_exact(column_elements_per_subargument).len());
+//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(),
+// witness.variables_columns.chunks_exact(column_elements_per_subargument).len());
 
-//     for (idx, (alpha, vars_chunk)) in witness_encoding_poly_powers_of_alpha.iter().zip(witness.variables_columns.chunks_exact(column_elements_per_subargument)).enumerate() {
-//         let alpha = P::constant(*alpha, ctx);
-//         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == lookup_selector
+//     for (idx, (alpha, vars_chunk)) in
+// witness_encoding_poly_powers_of_alpha.iter().zip(witness.variables_columns.
+// chunks_exact(column_elements_per_subargument)).enumerate() {         let alpha =
+// P::constant(*alpha, ctx);         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n +
+// beta) == lookup_selector
 
 //         let flat_poly_idx_offset = num_subarguments * set_idx;
-//         let a_poly = &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
+//         let a_poly = &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);
 
 //         assert_eq!(selector_precomputed.outer_len(), a_poly.outer_len());
 //         assert_eq!(selector_precomputed.inner_len(), a_poly.inner_len());
@@ -795,9 +785,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         }
 
 //         if let Some(table_id_poly) = table_id_column_idxes.get(0).copied() {
-//             let subset = setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);
-//             columns.push(subset);
-//         }
+//             let subset =
+// setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);             
+// columns.push(subset);         }
 
 //         worker.scope(0, |scope, _| {
 //             // transpose other chunks
@@ -824,7 +814,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         // mul by A(X)
 //                         tmp.mul_assign(&a_poly.storage[outer].storage[inner], &mut ctx);
 //                         // subtract selectors
-//                         tmp.sub_assign(&selector_precomputed.storage[outer].storage[inner], &mut ctx);
+//                         tmp.sub_assign(&selector_precomputed.storage[outer].storage[inner], &mut
+// ctx);
 
 //                         // mul by alpha
 //                         tmp.mul_assign(&alpha, &mut ctx);
@@ -833,10 +824,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("A(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("A(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator
@@ -862,11 +853,11 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         let alpha = P::constant(*alpha, ctx);
 //         // B(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == multiplicity column
 //         let flat_poly_idx_offset = num_subarguments * set_idx;
-//         let b_poly = &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
-//         // columns are precomputed, so we need multiplicity
-//         let multiplicity =  witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);
-//         worker.scope(0, |scope, _| {
-//             // transpose other chunks
+//         let b_poly = &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);         // columns are precomputed, so we need
+// multiplicity         let multiplicity =
+// witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);         worker.
+// scope(0, |scope, _| {             // transpose other chunks
 //             for lde_iter in iterators.iter().cloned() {
 //                 let mut lde_iter = lde_iter;
 //                 let mut ctx = *ctx;
@@ -888,10 +879,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("B(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("B(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator
@@ -946,16 +937,17 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     assert!(
 //         table_id_column_idxes.len() == 0 || table_id_column_idxes.len() == 1,
-//         "only specialized lookup with shared table ID in constants in supported, or no sharing, but got {:?} as table idxes for IDs",
-//         &table_id_column_idxes,
+//         "only specialized lookup with shared table ID in constants in supported, or no sharing,
+// but got {:?} as table idxes for IDs",         &table_id_column_idxes,
 //     );
 
 //     let variables_columns_for_lookup = witness.variables_columns[
 //         variables_offset..(variables_offset + column_elements_per_subargument * num_subarguments)
 //     ].to_vec_in(B::default());
 
-//     // this is our lookup width, either counted by number of witness columns only, or if one includes setup
-//     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len() == 1) as usize);
+//     // this is our lookup width, either counted by number of witness columns only, or if one
+// includes setup     let capacity = column_elements_per_subargument + ((table_id_column_idxes.len()
+// == 1) as usize);
 
 //     let mut powers_of_gamma = Vec::with_capacity_in(capacity, B::default());
 //     let mut tmp = P::one(ctx);
@@ -974,8 +966,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //     let aggregated_lookup_columns = setup.lookup_tables_columns[0]
 //         .owned_subset_for_degree(quotient_degree);
 
-//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1, B::default());
-//         setup.lookup_tables_columns[1..].iter().map(|el| el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
+//     let mut other_lookup_columns = Vec::with_capacity_in(setup.lookup_tables_columns.len() - 1,
+// B::default());         setup.lookup_tables_columns[1..].iter().map(|el|
+// el.subset_for_degree(quotient_degree)).collect_into(&mut other_lookup_columns);
 
 //     // we access the memory exactly once
 //     let dst_chunks = aggregated_lookup_columns.compute_chunks_for_num_workers(worker.num_cores);
@@ -993,8 +986,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                     let (outer, inner) = lde_iter.current();
 //                     let mut tmp = beta;
 
-//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter()) {
-//                         P::mul_and_accumulate_into(
+//                     for (gamma, other) in powers_of_gamma.iter().zip(other_lookup_columns.iter())
+// {                         P::mul_and_accumulate_into(
 //                             &mut tmp,
 //                             gamma,
 //                             &other.storage[outer].storage[inner],
@@ -1002,8 +995,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         );
 //                     }
 
-//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1 * column_0,
-//                     // so we just add
+//                     // our "base" value for `aggregated_lookup_columns` already contains a term 1
+// * column_0,                     // so we just add
 
 //                     unsafe {
 //                         std::sync::Arc::get_mut_unchecked(
@@ -1019,14 +1012,19 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 
 //     // now we can compute each term the same way, but identifying contributions
 //     let witness_encoding_poly_powers_of_alpha = &alphas[..num_subarguments];
-//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(), variables_columns_for_lookup.chunks_exact(column_elements_per_subargument).len());
+//     assert_eq!(witness_encoding_poly_powers_of_alpha.len(),
+// variables_columns_for_lookup.chunks_exact(column_elements_per_subargument).len());
 
-//     for (idx, (alpha, vars_chunk)) in witness_encoding_poly_powers_of_alpha.iter().zip(variables_columns_for_lookup.chunks_exact(column_elements_per_subargument)).enumerate() {
-//         let alpha = P::constant(*alpha, ctx);
-//         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == lookup_selector
+//     for (idx, (alpha, vars_chunk)) in
+// witness_encoding_poly_powers_of_alpha.iter().zip(variables_columns_for_lookup.
+// chunks_exact(column_elements_per_subargument)).enumerate() {         let alpha =
+// P::constant(*alpha, ctx);         // A(x) * (gamma^0 * column_0 + ... + gamma^n * column_n +
+// beta) == lookup_selector
 
 //         let flat_poly_idx_offset = num_subarguments * set_idx;
-//         let witness_encoding_poly = &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
+//         let witness_encoding_poly =
+// &second_stage.lookup_witness_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);
 
 //         let mut columns = Vec::with_capacity_in(capacity, B::default());
 //         for wit_column in vars_chunk.iter() {
@@ -1035,9 +1033,9 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         }
 
 //         if let Some(table_id_poly) = table_id_column_idxes.get(0).copied() {
-//             let subset = setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);
-//             columns.push(subset);
-//         }
+//             let subset =
+// setup.constant_columns[table_id_poly].subset_for_degree(quotient_degree);             
+// columns.push(subset);         }
 
 //         worker.scope(0, |scope, _| {
 //             // transpose other chunks
@@ -1063,8 +1061,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             );
 //                         }
 //                         // mul by A(X)
-//                         tmp.mul_assign(&witness_encoding_poly.storage[outer].storage[inner], &mut ctx);
-//                         // subtract 1
+//                         tmp.mul_assign(&witness_encoding_poly.storage[outer].storage[inner], &mut
+// ctx);                         // subtract 1
 //                         tmp.sub_assign(&one, &mut ctx);
 
 //                         // mul by alpha
@@ -1074,10 +1072,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("A(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("A(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator
@@ -1103,11 +1101,12 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //         let alpha = P::constant(*alpha, ctx);
 //         // B(x) * (gamma^0 * column_0 + ... + gamma^n * column_n + beta) == multiplicity column
 //         let flat_poly_idx_offset = num_multiplicities_polys * set_idx;
-//         let multiplicities_encoding_poly = &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset + idx].subset_for_degree(quotient_degree);
-//         // columns are precomputed, so we need multiplicity
-//         let multiplicity = witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);
-//         worker.scope(0, |scope, _| {
-//             // transpose other chunks
+//         let multiplicities_encoding_poly =
+// &second_stage.lookup_multiplicities_encoding_polys[flat_poly_idx_offset +
+// idx].subset_for_degree(quotient_degree);         // columns are precomputed, so we need
+// multiplicity         let multiplicity =
+// witness.lookup_multiplicities_polys[idx].subset_for_degree(quotient_degree);         worker.
+// scope(0, |scope, _| {             // transpose other chunks
 //             for lde_iter in iterators.iter().cloned() {
 //                 let mut lde_iter = lde_iter;
 //                 let mut ctx = *ctx;
@@ -1119,7 +1118,8 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                         let (outer, inner) = lde_iter.current();
 //                         let mut tmp = aggregated_lookup_columns.storage[outer].storage[inner];
 //                         // mul by B(X)
-//                         tmp.mul_assign(&multiplicities_encoding_poly.storage[outer].storage[inner], &mut ctx);
+//                         
+// tmp.mul_assign(&multiplicities_encoding_poly.storage[outer].storage[inner], &mut ctx);
 //                         // subtract multiplicity
 //                         tmp.sub_assign(&multiplicity.storage[outer].storage[inner], &mut ctx);
 //                         // mul by alpha
@@ -1129,10 +1129,10 @@ pub(crate) fn compute_lookup_poly_pairs_specialized<
 //                             if outer == 0 {
 //                                 if tmp.is_zero() == false {
 //                                     let mut normal_enumeration = inner.reverse_bits();
-//                                     normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
-//                                     panic!("B(x) term is invalid for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);
-//                                 }
-//                             }
+//                                     normal_enumeration >>= usize::BITS -
+// domain_size.trailing_zeros();                                     panic!("B(x) term is invalid
+// for index {} for subargument {} in repetition {}", normal_enumeration, idx, set_idx);            
+// }                             }
 //                         }
 
 //                         // add into accumulator

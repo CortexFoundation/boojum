@@ -1,10 +1,9 @@
 use std::alloc::Global;
 
-use crate::field::{ExtensionField, FieldExtension};
-use crate::worker::Worker;
 use crate::{
     cs::{implementations::utils::precompute_twiddles_for_fft, traits::GoodAllocator},
-    field::{Field, PrimeField, SmallField},
+    field::{ExtensionField, Field, FieldExtension, PrimeField, SmallField},
+    worker::Worker,
 };
 
 pub trait TrivialContext: 'static + Send + Sync + Clone + Copy + std::fmt::Debug {
@@ -135,7 +134,7 @@ pub trait PrimeFieldLikeVectorized: PrimeFieldLike<Context = ()> {
 
     fn vec_from_base_vec<A: GoodAllocator>(input: Vec<Self::Base, A>) -> Vec<Self, A>; // no context here
     fn vec_into_base_vec<A: GoodAllocator>(input: Vec<Self, A>) -> Vec<Self::Base, A>; // no context here
-                                                                                       // and FFT to allow to switch to any accelerated implementations for free
+    // and FFT to allow to switch to any accelerated implementations for free
     fn fft_natural_to_bitreversed<A: GoodAllocator>(
         input: &mut [Self],
         coset: Self::Base,
@@ -325,13 +324,7 @@ impl<'a, F: PrimeField, P: PrimeFieldLikeVectorized<Base = F>> Flattener<'a, F, 
         );
         let buffer = Vec::with_capacity(buffer_size);
 
-        Self {
-            source,
-            idx: 0,
-            take_by,
-            bound,
-            buffer,
-        }
+        Self { source, idx: 0, take_by, bound, buffer }
     }
 
     pub(crate) fn num_iterations(&self) -> usize {
@@ -396,10 +389,7 @@ impl<F: BaseField, E: FieldExtension<2, BaseField = F>> PrimeFieldLike for Exten
     }
     #[inline(always)]
     fn constant(value: F, _ctx: &mut Self::Context) -> Self {
-        Self {
-            coeffs: [value, F::ZERO],
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs: [value, F::ZERO], _marker: std::marker::PhantomData }
     }
     // #[inline(always)]
     // fn mul_by_base(&'_ mut self, other: &F, _ctx: &mut Self::Context) -> &'_ mut Self {
@@ -480,24 +470,15 @@ impl<P: PrimeFieldLike, E: PrimeFieldLikeExtension<2, BaseField = P>> PrimeField
     type Context = <E::BaseField as PrimeFieldLike>::Context;
     #[inline(always)]
     fn zero(ctx: &mut Self::Context) -> Self {
-        Self {
-            coeffs: [P::zero(ctx), P::zero(ctx)],
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs: [P::zero(ctx), P::zero(ctx)], _marker: std::marker::PhantomData }
     }
     #[inline(always)]
     fn one(ctx: &mut Self::Context) -> Self {
-        Self {
-            coeffs: [P::one(ctx), P::zero(ctx)],
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs: [P::one(ctx), P::zero(ctx)], _marker: std::marker::PhantomData }
     }
     #[inline(always)]
     fn minus_one(ctx: &mut Self::Context) -> Self {
-        Self {
-            coeffs: [P::minus_one(ctx), P::zero(ctx)],
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs: [P::minus_one(ctx), P::zero(ctx)], _marker: std::marker::PhantomData }
     }
     #[inline]
     fn add_assign(&'_ mut self, other: &Self, ctx: &mut Self::Context) -> &'_ mut Self {
@@ -574,10 +555,7 @@ impl<P: PrimeFieldLike, E: PrimeFieldLikeExtension<2, BaseField = P>> PrimeField
     }
     #[inline(always)]
     fn constant(value: Self::Base, ctx: &mut Self::Context) -> Self {
-        Self {
-            coeffs: [value, P::zero(ctx)],
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs: [value, P::zero(ctx)], _marker: std::marker::PhantomData }
     }
     // #[inline(always)]
     // fn mul_by_base(&'_ mut self, other: &Self::Base, ctx: &mut Self::Context) -> &'_ mut Self {

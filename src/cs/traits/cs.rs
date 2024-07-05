@@ -1,10 +1,13 @@
-use super::evaluator::GateConstraintEvaluator;
-use super::gate::{Gate, GatePlacementStrategy};
-use super::*;
-use crate::config::CSWitnessEvaluationConfig;
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::dag::{CSWitnessValues, WitnessSource};
+use super::{
+    evaluator::GateConstraintEvaluator,
+    gate::{Gate, GatePlacementStrategy},
+    *,
+};
+use crate::{
+    config::CSWitnessEvaluationConfig,
+    cs::toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+    dag::{CSWitnessValues, WitnessSource},
+};
 
 pub enum DstBuffer<'set, 'tgt: 'set, T> {
     MutSlice(&'set mut [T], usize),
@@ -140,9 +143,10 @@ pub trait ConstraintSystem<F: SmallField>: Send + Sync {
         for_places: [Place; N],
     ) -> CSWitnessValues<F, N, Self::WitnessSource>;
 
-    // same logic we try to apply for witness variables (non-copiable). During setup phase in the same way we can maintain
-    // a map of where each particular witness number W will go in the trace table, but for the hot path in circuit witness generation
-    // we want to also degrade it down to just bumping a counter
+    // same logic we try to apply for witness variables (non-copiable). During setup phase in the
+    // same way we can maintain a map of where each particular witness number W will go in the
+    // trace table, but for the hot path in circuit witness generation we want to also degrade
+    // it down to just bumping a counter
 
     #[inline]
     fn alloc_single_witness(&mut self, witness: F) -> Witness {
@@ -217,10 +221,11 @@ pub trait ConstraintSystem<F: SmallField>: Send + Sync {
     // we need few things to
     fn next_available_row(&self) -> usize;
 
-    // internal methods to actually place variables in particular places, usable by the gate. Should not be called by user
-    // unless you know what you are doing
+    // internal methods to actually place variables in particular places, usable by the gate. Should
+    // not be called by user unless you know what you are doing
 
-    // There are for case of "general purpose columns" that may have different gates placed on different rows
+    // There are for case of "general purpose columns" that may have different gates placed on
+    // different rows
     fn place_variable(&mut self, var: Variable, row: usize, column: usize);
     fn place_witness(&mut self, witness: Witness, row: usize, column: usize);
     fn place_gate<G: Gate<F>>(&mut self, gate: &G, row: usize);

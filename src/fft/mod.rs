@@ -1,6 +1,8 @@
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::traits::field::{Field, PrimeField};
-use crate::field::SmallField;
+use crate::field::{
+    goldilocks::GoldilocksField,
+    traits::field::{Field, PrimeField},
+    SmallField,
+};
 
 pub mod transpose;
 use crate::field::goldilocks::MixedGL;
@@ -171,8 +173,8 @@ const fn bitreverse_enumeration_inplace_hybrid<T>(input: &mut [T]) {
 //     }
 // }
 
-// const fn bitreverse_enumeration_inplace_via_small_lookup_into<T: Copy>(input: &[T], dst: &mut [T]) {
-//     assert!(input.len().is_power_of_two());
+// const fn bitreverse_enumeration_inplace_via_small_lookup_into<T: Copy>(input: &[T], dst: &mut
+// [T]) {     assert!(input.len().is_power_of_two());
 //     assert!(input.len() <= SMALL_BITREVERSE_LOOKUP_TABLE.len());
 
 //     let shift_to_cleanup =
@@ -194,8 +196,8 @@ const fn bitreverse_enumeration_inplace_hybrid<T>(input: &mut [T]) {
 //     }
 // }
 
-// const fn bitreverse_enumeration_inplace_via_medium_lookup_into<T: Copy>(input: &[T], dst: &mut [T]) {
-//     assert!(input.len().is_power_of_two());
+// const fn bitreverse_enumeration_inplace_via_medium_lookup_into<T: Copy>(input: &[T], dst: &mut
+// [T]) {     assert!(input.len().is_power_of_two());
 //     assert!(input.len() <= MEDIUM_BITREVERSE_LOOKUP_TABLE.len());
 
 //     let shift_to_cleanup =
@@ -248,8 +250,8 @@ const fn bitreverse_enumeration_inplace_hybrid<T>(input: &mut [T]) {
 //     // double loop. Note the swapping approach:
 //     // - lowest bits become highest bits and change every time
 //     // - highest bits change become lowest bits and change rarely
-//     // so our "i" counter is a counter over highest bits, and our source is in the form (i << 8) + j
-//     // and our dst is (reversed_j << common_part_log_n) + reversed_i
+//     // so our "i" counter is a counter over highest bits, and our source is in the form (i << 8)
+// + j     // and our dst is (reversed_j << common_part_log_n) + reversed_i
 //     // and since our source and destination are symmetrical we can formally swap them
 //     // and have our writes cache-friendly
 //     let mut i = 0;
@@ -283,11 +285,11 @@ const fn bitreverse_enumeration_inplace_hybrid<T>(input: &mut [T]) {
 
 // Some basic words on FFT
 // Assuming that traces will be quite wide (tens of polys) we agree that parallelism strategy
-// for all LDE or FFT operations will be separate polys -> separate cores, instead of trying to parallelise
-// internal FFT/LDE subtask
+// for all LDE or FFT operations will be separate polys -> separate cores, instead of trying to
+// parallelise internal FFT/LDE subtask
 
-// We also will eventually want to implement a pool of preallocated vectors as we may want to have scratch space
-// or partial out-of-place operations, but it's second order optimization
+// We also will eventually want to implement a pool of preallocated vectors as we may want to have
+// scratch space or partial out-of-place operations, but it's second order optimization
 
 // Some functions below allow us to estimate some machine-specific(!) cache-friendly strategies
 // Later on we can update those based on compiler flags / CPU detection, but at the moment
@@ -300,10 +302,11 @@ const fn bitreverse_enumeration_inplace_hybrid<T>(input: &mut [T]) {
 // n1 * n2 problems where n1 == n2 or n1 == 2*n2. We restrict ourselves to problem sized up to
 // 2^24, so splitting will always be L1 cache friendly
 
-// Notes on higher-radix FFTs in prime fields: for complex numbers higher-radix FFTs reduced number of multiplications,
-// but for prime field it does not. Nevertheless for small fields where we can read large cache lines
-// it's beneficial to use both larger-radix FFT to reduce bandwidth requriements (keep more in registers),
-// and also to utilize the fact that cache line fits 8 or 16 field elements
+// Notes on higher-radix FFTs in prime fields: for complex numbers higher-radix FFTs reduced number
+// of multiplications, but for prime field it does not. Nevertheless for small fields where we can
+// read large cache lines it's beneficial to use both larger-radix FFT to reduce bandwidth
+// requriements (keep more in registers), and also to utilize the fact that cache line fits 8 or 16
+// field elements
 
 pub fn distribute_powers<F: PrimeField>(input: &mut [F], element: F) {
     let work_size = input.len();
@@ -385,11 +388,7 @@ const fn max_stride_for_problem_size(size: usize) -> usize {
     if max == 0 {
         1
     } else if max >= size / 2 {
-        if size / 2 > 0 {
-            size / 2
-        } else {
-            1
-        }
+        if size / 2 > 0 { size / 2 } else { 1 }
     } else {
         max
     }
@@ -618,9 +617,7 @@ pub fn ifft_natural_to_natural_mixedgl_interleaving(
     }
 }
 
-use crate::cs::traits::GoodAllocator;
-use crate::field::traits::field_like::BaseField;
-use crate::worker::Worker;
+use crate::{cs::traits::GoodAllocator, field::traits::field_like::BaseField, worker::Worker};
 
 pub fn precompute_twiddles_for_fft_wrapper<F: BaseField, A: GoodAllocator, const INVERSED: bool>(
     fft_size: usize,
@@ -960,7 +957,7 @@ pub(crate) fn mixedgl_cache_friendly_ntt_natural_to_bitreversed(
         }
 
         while round_in_cache < (num_rounds_in_cache - 4) {
-            //attempt to subtract with overflow
+            // attempt to subtract with overflow
             let mut k = 0;
             while k < num_groups_in_cache {
                 // group loop
@@ -1092,8 +1089,7 @@ pub(crate) fn mixedgl_cache_friendly_ntt_natural_to_bitreversed_interlieving(
 ) {
     use std::arch::x86_64::_mm512_loadu_epi64;
 
-    use crate::field::traits::field_like::PrimeFieldLike;
-    use crate::field::traits::field_like::PrimeFieldLikeVectorized;
+    use crate::field::traits::field_like::{PrimeFieldLike, PrimeFieldLikeVectorized};
     let n = a.len() * MixedGL::SIZE_FACTOR;
     debug_assert!(a.len() > 0);
 
@@ -1201,7 +1197,7 @@ pub(crate) fn mixedgl_cache_friendly_ntt_natural_to_bitreversed_interlieving(
         }
 
         while round_in_cache < (num_rounds_in_cache - 4) {
-            //attempt to subtract with overflow
+            // attempt to subtract with overflow
             let mut k = 0;
             while k < num_groups_in_cache {
                 // group loop
@@ -1265,7 +1261,8 @@ pub(crate) fn mixedgl_cache_friendly_ntt_natural_to_bitreversed_interlieving(
                             as *const i64,
                     )
                 };
-                // let mut s_as_mgl: MixedGL = unsafe { &*(s as *const _ as *const MixedGL) }.clone();
+                // let mut s_as_mgl: MixedGL = unsafe { &*(s as *const _ as *const MixedGL)
+                // }.clone();
                 let mut s_mgl = MixedGL::from_v(s_v);
                 s_mgl.permute(&omega_permutation);
                 let mut i = 0;
@@ -1332,14 +1329,15 @@ mod test {
         }
     }
 
-    use crate::cs::implementations::utils::{
-        domain_generator_for_size, precompute_twiddles_for_fft,
+    use crate::{
+        cs::implementations::utils::{domain_generator_for_size, precompute_twiddles_for_fft},
+        field::{
+            goldilocks::GoldilocksField, rand_from_rng,
+            traits::field_like::PrimeFieldLikeVectorized, Field, PrimeField,
+        },
+        utils::{allocate_in_with_alignment_of, clone_respecting_allignment},
+        worker::Worker,
     };
-    use crate::field::goldilocks::GoldilocksField;
-    use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-    use crate::field::{rand_from_rng, Field, PrimeField};
-    use crate::utils::{allocate_in_with_alignment_of, clone_respecting_allignment};
-    use crate::worker::Worker;
 
     #[test]
     fn test_over_goldilocks_valid_naive() {
@@ -1360,7 +1358,8 @@ mod test {
             // dbg!(&forward_twiddles);
             let mut forward = original.clone();
             fft_natural_to_bitreversed(&mut forward, GoldilocksField::ONE, &forward_twiddles[..]);
-            // fft_natural_to_bitreversed_cache_friendly(&mut forward, GoldilocksField::ONE, &forward_twiddles[..]);
+            // fft_natural_to_bitreversed_cache_friendly(&mut forward, GoldilocksField::ONE,
+            // &forward_twiddles[..]);
             bitreverse_enumeration_inplace(&mut forward);
 
             let omega = domain_generator_for_size::<GoldilocksField>(poly_size as u64);
@@ -1393,7 +1392,8 @@ mod test {
 
         let original: Vec<GoldilocksField> =
             (0..poly_size).map(|_| rand_from_rng(&mut rng)).collect();
-        // let forward_twiddles = precompute_twiddles_for_fft::<GoldilocksField, GoldilocksField, Global, false>(poly_size, &worker, ());
+        // let forward_twiddles = precompute_twiddles_for_fft::<GoldilocksField, GoldilocksField,
+        // Global, false>(poly_size, &worker, ());
         let forward_twiddles = precompute_twiddles_for_fft_wrapper::<GoldilocksField, Global, false>(
             poly_size, &worker,
         );
@@ -1427,7 +1427,8 @@ mod test {
             let mut original = allocate_in_with_alignment_of::<GoldilocksField, MixedGL, Global>(
                 poly_size, Global,
             );
-            // (0..poly_size).map(|_| rand_from_rng::<_, GoldilocksField>(&mut rng)).collect_into(&mut original);
+            // (0..poly_size).map(|_| rand_from_rng::<_, GoldilocksField>(&mut
+            // rng)).collect_into(&mut original);
             use rand::Rng;
             (0..poly_size)
                 .map(|_| GoldilocksField(rng.gen_range(0..2)))
@@ -1488,7 +1489,8 @@ mod test {
             let mut original = allocate_in_with_alignment_of::<GoldilocksField, MixedGL, Global>(
                 poly_size, Global,
             );
-            // (0..poly_size).map(|_| rand_from_rng::<_, GoldilocksField>(&mut rng)).collect_into(&mut original);
+            // (0..poly_size).map(|_| rand_from_rng::<_, GoldilocksField>(&mut
+            // rng)).collect_into(&mut original);
             (0..poly_size)
                 .map(|_| GoldilocksField(rng.gen_range(0..2)))
                 .collect_into(&mut original);

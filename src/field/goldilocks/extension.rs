@@ -1,5 +1,6 @@
-use super::*;
 use derivative::*;
+
+use super::*;
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone, Copy, Debug, Hash)]

@@ -1,24 +1,25 @@
-use super::tables::ch4::Ch4Table;
-use super::tables::trixor4::TriXor4Table;
-use super::tables::xor8::Xor8Table;
-use super::tables::RangeCheckTable;
-use super::*;
-
-use crate::config::*;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::gates::UIntXAddGate;
-use crate::cs::gates::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::num::Num;
-use crate::gadgets::tables::binop_table::BinopTable;
-use crate::gadgets::tables::maj4::Maj4Table;
-use crate::gadgets::tables::ByteSplitTable;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::{cs::Variable, field::SmallField};
+use super::{
+    tables::{ch4::Ch4Table, trixor4::TriXor4Table, xor8::Xor8Table, RangeCheckTable},
+    *,
+};
+use crate::{
+    config::*,
+    cs::{
+        gates::{ConstantAllocatableCS, UIntXAddGate, *},
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::{
+        boolean::Boolean,
+        num::Num,
+        tables::{binop_table::BinopTable, maj4::Maj4Table, ByteSplitTable},
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            castable::WitnessCastable,
+        },
+    },
+};
 
 #[inline(always)]
 pub fn get_8_by_8_range_check_table<F: SmallField, CS: ConstraintSystem<F>>(
@@ -90,10 +91,7 @@ fn uint8_into_4bit_chunks_unchecked<F: SmallField, CS: ConstraintSystem<F>>(
             let input = <u8 as WitnessCastable<F, F>>::cast_from_source(input[0]);
             let low = input % (1u8 << 4);
             let high = input >> 4;
-            [
-                F::from_u64_unchecked(low as u64),
-                F::from_u64_unchecked(high as u64),
-            ]
+            [F::from_u64_unchecked(low as u64), F::from_u64_unchecked(high as u64)]
         };
 
         let outputs = Place::from_variables(chunks);
@@ -175,10 +173,8 @@ impl<F: SmallField> CSAllocatableExt<F> for UInt8<F> {
     }
 }
 
+use super::traits::{castable::Convertor, witnessable::WitnessHookable};
 use crate::gadgets::traits::witnessable::CSWitnessable;
-
-use super::traits::castable::Convertor;
-use super::traits::witnessable::WitnessHookable;
 
 impl<F: SmallField> CSWitnessable<F, 1> for UInt8<F> {
     type ConversionFunction = Convertor<F, [F; 1], u8>;
@@ -274,20 +270,14 @@ impl<F: SmallField> UInt8<F> {
     #[inline]
     #[must_use]
     pub const fn into_num(self) -> Num<F> {
-        Num {
-            variable: self.variable,
-            _marker: std::marker::PhantomData,
-        }
+        Num { variable: self.variable, _marker: std::marker::PhantomData }
     }
 
     // this routine is not too efficient because we can allocate more per lookup, so use carefully
     pub fn from_variable_checked<CS: ConstraintSystem<F>>(cs: &mut CS, variable: Variable) -> Self {
         range_check_u8(cs, variable);
 
-        let a = Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        };
+        let a = Self { variable, _marker: std::marker::PhantomData };
 
         a
     }
@@ -298,10 +288,7 @@ impl<F: SmallField> UInt8<F> {
     #[inline(always)]
     #[must_use]
     pub const unsafe fn from_variable_unchecked(variable: Variable) -> Self {
-        Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -310,10 +297,7 @@ impl<F: SmallField> UInt8<F> {
 
         let constant_var = cs.allocate_constant(F::from_u64_unchecked(constant as u64));
 
-        Self {
-            variable: constant_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: constant_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -326,10 +310,7 @@ impl<F: SmallField> UInt8<F> {
         let a = cs.alloc_single_variable_from_witness(F::from_u64_with_reduction(witness as u64));
         range_check_u8(cs, a);
 
-        let a = Self {
-            variable: a,
-            _marker: std::marker::PhantomData,
-        };
+        let a = Self { variable: a, _marker: std::marker::PhantomData };
 
         a
     }
@@ -341,15 +322,9 @@ impl<F: SmallField> UInt8<F> {
 
         range_check_u8_pair(cs, &[a, b]);
 
-        let a = Self {
-            variable: a,
-            _marker: std::marker::PhantomData,
-        };
+        let a = Self { variable: a, _marker: std::marker::PhantomData };
 
-        let b = Self {
-            variable: b,
-            _marker: std::marker::PhantomData,
-        };
+        let b = Self { variable: b, _marker: std::marker::PhantomData };
 
         [a, b]
     }
@@ -381,11 +356,7 @@ impl<F: SmallField> UInt8<F> {
     #[inline]
     #[must_use]
     pub fn equals<CS: ConstraintSystem<F>>(cs: &mut CS, a: &Self, b: &Self) -> Boolean<F> {
-        Num::equals(
-            cs,
-            &Num::from_variable(a.variable),
-            &Num::from_variable(b.variable),
-        )
+        Num::equals(cs, &Num::from_variable(a.variable), &Num::from_variable(b.variable))
     }
 
     /// # Safety
@@ -407,12 +378,7 @@ impl<F: SmallField> UInt8<F> {
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
             if let (Some(a), Some(b)) = (self.witness_hook(&*cs)(), other.witness_hook(&*cs)()) {
                 let (_, of) = a.overflowing_add(b);
-                assert!(
-                    of == false,
-                    "trying to add {} and {} that leads to overflow",
-                    a,
-                    b
-                );
+                assert!(of == false, "trying to add {} and {} that leads to overflow", a, b);
             }
         }
 
@@ -440,12 +406,7 @@ impl<F: SmallField> UInt8<F> {
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
             if let (Some(a), Some(b)) = (self.witness_hook(&*cs)(), other.witness_hook(&*cs)()) {
                 let (_, uf) = a.overflowing_sub(b);
-                assert!(
-                    uf == false,
-                    "trying to sub {} and {} that leads to underflow",
-                    a,
-                    b
-                );
+                assert!(uf == false, "trying to sub {} and {} that leads to underflow", a, b);
             }
         }
 
@@ -459,10 +420,7 @@ impl<F: SmallField> UInt8<F> {
                 no_borrow,
             );
 
-            let result = Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            };
+            let result = Self { variable: result_var, _marker: std::marker::PhantomData };
             result
         } else {
             unimplemented!()
@@ -480,10 +438,7 @@ impl<F: SmallField> UInt8<F> {
             let (result_var, carry_out_var) =
                 UIntXAddGate::<8>::perform_addition(cs, self.variable, other.variable, no_carry_in);
 
-            let carry_out = Boolean {
-                variable: carry_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let carry_out = Boolean { variable: carry_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 
@@ -508,10 +463,8 @@ impl<F: SmallField> UInt8<F> {
                 no_borrow_in,
             );
 
-            let borrow_out = Boolean {
-                variable: borrow_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let borrow_out =
+                Boolean { variable: borrow_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 

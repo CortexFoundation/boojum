@@ -1,11 +1,13 @@
-use crate::cs::implementations::evaluator_data::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::*;
-use crate::cs::CSGeometry;
-use crate::cs::GateTool;
-use crate::field::SmallField;
 use std::any::TypeId;
+
+use crate::{
+    cs::{
+        implementations::evaluator_data::*,
+        traits::{cs::ConstraintSystem, evaluator::*, gate::*},
+        CSGeometry, GateTool,
+    },
+    field::SmallField,
+};
 
 pub struct GateTypeEntry<F: SmallField, G: Gate<F>, T: 'static + Send + Sync + Clone> {
     pub placement_strategy: GatePlacementStrategy,
@@ -78,27 +80,15 @@ impl<F: SmallField> GateConfigurationHolder<F> for () {
     }
 }
 
-impl<
-        F: SmallField,
-        GG: Gate<F>,
-        TT: 'static + Send + Sync + Clone,
-        U: GateConfigurationHolder<F>,
-    > GateConfigurationHolder<F> for (GateTypeEntry<F, GG, TT>, U)
+impl<F: SmallField, GG: Gate<F>, TT: 'static + Send + Sync + Clone, U: GateConfigurationHolder<F>>
+    GateConfigurationHolder<F> for (GateTypeEntry<F, GG, TT>, U)
 {
     #[inline(always)]
     fn is_gate_allowed<G: Gate<F>>(&self) -> bool {
-        if TypeId::of::<GG>() == TypeId::of::<G>() {
-            true
-        } else {
-            self.1.is_gate_allowed::<G>()
-        }
+        if TypeId::of::<GG>() == TypeId::of::<G>() { true } else { self.1.is_gate_allowed::<G>() }
     }
     fn is_type_id_included(&self, type_id: TypeId) -> bool {
-        if TypeId::of::<GG>() == type_id {
-            true
-        } else {
-            self.1.is_type_id_included(type_id)
-        }
+        if TypeId::of::<GG>() == type_id { true } else { self.1.is_type_id_included(type_id) }
     }
     #[inline(always)]
     fn add_gate<G: Gate<F>, T: 'static + Send + Sync + Clone>(
@@ -148,10 +138,7 @@ impl<
         &self,
         dst: &mut Vec<GateRowCleanupFunction<CS>>,
     ) {
-        if matches!(
-            self.0.placement_strategy,
-            GatePlacementStrategy::UseGeneralPurposeColumns
-        ) {
+        if matches!(self.0.placement_strategy, GatePlacementStrategy::UseGeneralPurposeColumns) {
             if let Some(cleanup_fn) = GG::row_finalization_function::<CS>() {
                 dst.push(cleanup_fn);
             }
@@ -162,10 +149,8 @@ impl<
         &self,
         dst: &mut Vec<GateColumnsCleanupFunction<CS>>,
     ) {
-        if matches!(
-            self.0.placement_strategy,
-            GatePlacementStrategy::UseSpecializedColumns { .. }
-        ) {
+        if matches!(self.0.placement_strategy, GatePlacementStrategy::UseSpecializedColumns { .. })
+        {
             if let Some(cleanup_fn) = GG::columns_finalization_function::<CS>() {
                 dst.push(cleanup_fn);
             }

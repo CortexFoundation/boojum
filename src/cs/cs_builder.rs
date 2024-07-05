@@ -3,8 +3,7 @@ use super::{
     CSGeometry, GateConfigurationHolder, GateTypeEntry, LookupParameters, StaticToolboxHolder,
     Tool,
 };
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::field::SmallField;
+use crate::{cs::traits::gate::GatePlacementStrategy, field::SmallField};
 
 pub trait CsBuilderImpl<F: SmallField, TImpl> {
     type Final<GC: GateConfigurationHolder<F>, TB: StaticToolboxHolder>;
@@ -68,12 +67,7 @@ pub struct CsBuilder<TImpl, F: SmallField, GC: GateConfigurationHolder<F>, TB: S
 pub fn new_builder<TImpl: CsBuilderImpl<F, TImpl>, F: SmallField>(
     implementation: TImpl,
 ) -> CsBuilder<TImpl, F, (), ()> {
-    CsBuilder {
-        phantom: std::marker::PhantomData,
-        implementation,
-        gates_config: (),
-        toolbox: (),
-    }
+    CsBuilder { phantom: std::marker::PhantomData, implementation, gates_config: (), toolbox: () }
 }
 
 // pub fn new_builder<TImpl: CsBuilderImpl<F, TImpl>, F: SmallField>(
@@ -88,11 +82,11 @@ pub fn new_builder<TImpl: CsBuilderImpl<F, TImpl>, F: SmallField>(
 // }
 
 impl<
-        TImpl: CsBuilderImpl<F, TImpl>,
-        F: SmallField,
-        GC: GateConfigurationHolder<F>,
-        TB: StaticToolboxHolder,
-    > CsBuilder<TImpl, F, GC, TB>
+    TImpl: CsBuilderImpl<F, TImpl>,
+    F: SmallField,
+    GC: GateConfigurationHolder<F>,
+    TB: StaticToolboxHolder,
+> CsBuilder<TImpl, F, GC, TB>
 {
     pub fn get_params(&self) -> CSGeometry {
         TImpl::parameters::<GC, TB>(self)

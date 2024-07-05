@@ -2,34 +2,32 @@
 //! under a single function umbrella.
 use std::alloc::Global;
 
-use super::polynomial_storage::{SetupBaseStorage, SetupStorage};
-use super::proof::Proof;
-use super::verifier::VerificationKey;
-use super::witness::WitnessVec;
-use crate::cs::cs_builder_verifier::CsVerifierBuilder;
-use crate::cs::oracle::merkle_tree::MerkleTreeWithCap;
-use crate::cs::traits::GoodAllocator;
-
-use super::transcript::Transcript;
-use crate::cs::traits::circuit::Circuit;
-
-use super::*;
-
-use super::pow::*;
-
-use crate::config::*;
-use crate::cs::implementations::hints::*;
-use crate::cs::implementations::prover::ProofConfig;
-use crate::cs::implementations::reference_cs::*;
-use crate::cs::oracle::TreeHasher;
-use crate::field::FieldExtension;
+use super::{
+    polynomial_storage::{SetupBaseStorage, SetupStorage},
+    pow::*,
+    proof::Proof,
+    transcript::Transcript,
+    verifier::VerificationKey,
+    witness::WitnessVec,
+    *,
+};
+use crate::{
+    config::*,
+    cs::{
+        cs_builder_verifier::CsVerifierBuilder,
+        implementations::{hints::*, prover::ProofConfig, reference_cs::*},
+        oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
+        traits::{circuit::Circuit, GoodAllocator},
+    },
+    field::FieldExtension,
+};
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        A: GoodAllocator,
-    > CSReferenceAssembly<F, P, CFG, A>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    A: GoodAllocator,
+> CSReferenceAssembly<F, P, CFG, A>
 {
     pub fn prove_one_shot<
         EXT: FieldExtension<2, BaseField = F>,

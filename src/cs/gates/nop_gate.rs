@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::*;
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 // Allocates bootlean variables
 
@@ -30,11 +29,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for NopGateConstraintEvaluator {
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 0,
-            num_witnesses: 0,
-            num_constants: 0,
-        }
+        GatePrincipalInstanceWidth { num_variables: 0, num_witnesses: 0, num_constants: 0 }
     }
 
     #[inline]

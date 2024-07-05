@@ -34,11 +34,14 @@ pub trait CircuitBuilder<F: SmallField> {
     ) -> CsBuilder<T, F, impl GateConfigurationHolder<F>, impl StaticToolboxHolder>;
 }
 
-use crate::cs::cs_builder_verifier::CsVerifierBuilder;
-use crate::cs::implementations::verifier::Verifier;
-use crate::field::FieldExtension;
-use crate::gadgets::recursion::recursive_verifier::RecursiveVerifier;
-use crate::gadgets::recursion::recursive_verifier_builder::CsRecursiveVerifierBuilder;
+use crate::{
+    cs::{cs_builder_verifier::CsVerifierBuilder, implementations::verifier::Verifier},
+    field::FieldExtension,
+    gadgets::recursion::{
+        recursive_verifier::RecursiveVerifier,
+        recursive_verifier_builder::CsRecursiveVerifierBuilder,
+    },
+};
 
 // Done object-safe traits for convenience, as well as holders
 
@@ -57,8 +60,8 @@ pub struct CircuitBuilderProxy<F: SmallField, C: CircuitBuilder<F>> {
 
 impl<F: SmallField, T: CircuitBuilder<F> + 'static> CircuitBuilderProxy<F, T> {
     // Create a boxed builder
-    pub fn dyn_verifier_builder<EXT: FieldExtension<2, BaseField = F>>(
-    ) -> Box<dyn ErasedBuilderForVerifier<F, EXT>> {
+    pub fn dyn_verifier_builder<EXT: FieldExtension<2, BaseField = F>>()
+    -> Box<dyn ErasedBuilderForVerifier<F, EXT>> {
         Box::<Self>::default()
     }
 
@@ -71,8 +74,8 @@ impl<F: SmallField, T: CircuitBuilder<F> + 'static> CircuitBuilderProxy<F, T> {
     }
 }
 
-// we do not provide default implementation for CircuitBuilder, because those would require non-trivial construction,
-// and instead we provide it for proxy
+// we do not provide default implementation for CircuitBuilder, because those would require
+// non-trivial construction, and instead we provide it for proxy
 
 impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, T: CircuitBuilder<F>>
     ErasedBuilderForVerifier<F, EXT> for CircuitBuilderProxy<F, T>
@@ -107,11 +110,11 @@ pub trait ErasedBuilderForRecursiveVerifier<
 }
 
 impl<
-        F: SmallField,
-        CS: ConstraintSystem<F> + 'static,
-        EXT: FieldExtension<2, BaseField = F>,
-        T: CircuitBuilder<F>,
-    > ErasedBuilderForRecursiveVerifier<F, EXT, CS> for CircuitBuilderProxy<F, T>
+    F: SmallField,
+    CS: ConstraintSystem<F> + 'static,
+    EXT: FieldExtension<2, BaseField = F>,
+    T: CircuitBuilder<F>,
+> ErasedBuilderForRecursiveVerifier<F, EXT, CS> for CircuitBuilderProxy<F, T>
 {
     fn geometry(&self) -> CSGeometry {
         T::geometry()

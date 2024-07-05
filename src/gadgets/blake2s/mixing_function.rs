@@ -1,17 +1,20 @@
-use crate::config::*;
-use crate::cs::gates::{
-    ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant, FmaGateInBaseWithoutConstantParams,
-};
-use crate::cs::Variable;
-use crate::cs::{
-    gates::u32_tri_add_carry_as_chunk::U32TriAddCarryAsChunkGate, traits::cs::ConstraintSystem,
-};
-use crate::gadgets::tables::xor8::Xor8Table;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::u8::range_check_u8_pair;
 use arrayvec::ArrayVec;
 
 use super::*;
+use crate::{
+    config::*,
+    cs::{
+        gates::{
+            u32_tri_add_carry_as_chunk::U32TriAddCarryAsChunkGate, ConstantAllocatableCS,
+            FmaGateInBaseFieldWithoutConstant, FmaGateInBaseWithoutConstantParams,
+        },
+        traits::cs::ConstraintSystem,
+        Variable,
+    },
+    gadgets::{
+        tables::xor8::Xor8Table, traits::castable::WitnessCastable, u8::range_check_u8_pair,
+    },
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug)]
@@ -20,8 +23,8 @@ pub struct Word<F: SmallField> {
 }
 
 // we HARDCODE rotations here
-// Rotations are 16, 12, 8 and 7. Rotations by 16 and 8 are "free", and rorations by 12 and 7 require extra
-// decomposition
+// Rotations are 16, 12, 8 and 7. Rotations by 16 and 8 are "free", and rorations by 12 and 7
+// require extra decomposition
 
 pub(crate) fn mixing_function_g<F: SmallField, CS: ConstraintSystem<F>>(
     cs: &mut CS,
@@ -52,12 +55,7 @@ pub(crate) fn mixing_function_g<F: SmallField, CS: ConstraintSystem<F>>(
     // and rotation by 16
     let not_shifted_d = xor_many(cs, &a, &d);
 
-    d = [
-        not_shifted_d[2],
-        not_shifted_d[3],
-        not_shifted_d[0],
-        not_shifted_d[1],
-    ];
+    d = [not_shifted_d[2], not_shifted_d[3], not_shifted_d[0], not_shifted_d[1]];
 
     // v[c] := (v[c] + v[d])     mod 2**w
     // v[b] := (v[b] ^ v[c]) >>> R2
@@ -113,12 +111,7 @@ pub(crate) fn mixing_function_g<F: SmallField, CS: ConstraintSystem<F>>(
     // and rotation by 8
     let not_shifted_d = xor_many(cs, &a, &d);
 
-    let d = [
-        not_shifted_d[1],
-        not_shifted_d[2],
-        not_shifted_d[3],
-        not_shifted_d[0],
-    ];
+    let d = [not_shifted_d[1], not_shifted_d[2], not_shifted_d[3], not_shifted_d[0]];
 
     // v[c] := (v[c] + v[d])     mod 2**w
     // v[b] := (v[b] ^ v[c]) >>> R4
@@ -170,18 +163,10 @@ pub(crate) fn mixing_function_g<F: SmallField, CS: ConstraintSystem<F>>(
 
     // just assign. Bit lengths are constrainted by our decompositions/recompositions
     unsafe {
-        let a = Word {
-            inner: a.map(|el| UInt8::from_variable_unchecked(el)),
-        };
-        let b = Word {
-            inner: b.map(|el| UInt8::from_variable_unchecked(el)),
-        };
-        let c = Word {
-            inner: c.map(|el| UInt8::from_variable_unchecked(el)),
-        };
-        let d = Word {
-            inner: d.map(|el| UInt8::from_variable_unchecked(el)),
-        };
+        let a = Word { inner: a.map(|el| UInt8::from_variable_unchecked(el)) };
+        let b = Word { inner: b.map(|el| UInt8::from_variable_unchecked(el)) };
+        let c = Word { inner: c.map(|el| UInt8::from_variable_unchecked(el)) };
+        let d = Word { inner: d.map(|el| UInt8::from_variable_unchecked(el)) };
 
         space[space_idxes[0]] = a;
         space[space_idxes[1]] = b;
@@ -242,10 +227,7 @@ fn split_byte_at<F: SmallField, CS: ConstraintSystem<F>>(
             let low = input & mask;
             let high = input >> split_at;
 
-            [
-                F::from_u64_unchecked(low as u64),
-                F::from_u64_unchecked(high as u64),
-            ]
+            [F::from_u64_unchecked(low as u64), F::from_u64_unchecked(high as u64)]
         };
 
         let dependencies = [input.into()];

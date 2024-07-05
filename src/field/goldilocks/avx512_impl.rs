@@ -1,39 +1,30 @@
-use crate::cs::implementations::utils::precompute_twiddles_for_fft;
-use crate::cs::traits::GoodAllocator;
-// use crate::field::traits::field_like::PrimeFieldLike;
-use crate::field::{Field, PrimeField};
-use crate::worker::Worker;
-use std::mem::transmute;
-use std::ops::BitOr;
-use std::usize;
+use std::{
+    arch::x86_64::{
+        __m512i, __mmask16, _mm256_load_epi32 as load_aligned_256_i32,
+        _mm256_loadu_epi32 as load_unaligned_256_i32, _mm512_add_epi64, _mm512_and_si512,
+        _mm512_castps_si512, _mm512_castsi512_ps, _mm512_cmpeq_epu64_mask as op_eq,
+        _mm512_cmpge_epu64_mask, _mm512_cmplt_epu64_mask, _mm512_i32gather_epi64 as gather,
+        _mm512_i32scatter_epi64 as scatter, _mm512_load_epi64 as load_aligned,
+        _mm512_loadu_epi64 as load_unaligned, _mm512_mask_add_epi64, _mm512_mask_blend_epi32,
+        _mm512_mask_blend_epi64 as op_select, _mm512_mask_sub_epi64, _mm512_maskz_add_epi64,
+        _mm512_movehdup_ps, _mm512_moveldup_ps, _mm512_mul_epu32, _mm512_permutex2var_epi64,
+        _mm512_permutexvar_epi64, _mm512_set1_epi64 as op_set1, _mm512_setzero_epi32 as op_setzero,
+        _mm512_shuffle_i64x2, _mm512_slli_epi64, _mm512_srli_epi64,
+        _mm512_store_epi64 as store_aligned, _mm512_storeu_epi64 as store_unaligned,
+        _mm512_sub_epi64, _mm512_unpackhi_epi64, _mm512_unpacklo_epi64,
+    },
+    mem::transmute,
+    ops::BitOr,
+    usize,
+};
 
 use super::GoldilocksField;
-
-use std::arch::x86_64::_mm512_cmplt_epu64_mask;
-use std::arch::x86_64::_mm512_load_epi64 as load_aligned;
-use std::arch::x86_64::_mm512_loadu_epi64 as load_unaligned;
-use std::arch::x86_64::_mm512_mask_blend_epi64 as op_select;
-use std::arch::x86_64::_mm512_store_epi64 as store_aligned;
-use std::arch::x86_64::_mm512_storeu_epi64 as store_unaligned;
-use std::arch::x86_64::_mm512_sub_epi64;
-use std::arch::x86_64::{
-    __m512i, __mmask16, _mm512_add_epi64, _mm512_and_si512, _mm512_castps_si512,
-    _mm512_castsi512_ps, _mm512_cmpge_epu64_mask, _mm512_mask_add_epi64, _mm512_mask_blend_epi32,
-    _mm512_mask_sub_epi64, _mm512_movehdup_ps, _mm512_moveldup_ps, _mm512_mul_epu32,
-    _mm512_permutex2var_epi64, _mm512_permutexvar_epi64, _mm512_shuffle_i64x2, _mm512_srli_epi64,
-    _mm512_unpackhi_epi64, _mm512_unpacklo_epi64,
+// use crate::field::traits::field_like::PrimeFieldLike;
+use crate::field::{Field, PrimeField};
+use crate::{
+    cs::{implementations::utils::precompute_twiddles_for_fft, traits::GoodAllocator},
+    worker::Worker,
 };
-use std::arch::x86_64::{
-    _mm512_cmpeq_epu64_mask as op_eq, _mm512_maskz_add_epi64, _mm512_slli_epi64,
-};
-
-use std::arch::x86_64::_mm512_set1_epi64 as op_set1;
-use std::arch::x86_64::_mm512_setzero_epi32 as op_setzero;
-
-use std::arch::x86_64::_mm256_load_epi32 as load_aligned_256_i32;
-use std::arch::x86_64::_mm256_loadu_epi32 as load_unaligned_256_i32;
-use std::arch::x86_64::_mm512_i32gather_epi64 as gather;
-use std::arch::x86_64::_mm512_i32scatter_epi64 as scatter;
 
 // Helper struct to guarantee alignment
 #[derive(Hash, Clone, Copy)]
@@ -62,7 +53,7 @@ impl MixedGL {
     pub const TWO_ADICITY: usize = GoldilocksField::TWO_ADICITY;
     pub const T: u64 = (Self::ORDER - 1) >> Self::TWO_ADICITY;
     pub const BARRETT: u128 = 18446744078004518912; // 0x10000000100000000
-                                                    // pub const EPSILON: u64 = (1 << 32) - 1;
+    // pub const EPSILON: u64 = (1 << 32) - 1;
     const FIELD_ORDER: __m512i = unsafe { transmute(AlignedArray([GoldilocksField::ORDER; 8])) };
     const EPSILON: __m512i =
         unsafe { transmute(AlignedArray([GoldilocksField::ORDER.wrapping_neg(); 8])) };
@@ -193,7 +184,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON_SCALAR as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = _mm512_add_epi64(v, epsilon_vec);
         let cmp = _mm512_cmplt_epu64_mask(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -225,7 +216,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON_SCALAR as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = _mm512_add_epi64(v, epsilon_vec);
         let cmp = _mm512_cmplt_epu64_mask(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -257,7 +248,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON_SCALAR as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = _mm512_add_epi64(v, epsilon_vec);
         let cmp = _mm512_cmplt_epu64_mask(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -355,13 +346,13 @@ impl MixedGL {
 
     #[inline(always)]
     pub(crate) unsafe fn mul64_64(x: __m512i, y: __m512i) -> (__m512i, __m512i) {
-        // We want to move the high 32 bits to the low position. The multiplication instruction ignores
-        // the high 32 bits, so it's ok to just duplicate it into the low position. This duplication can
-        // be done on port 5; bitshifts run on port 0, competing with multiplication.
-        //   This instruction is only provided for 32-bit floats, not integers. Idk why Intel makes the
-        // distinction; the casts are free and it guarantees that the exact bit pattern is preserved.
-        // Using a swizzle instruction of the wrong domain (float vs int) does not increase latency
-        // since Haswell.
+        // We want to move the high 32 bits to the low position. The multiplication instruction
+        // ignores the high 32 bits, so it's ok to just duplicate it into the low position.
+        // This duplication can be done on port 5; bitshifts run on port 0, competing with
+        // multiplication.   This instruction is only provided for 32-bit floats, not
+        // integers. Idk why Intel makes the distinction; the casts are free and it
+        // guarantees that the exact bit pattern is preserved. Using a swizzle instruction
+        // of the wrong domain (float vs int) does not increase latency since Haswell.
         let x_hi = _mm512_castps_si512(_mm512_movehdup_ps(_mm512_castsi512_ps(x)));
         let y_hi = _mm512_castps_si512(_mm512_movehdup_ps(_mm512_castsi512_ps(y)));
 
@@ -385,8 +376,8 @@ impl MixedGL {
         let t1_hi = _mm512_srli_epi64::<32>(t1);
         let res_hi = _mm512_add_epi64(t2, t1_hi);
 
-        // Form res_lo by combining the low half of mul_ll with the low half of t1 (shifted into high
-        // position).
+        // Form res_lo by combining the low half of mul_ll with the low half of t1 (shifted into
+        // high position).
         let t1_lo = _mm512_castps_si512(_mm512_moveldup_ps(_mm512_castsi512_ps(t1)));
         let res_lo = _mm512_mask_blend_epi32(Self::LO_32_BITS_MASK, t1_lo, mul_ll);
 
@@ -618,7 +609,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::Twiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::fft_natural_to_bitreversed_cache_friendly(input, coset, twiddles);
 
         crate::fft::fft_natural_to_bitreversed_mixedgl_interleaving(input, coset, twiddles);
@@ -631,7 +623,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::InverseTwiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::ifft_natural_to_natural_cache_friendly(input, coset, twiddles);
 
         crate::fft::ifft_natural_to_natural_mixedgl_interleaving(input, coset, twiddles);
@@ -663,12 +656,15 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
 #[cfg(test)]
 mod test {
 
-    use crate::field::goldilocks::MixedGL;
-    use crate::field::rand_from_rng;
-    use crate::field::traits::field_like::PrimeFieldLike;
-    use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-    use crate::field::{goldilocks::GoldilocksField, Field};
-    use crate::utils::clone_respecting_allignment;
+    use crate::{
+        field::{
+            goldilocks::{GoldilocksField, MixedGL},
+            rand_from_rng,
+            traits::field_like::{PrimeFieldLike, PrimeFieldLikeVectorized},
+            Field,
+        },
+        utils::clone_respecting_allignment,
+    };
 
     #[test]
     fn test_mixedgl_negate() {

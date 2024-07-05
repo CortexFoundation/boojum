@@ -1,11 +1,11 @@
-use crate::cs::traits::GoodAllocator;
-use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-use crate::field::PrimeField;
-use crate::utils::*;
 use std::alloc::Global;
 
-use super::fast_serialization::MemcopySerializable;
-use super::*;
+use super::{fast_serialization::MemcopySerializable, *};
+use crate::{
+    cs::traits::GoodAllocator,
+    field::{traits::field_like::PrimeFieldLikeVectorized, PrimeField},
+    utils::*,
+};
 
 pub mod lde;
 
@@ -49,20 +49,17 @@ pub struct GenericPolynomial<
 }
 
 impl<
-        F: PrimeField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > Clone for GenericPolynomial<F, FORM, P, A>
+    F: PrimeField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> Clone for GenericPolynomial<F, FORM, P, A>
 {
     #[inline(always)]
     fn clone(&self) -> Self {
         let storage = Vec::clone(&self.storage);
 
-        Self {
-            storage,
-            _marker: std::marker::PhantomData,
-        }
+        Self { storage, _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -72,11 +69,11 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > PartialEq for GenericPolynomial<F, FORM, P, A>
+    F: PrimeField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> PartialEq for GenericPolynomial<F, FORM, P, A>
 {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
@@ -85,20 +82,20 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > Eq for GenericPolynomial<F, FORM, P, A>
+    F: PrimeField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> Eq for GenericPolynomial<F, FORM, P, A>
 {
 }
 
 impl<
-        F: SmallField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > MemcopySerializable for GenericPolynomial<F, FORM, P, A>
+    F: SmallField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> MemcopySerializable for GenericPolynomial<F, FORM, P, A>
 where
     Self: 'static,
 {
@@ -120,12 +117,12 @@ where
 }
 
 impl<
-        F: SmallField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > MemcopySerializable for Vec<std::sync::Arc<GenericPolynomial<F, FORM, P, A>>, B>
+    F: SmallField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> MemcopySerializable for Vec<std::sync::Arc<GenericPolynomial<F, FORM, P, A>>, B>
 where
     Self: 'static,
 {
@@ -166,18 +163,15 @@ where
 pub type Polynomial<F, FORM, A> = GenericPolynomial<F, FORM, F, A>;
 
 impl<
-        F: PrimeField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > GenericPolynomial<F, FORM, P, A>
+    F: PrimeField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> GenericPolynomial<F, FORM, P, A>
 {
     #[inline]
     pub fn new() -> Self {
-        Self {
-            storage: Vec::new_in(A::default()),
-            _marker: std::marker::PhantomData,
-        }
+        Self { storage: Vec::new_in(A::default()), _marker: std::marker::PhantomData }
     }
 
     pub fn pretty_compare(&self, other: &Self) {
@@ -195,10 +189,7 @@ impl<
     #[inline]
     pub(crate) fn from_storage(storage: Vec<P, A>) -> Self {
         debug_assert!(storage.as_ptr().addr() % std::mem::align_of::<P>() == 0);
-        Self {
-            storage,
-            _marker: std::marker::PhantomData,
-        }
+        Self { storage, _marker: std::marker::PhantomData }
     }
 
     #[inline]
@@ -223,10 +214,7 @@ impl<
     #[inline]
     pub(crate) fn clone_respecting_allignment<U: Sized>(&self) -> Self {
         let buffer = clone_respecting_allignment::<_, U, _>(&self.storage);
-        Self {
-            storage: buffer,
-            _marker: std::marker::PhantomData,
-        }
+        Self { storage: buffer, _marker: std::marker::PhantomData }
     }
 
     pub(crate) fn chunks<B: GoodAllocator>(
@@ -259,10 +247,10 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > GenericPolynomial<F, MonomialForm, P, A>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> GenericPolynomial<F, MonomialForm, P, A>
 {
     pub fn chunk_into_subpolys_of_degree<B: GoodAllocator>(self, degree: usize) -> Vec<Self, B> {
         debug_assert!(self.domain_size() % degree == 0);
@@ -277,10 +265,7 @@ impl<
         for _ in 0..num_chunks {
             let mut subchunk = Vec::with_capacity_in(degree / P::SIZE_FACTOR, A::default());
             subchunk.extend(storage.drain(..degree / P::SIZE_FACTOR));
-            result.push(Self {
-                storage: subchunk,
-                _marker: std::marker::PhantomData,
-            });
+            result.push(Self { storage: subchunk, _marker: std::marker::PhantomData });
         }
 
         result
@@ -301,11 +286,11 @@ pub(crate) struct GenericPolynomialChunk<
 }
 
 impl<
-        F: PrimeField,
-        FORM: PolynomialForm,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-    > GenericPolynomialChunk<F, FORM, P, A>
+    F: PrimeField,
+    FORM: PolynomialForm,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+> GenericPolynomialChunk<F, FORM, P, A>
 {
     pub(crate) fn as_ref(&self) -> &[P] {
         &self.over.storage[self.range.clone()]
@@ -355,10 +340,7 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
             }
         }
 
-        Self {
-            inner: transposed_chunks,
-            _marker: std::marker::PhantomData,
-        }
+        Self { inner: transposed_chunks, _marker: std::marker::PhantomData }
     }
 }
 
@@ -381,10 +363,7 @@ impl<'a, F: PrimeField, A: GoodAllocator, B: GoodAllocator>
             for _ in 0..num_chunks {
                 inner.push(Vec::new_in(B::default()));
             }
-            return Self {
-                inner,
-                _marker: std::marker::PhantomData,
-            };
+            return Self { inner, _marker: std::marker::PhantomData };
         }
         assert_eq!(polys[0].len(), domain_size);
         // trick to be able to fill the vectors and then assign by index instead of push
@@ -403,10 +382,7 @@ impl<'a, F: PrimeField, A: GoodAllocator, B: GoodAllocator>
             }
         }
 
-        Self {
-            inner: transposed_chunks,
-            _marker: std::marker::PhantomData,
-        }
+        Self { inner: transposed_chunks, _marker: std::marker::PhantomData }
     }
 }
 
@@ -455,10 +431,7 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
             }
         }
 
-        Self {
-            inner: transposed_chunks,
-            _marker: std::marker::PhantomData,
-        }
+        Self { inner: transposed_chunks, _marker: std::marker::PhantomData }
     }
 }
 
@@ -511,21 +484,23 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 //     // is (if concatenated) an evaluations of some polynomial F(x) of degree N on domain
 //     // multiplicative_generator * {1, omega', omega'^2, ..} where omega' ^ N == 1
 
-//     // if we want to somehow split that into k polynomials of degree of N/k and save on IFFT size,
-//     // we should properly restructure the initial values
+//     // if we want to somehow split that into k polynomials of degree of N/k and save on IFFT
+// size,     // we should properly restructure the initial values
 
-//     // we can not take each of those sets on multiplicative_generator * gamma^i X {1, omega, omega^2, ...},
-//     // where gamma^k == omega, omega^(N/k) == 1 because it's not possible to find a compact
-//     // composition of initial polynomial of degree N as function of k polynomials of degree N/k
+//     // we can not take each of those sets on multiplicative_generator * gamma^i X {1, omega,
+// omega^2, ...},     // where gamma^k == omega, omega^(N/k) == 1 because it's not possible to find
+// a compact     // composition of initial polynomial of degree N as function of k polynomials of
+// degree N/k
 
 //     // f_1(x^M) +
 
 //     // f_1(x^N/k) + x * f_2(x^N/k) + ... (k terms),
 //     // then we
 
-//     // we can use an observation that omega^(N/k) == 1, so if we will look for a final decomposition
-//     // as form f_1(x) + x^{N/k} * f_2(x) + ... where every f_{i} is of degree N-1 and there are k terms in total
-//     // at every evaluation point of gamma^i X {1, omega, omega^2, ...} x^N/k == 1 * gamma^iN/k =
+//     // we can use an observation that omega^(N/k) == 1, so if we will look for a final
+// decomposition     // as form f_1(x) + x^{N/k} * f_2(x) + ... where every f_{i} is of degree N-1
+// and there are k terms in total     // at every evaluation point of gamma^i X {1, omega, omega^2,
+// ...} x^N/k == 1 * gamma^iN/k =
 
 //     // but what we can notice is:
 //     // - recomposition should be in a form f_1(x^k) + x * f_2(x^k) + x^2 * f_3(x^k) + ...
@@ -535,24 +510,27 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 //     // where gamma^k == omega, omega^(N/k) == 1
 
 //     // so we kind of "guess" an good interpolation here: we
-//     // - we do IFFT for each of those subvectors assuming they are values of poly of degree N/k on domain
-//     // multiplicative_generator * gamma^i X {1, omega, omega^2, ...}
-//     // - now we need to understand how we can construct our initial polynomial from those k subpolys
+//     // - we do IFFT for each of those subvectors assuming they are values of poly of degree N/k
+// on domain     // multiplicative_generator * gamma^i X {1, omega, omega^2, ...}
+//     // - now we need to understand how we can construct our initial polynomial from those k
+// subpolys
 
 //     // 1 : f1(1) + 1 * f2(1) + ...
 //     // gamma : f1(omega) + gamma * f2(omega) + ...
-//     // gamma^2: f1(omega^2) + gamma^2 * f2(omega^2) + ... omega * f_{k/2}(omega^2) + gamma^2 * omega * f_{k/2 + 1}(omega^2)
+//     // gamma^2: f1(omega^2) + gamma^2 * f2(omega^2) + ... omega * f_{k/2}(omega^2) + gamma^2 *
+// omega * f_{k/2 + 1}(omega^2)
 
 //     // what we want is instead of doing IFFT of size N to do k IFFTs of size N/k,
 //     // and get polynomials f_1(x) .. f_k(x) such that F(x) = f_1(x^k) + x^m * f_2(x^k) + ...
 
-//     let initial_domain_size = presumably_bitreversed_lde_chunks.len() * presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;
-//     dbg!(&initial_domain_size);
+//     let initial_domain_size = presumably_bitreversed_lde_chunks.len() *
+// presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;     dbg!(&initial_domain_size);
 //     debug_assert!(initial_domain_size.is_power_of_two());
 //     let fold_into = presumably_bitreversed_lde_chunks.len();
 
 //     let multiplicative_generator = P::constant(F::multiplicative_generator(), ctx);
-//     let twiddles = precompute_twiddles_for_fft::<_, _, A, true>(initial_domain_size, worker, ctx);
+//     let twiddles = precompute_twiddles_for_fft::<_, _, A, true>(initial_domain_size, worker,
+// ctx);
 
 //     let t = if config::DEBUG_SATISFIABLE == false {
 //         multiplicative_generator
@@ -584,9 +562,9 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 //     let mut presumably_bitreversed_lde_chunks = presumably_bitreversed_lde_chunks;
 
 //     worker.scope(presumably_bitreversed_lde_chunks.len(), |scope, chunk_size| {
-//         for (chunk_idx, dst) in presumably_bitreversed_lde_chunks.chunks_mut(chunk_size).enumerate() {
-//             scope.spawn(move |_| {
-//                 for (i, dst) in dst.iter_mut().enumerate() {
+//         for (chunk_idx, dst) in
+// presumably_bitreversed_lde_chunks.chunks_mut(chunk_size).enumerate() {             
+// scope.spawn(move |_| {                 for (i, dst) in dst.iter_mut().enumerate() {
 //                     let coset_idx = chunk_idx * chunk_size + i;
 //                     let mut coset = P::constant(powers_of_coset_ref[coset_idx], ctx);
 //                     if config::DEBUG_SATISFIABLE == false {
@@ -615,23 +593,26 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 //     // // where x has a form {1, gamma, gamma^2, ...} X {1, omega, omega^2, ...}
 
 //     // // note that when we construct f0/f1 we go form gamma^i omega^k into gamma^2i omega^2k,
-//     // // and when we fold enough times then it's gamma^Ni omega^Nk with a relation that gamma^N == omega, so
-//     // // we again span the whole domain {1, omega, omega^2, ...}, but in different order: every
-//     // // coset in `presumably_bitreversed_lde_chunks` will give rise to series omega^i if coset was created using gamma^i,
-//     // // and subdomain like `{1, omega^N, omega^2N, ...}
-//     // // so to properly form f0/f1/... over {1, omega, omega^2, ...} we would need to do some shuffling
+//     // // and when we fold enough times then it's gamma^Ni omega^Nk with a relation that gamma^N
+// == omega, so     // // we again span the whole domain {1, omega, omega^2, ...}, but in different
+// order: every     // // coset in `presumably_bitreversed_lde_chunks` will give rise to series
+// omega^i if coset was created using gamma^i,     // // and subdomain like `{1, omega^N, omega^2N,
+// ...}     // // so to properly form f0/f1/... over {1, omega, omega^2, ...} we would need to do
+// some shuffling
 
-//     // // we should have another note: we are not exactly at {1, gamma, gamma^2, ...} X {1, omega, omega^2, ...},
-//     // // but on multiplicative_generator * {1, gamma, gamma^2, ...} X {1, omega, omega^2, ...},
-//     // // so every time we do "fold" we accumulate another power of multiplicative_generator, so eventually we will have
-//     // // evaluations on multiplicative_generator^2N * omega^i x {1, omega^N, omega^2N, ...}
+//     // // we should have another note: we are not exactly at {1, gamma, gamma^2, ...} X {1,
+// omega, omega^2, ...},     // // but on multiplicative_generator * {1, gamma, gamma^2, ...} X {1,
+// omega, omega^2, ...},     // // so every time we do "fold" we accumulate another power of
+// multiplicative_generator, so eventually we will have     // // evaluations on
+// multiplicative_generator^2N * omega^i x {1, omega^N, omega^2N, ...}
 
 //     // // We also do not need to divide by 2 in practice, and so we do IFFT like butterflies here
 
 //     // debug_assert!(presumably_bitreversed_lde_chunks.len().is_power_of_two());
-//     // let initial_domain_size = presumably_bitreversed_lde_chunks.len() * presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;
-//     // debug_assert!(initial_domain_size.is_power_of_two());
-//     // let final_domain_size = presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;
+//     // let initial_domain_size = presumably_bitreversed_lde_chunks.len() *
+// presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;     // debug_assert!
+// (initial_domain_size.is_power_of_two());     // let final_domain_size =
+// presumably_bitreversed_lde_chunks[0].len() * P::SIZE_FACTOR;
 
 //     // let inner_size = presumably_bitreversed_lde_chunks[0].len();
 
@@ -648,25 +629,28 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 
 //     // // now we should note:
 //     // // - every subvector is evaluations on coset * {1, omega, omega^2, ...}.bitreverse()
-//     // // - `inverse_omegas_bitreversed` is in the form {1, omega^-1, omega^-2, ...}.bitreverse(),
-//     // // - so they are kind of aligned, and we could use vectorized operations, but as one
-//     // // will see below values at omega and -omega are always adjustent inside of the vector type,
-//     // // so we will have to split into base for most of the time
+//     // // - `inverse_omegas_bitreversed` is in the form {1, omega^-1, omega^-2,
+// ...}.bitreverse(),     // // - so they are kind of aligned, and we could use vectorized
+// operations, but as one     // // will see below values at omega and -omega are always adjustent
+// inside of the vector type,     // // so we will have to split into base for most of the time
 
 //     // let inverse_omegas_bitreversed = P::slice_into_base_slice(inverse_omegas_bitreversed);
 
-//     // // let mut tmp_buffer = initialize_in_with_alignment_of::<_, P, _>(F::ZERO, initial_domain_size, A::default());
+//     // // let mut tmp_buffer = initialize_in_with_alignment_of::<_, P, _>(F::ZERO,
+// initial_domain_size, A::default());
 
-//     // // the only trick would be that every time we divide by x we divide by both powers of omega from precomputed twiddles
+//     // // the only trick would be that every time we divide by x we divide by both powers of
+// omega from precomputed twiddles
 
 //     // let mut split_polys = Vec::with_capacity_in(degree, B::default());
 //     // for _ in 0..degree {
-//     //     let tmp = initialize_in_with_alignment_of::<_, P, _>(F::ZERO, final_domain_size, A::default());
-//     //     split_polys.push(tmp);
+//     //     let tmp = initialize_in_with_alignment_of::<_, P, _>(F::ZERO, final_domain_size,
+// A::default());     //     split_polys.push(tmp);
 //     // }
 
-//     // for (coset_values, coset) in presumably_bitreversed_lde_chunks.iter().zip(powers_of_coset.iter()) {
-//     //     let coset_values = P::slice_into_base_slice(coset_values);
+//     // for (coset_values, coset) in
+// presumably_bitreversed_lde_chunks.iter().zip(powers_of_coset.iter()) {     //     let
+// coset_values = P::slice_into_base_slice(coset_values);
 
 //     //     // those are internally bitreversed, so omega and -omega are always adjustent,
 //     //     // but we should be careful about subranges of destinations
@@ -687,16 +671,18 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 
 //     //                     // now we should place it into
 //     //                     // corresponding location,
-//     //                     // and also do it in such a way that it's convenient for any future step
+//     //                     // and also do it in such a way that it's convenient for any future
+// step
 
 //     //                     // for this we should have a look at our domain structure
-//     //                     // omaga and -omega have indexes 0b0X and 0b1X, that are in bitreversed enumeration
-//     //                     // map into 0bX_rev0 and 0bX_rev1 and we used such property.
-//     //                     // Now we have to place omega^2 such that ideally -omega^2 will be near it and our construction
-//     //                     // is recursive. In normal enumerations elements that are sqrt(-omega^2) are located
-//     //                     // at 0b10Z and 0b11Z, while sqrt(omega^2) are at 0b00Z and 0b10Z, so one can see
-//     //                     // that we also need to place evalues of f0/f1 just continuously in corresponding locations
-//     //                     // the only trick is to place all f0s separately and all f1s separately
+//     //                     // omaga and -omega have indexes 0b0X and 0b1X, that are in
+// bitreversed enumeration     //                     // map into 0bX_rev0 and 0bX_rev1 and we used
+// such property.     //                     // Now we have to place omega^2 such that ideally
+// -omega^2 will be near it and our construction     //                     // is recursive. In
+// normal enumerations elements that are sqrt(-omega^2) are located     //                     // at
+// 0b10Z and 0b11Z, while sqrt(omega^2) are at 0b00Z and 0b10Z, so one can see     //
+// // that we also need to place evalues of f0/f1 just continuously in corresponding locations     //
+// // the only trick is to place all f0s separately and all f1s separately
 
 //     //                 }
 //     //             })
@@ -705,17 +691,18 @@ impl<'a, F: PrimeField, FORM: PolynomialForm, A: GoodAllocator, B: GoodAllocator
 
 //     // }
 
-//     //  // // the only trick would be that every time we divide by x we divide by both powers of omega from precomputed twiddles
+//     //  // // the only trick would be that every time we divide by x we divide by both powers of
+// omega from precomputed twiddles
 
 //     // // let mut split_polys = Vec::with_capacity_in(degree, B::default());
 //     // // for _ in 0..degree {
-//     // //     let tmp = initialize_in_with_alignment_of::<_, P, _>(F::ZERO, final_domain_size, A::default());
-//     // //     split_polys.push(tmp);
+//     // //     let tmp = initialize_in_with_alignment_of::<_, P, _>(F::ZERO, final_domain_size,
+// A::default());     // //     split_polys.push(tmp);
 //     // // }
 
-//     // // for (coset_values, coset) in presumably_bitreversed_lde_chunks.iter().zip(powers_of_coset.iter()) {
-//     // //     let mut extra_divisor = two_inv;
-//     // //     extra_divisor.mul_assign(&coset);
+//     // // for (coset_values, coset) in
+// presumably_bitreversed_lde_chunks.iter().zip(powers_of_coset.iter()) {     // //     let mut
+// extra_divisor = two_inv;     // //     extra_divisor.mul_assign(&coset);
 //     // //     let coset_values = P::slice_into_base_slice(coset_values);
 
 //     // //     // those are internally bitreversed, so omega and -omega are always adjustent,

@@ -1,6 +1,8 @@
 use super::*;
-use crate::field::traits::field_like::BaseField;
-use crate::{cs::implementations::polynomial::lde::*, field::PrimeField};
+use crate::{
+    cs::implementations::polynomial::lde::*,
+    field::{traits::field_like::BaseField, PrimeField},
+};
 
 // we want to place evaluations of the value into some slot for it
 
@@ -96,8 +98,10 @@ pub struct GateEvaluationReducingDestination<
     F: PrimeField,
     P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
 > {
-    pub challenges_powers: std::sync::Arc<Vec<[F; 2]>>, // we do not expect too many repetitions of the protocol
-    pub quotient_buffers: std::sync::Arc<[Vec<Vec<P>>; 2]>, // closely mimic structure of LDE storage
+    pub challenges_powers: std::sync::Arc<Vec<[F; 2]>>, /* we do not expect too many repetitions
+                                                         * of the protocol */
+    pub quotient_buffers: std::sync::Arc<[Vec<Vec<P>>; 2]>, /* closely mimic structure of LDE
+                                                             * storage */
     pub ctx: P::Context,
 }
 
@@ -149,14 +153,8 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
         num_workers: usize,
         selectors_storage: &ArcGenericLdeStorage<F, P>,
     ) -> Vec<GateEvaluationReducingDestinationChunk<F, P>> {
-        debug_assert_eq!(
-            self.quotient_buffers[0].len(),
-            selectors_storage.outer_len()
-        );
-        debug_assert_eq!(
-            self.quotient_buffers[0][0].len(),
-            selectors_storage.inner_len()
-        );
+        debug_assert_eq!(self.quotient_buffers[0].len(), selectors_storage.outer_len());
+        debug_assert_eq!(self.quotient_buffers[0][0].len(), selectors_storage.inner_len());
         let lde_iterators = selectors_storage.compute_chunks_for_num_workers(num_workers);
         let mut ctx = self.ctx;
 
@@ -201,9 +199,7 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                 destination: self.clone(),
                 work_buffer: [zero; 2],
                 selectors_view: GenericLdeRowView {
-                    over: ArcGenericLdeStorage {
-                        storage: Vec::new(),
-                    },
+                    over: ArcGenericLdeStorage { storage: Vec::new() },
                     iterator: subiterator,
                 },
                 base_challenge_offset: 0,
@@ -272,17 +268,20 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                 let inner = inner * P::SIZE_FACTOR + idx;
                 if selector.is_zero() == false {
                     debug_assert!(
-                            value.is_zero() == true,
-                            "aggregated term value is non-zero and has value {} for selector value {} at trace row {}", 
-                            value,
-                            selector,
-                            {
-                                let mut normal_enumeration = inner.reverse_bits();
-                                normal_enumeration >>= usize::BITS - self.destination.quotient_buffers[0][0].len().trailing_zeros();
+                        value.is_zero() == true,
+                        "aggregated term value is non-zero and has value {} for selector value {} at trace row {}",
+                        value,
+                        selector,
+                        {
+                            let mut normal_enumeration = inner.reverse_bits();
+                            normal_enumeration >>= usize::BITS
+                                - self.destination.quotient_buffers[0][0]
+                                    .len()
+                                    .trailing_zeros();
 
-                                normal_enumeration
-                            }
-                        );
+                            normal_enumeration
+                        }
+                    );
                 }
             }
         }

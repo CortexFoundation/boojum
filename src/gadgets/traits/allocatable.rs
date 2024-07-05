@@ -1,7 +1,7 @@
-use crate::field::SmallField;
-
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
+use crate::{
+    cs::{traits::cs::ConstraintSystem, Variable},
+    field::SmallField,
+};
 
 pub trait CSAllocatable<F: SmallField>: Sized {
     // quite restrictive, but we want to allow placing too many bounds everywhere.

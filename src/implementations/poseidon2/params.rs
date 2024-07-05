@@ -1,35 +1,17 @@
 //! A set of matrix parameters used for poseidon2.
 use super::*;
-use crate::field::traits::field::*;
-use crate::implementations::poseidon_goldilocks_params::{
-    self, HALF_NUM_FULL_ROUNDS, NUM_FULL_ROUNDS_TOTAL, NUM_PARTIAL_ROUNDS,
+use crate::{
+    field::traits::field::*,
+    implementations::poseidon_goldilocks_params::{
+        self, HALF_NUM_FULL_ROUNDS, NUM_FULL_ROUNDS_TOTAL, NUM_PARTIAL_ROUNDS,
+    },
 };
 
 pub const EXTERNAL_MDS_MATRIX_BLOCK: [[GoldilocksField; 4]; 4] = [
-    [
-        GoldilocksField(5),
-        GoldilocksField(7),
-        GoldilocksField(1),
-        GoldilocksField(3),
-    ],
-    [
-        GoldilocksField(4),
-        GoldilocksField(6),
-        GoldilocksField(1),
-        GoldilocksField(1),
-    ],
-    [
-        GoldilocksField(1),
-        GoldilocksField(3),
-        GoldilocksField(5),
-        GoldilocksField(7),
-    ],
-    [
-        GoldilocksField(1),
-        GoldilocksField(1),
-        GoldilocksField(4),
-        GoldilocksField(6),
-    ],
+    [GoldilocksField(5), GoldilocksField(7), GoldilocksField(1), GoldilocksField(3)],
+    [GoldilocksField(4), GoldilocksField(6), GoldilocksField(1), GoldilocksField(1)],
+    [GoldilocksField(1), GoldilocksField(3), GoldilocksField(5), GoldilocksField(7)],
+    [GoldilocksField(1), GoldilocksField(1), GoldilocksField(4), GoldilocksField(6)],
 ];
 
 pub const INNER_ROUNDS_MATRIX_DIAGONAL_ELEMENTS_MINUS_ONE_SHIFTS: [u32; 12] =

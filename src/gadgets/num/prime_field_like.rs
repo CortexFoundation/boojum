@@ -1,7 +1,8 @@
 use super::*;
-use crate::cs::gates::FmaGateInExtensionWithoutConstant;
-use crate::field::Field;
-use crate::field::{traits::field_like::PrimeFieldLike, ExtensionField, FieldExtension};
+use crate::{
+    cs::gates::FmaGateInExtensionWithoutConstant,
+    field::{traits::field_like::PrimeFieldLike, ExtensionField, Field, FieldExtension},
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug(bound = ""), Hash(bound = ""))]
@@ -21,10 +22,7 @@ impl<F: SmallField, CS: ConstraintSystem<F>> std::fmt::Display for NumAsFieldWra
 
 impl<F: SmallField, CS: ConstraintSystem<F>> From<Num<F>> for NumAsFieldWrapper<F, CS> {
     fn from(value: Num<F>) -> Self {
-        Self {
-            inner: value,
-            _marker: std::marker::PhantomData,
-        }
+        Self { inner: value, _marker: std::marker::PhantomData }
     }
 }
 
@@ -67,10 +65,7 @@ impl<F: SmallField, CS: ConstraintSystem<F>> NumAsFieldWrapper<F, CS> {
     pub fn conditionally_select(cs: &mut CS, flag: Boolean<F>, a: &Self, b: &Self) -> Self {
         let inner = Num::conditionally_select(cs, flag, &a.inner, &b.inner);
 
-        Self {
-            inner,
-            _marker: std::marker::PhantomData,
-        }
+        Self { inner, _marker: std::marker::PhantomData }
     }
 }
 
@@ -182,11 +177,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
 {
     #[must_use]
     fn clone(&self) -> Self {
-        Self {
-            c0: self.c0,
-            c1: self.c1,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: self.c0, c1: self.c1, _marker: std::marker::PhantomData }
     }
 }
 
@@ -246,22 +237,14 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
     pub const fn from_coeffs_in_base(coeffs: [NumAsFieldWrapper<F, CS>; 2]) -> Self {
         let [c0, c1] = coeffs;
 
-        Self {
-            c0,
-            c1,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0, c1, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
     pub fn from_num_coeffs_in_base(coeffs: [Num<F>; 2]) -> Self {
         let [c0, c1] = coeffs;
 
-        Self {
-            c0: c0.into(),
-            c1: c1.into(),
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: c0.into(), c1: c1.into(), _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -310,11 +293,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
         let c0 = NumAsFieldWrapper::conditionally_select(cs, flag, &a.c0, &b.c0);
         let c1 = NumAsFieldWrapper::conditionally_select(cs, flag, &a.c1, &b.c1);
 
-        Self {
-            c0,
-            c1,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0, c1, _marker: std::marker::PhantomData }
     }
 
     pub fn mul_by_base_and_accumulate_into(
@@ -369,31 +348,19 @@ where
     #[must_use]
     fn zero(ctx: &mut Self::Context) -> Self {
         let zero = Num::allocated_constant(ctx, F::ZERO).into();
-        Self {
-            c0: zero,
-            c1: zero,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: zero, c1: zero, _marker: std::marker::PhantomData }
     }
     #[must_use]
     fn one(ctx: &mut Self::Context) -> Self {
         let zero = Num::allocated_constant(ctx, F::ZERO).into();
         let one = Num::allocated_constant(ctx, F::ONE).into();
-        Self {
-            c0: one,
-            c1: zero,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: one, c1: zero, _marker: std::marker::PhantomData }
     }
     #[must_use]
     fn minus_one(ctx: &mut Self::Context) -> Self {
         let zero = Num::allocated_constant(ctx, F::ZERO).into();
         let minus_one = Num::allocated_constant(ctx, F::MINUS_ONE).into();
-        Self {
-            c0: minus_one,
-            c1: zero,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: minus_one, c1: zero, _marker: std::marker::PhantomData }
     }
     fn add_assign(&'_ mut self, other: &Self, ctx: &mut Self::Context) -> &'_ mut Self {
         self.c0.add_assign(&other.c0, ctx);
@@ -552,11 +519,7 @@ where
         c1.mul_assign(&inversed, ctx);
         c1.negate(ctx);
 
-        let new = Self {
-            c0,
-            c1,
-            _marker: std::marker::PhantomData,
-        };
+        let new = Self { c0, c1, _marker: std::marker::PhantomData };
 
         new
     }
@@ -565,11 +528,7 @@ where
     fn constant(value: Self::Base, ctx: &mut Self::Context) -> Self {
         let zero = Num::allocated_constant(ctx, F::ZERO).into();
         let constant = Num::allocated_constant(ctx, value).into();
-        Self {
-            c0: constant,
-            c1: zero,
-            _marker: std::marker::PhantomData,
-        }
+        Self { c0: constant, c1: zero, _marker: std::marker::PhantomData }
     }
     #[must_use]
     fn mul_and_accumulate_into(acc: &mut Self, a: &Self, b: &Self, ctx: &mut Self::Context) {

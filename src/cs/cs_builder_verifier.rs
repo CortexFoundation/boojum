@@ -10,13 +10,14 @@ use super::{
     },
     CSGeometry, GateConfigurationHolder, LookupParameters, StaticToolboxHolder,
 };
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::cs::GateTypeEntry;
-use crate::cs::Tool;
 use crate::{
     cs::{
         implementations::verifier::TypeErasedGateEvaluationVerificationFunction,
-        traits::evaluator::{GatePlacementType, PerChunkOffset},
+        traits::{
+            evaluator::{GatePlacementType, PerChunkOffset},
+            gate::GatePlacementStrategy,
+        },
+        GateTypeEntry, Tool,
     },
     field::{FieldExtension, SmallField},
 };
@@ -148,10 +149,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                         .insert(evaluator_type_id, vec![(comparator, idx)]);
                 }
             }
-            GatePlacementStrategy::UseSpecializedColumns {
-                num_repetitions,
-                share_constants,
-            } => {
+            GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants } => {
                 // we always add an evaluator
 
                 let (dynamic_evaluator, _comparator) =
@@ -185,9 +183,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
 
                 if share_constants {
                     match evaluator.placement_type() {
-                        GatePlacementType::MultipleOnRow {
-                            per_chunk_offset: _,
-                        } => {}
+                        GatePlacementType::MultipleOnRow { per_chunk_offset: _ } => {}
                         GatePlacementType::UniqueOnRow => {
                             panic!("Can not share constants if placement type is unique");
                         }
@@ -199,7 +195,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                         + this.total_num_variables_for_specialized_columns,
                     witnesses_offset: this.parameters.num_witness_columns
                         + this.total_num_witnesses_for_specialized_columns,
-                    constants_offset: this.total_num_constants_for_specialized_columns, // we use separate vector for them
+                    constants_offset: this.total_num_constants_for_specialized_columns, /* we use separate vector for them */
                 };
 
                 let offset_per_repetition = if share_constants == false {
@@ -244,10 +240,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
             }
         }
 
-        CsBuilder {
-            gates_config: new_configuration,
-            ..builder
-        }
+        CsBuilder { gates_config: new_configuration, ..builder }
     }
 
     fn add_tool<
@@ -265,10 +258,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
         // hold the type in the phantom.
         let new_toolbox = builder.toolbox.add_tool(tool);
 
-        CsBuilder {
-            toolbox: new_toolbox,
-            ..builder
-        }
+        CsBuilder { toolbox: new_toolbox, ..builder }
     }
 
     // type GcWithLookup<GC: GateConfigurationHolder<F>> = GC;
@@ -298,14 +288,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                         false,
                     )
                 }
-                LookupParameters::TableIdAsVariable {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsVariable { width, share_table_id } => {
+                    assert!(share_table_id == false, "other option is not yet implemented");
                     // we need to resize multiplicities
                     assert!(
                         builder
@@ -322,14 +306,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                         share_table_id,
                     )
                 }
-                LookupParameters::TableIdAsConstant {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsConstant { width, share_table_id } => {
+                    assert!(share_table_id == true, "other option is not yet implemented");
                     assert!(
                         builder
                             .implementation
@@ -350,10 +328,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == false, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {
@@ -370,10 +345,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == true, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {

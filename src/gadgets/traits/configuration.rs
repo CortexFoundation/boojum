@@ -1,8 +1,8 @@
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::cs::*;
-use crate::gadgets::traits::configuration::cs_builder::*;
-
 use super::*;
+use crate::{
+    cs::{traits::gate::GatePlacementStrategy, *},
+    gadgets::traits::configuration::cs_builder::*,
+};
 
 pub trait ConfigurationFunction<F: SmallField>: 'static + Sized + std::fmt::Debug {
     fn configure<TImpl: CsBuilderImpl<F, TImpl>>(
@@ -27,17 +27,13 @@ pub struct IdentityConfiguration<F: SmallField> {
 
 impl<F: SmallField> IdentityConfiguration<F> {
     pub fn new() -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 
     pub fn add_confituration_step<A: ConfigurationFunction<F>>(
         self,
     ) -> ConfigurationComposition<F, Self, A> {
-        ConfigurationComposition {
-            _marker: std::marker::PhantomData,
-        }
+        ConfigurationComposition { _marker: std::marker::PhantomData }
     }
 }
 
@@ -79,8 +75,6 @@ impl<F: SmallField, A: ConfigurationFunction<F>, B: ConfigurationFunction<F>>
     pub fn add_confituration_step<C: ConfigurationFunction<F>>(
         self,
     ) -> ConfigurationComposition<F, Self, C> {
-        ConfigurationComposition {
-            _marker: std::marker::PhantomData,
-        }
+        ConfigurationComposition { _marker: std::marker::PhantomData }
     }
 }

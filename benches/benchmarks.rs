@@ -6,13 +6,13 @@
 #![feature(iter_collect_into)]
 #![feature(allocator_api)]
 
-use boojum::fft::precompute_twiddles_for_fft_wrapper;
-use boojum::field::goldilocks::GoldilocksField;
-use boojum::field::Field;
-use boojum::implementations::poseidon2::State;
 // use boojum::implementations::state_vectorized_double::StateVecD;
-
 use boojum::field::goldilocks::MixedGL;
+use boojum::{
+    fft::precompute_twiddles_for_fft_wrapper,
+    field::{goldilocks::GoldilocksField, Field},
+    implementations::poseidon2::State,
+};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sha3::{Digest, Keccak256};
 
@@ -86,9 +86,7 @@ fn criterion_benchmark_poseidon2_statevec(c: &mut Criterion) {
 
 fn criterion_benchmark_keccak(c: &mut Criterion) {
     let input = [0u8; 64];
-    c.bench_function("Keccak256", |b| {
-        b.iter(|| Keccak256::digest(black_box(input)))
-    });
+    c.bench_function("Keccak256", |b| b.iter(|| Keccak256::digest(black_box(input))));
 }
 
 // fn criterion_benchmark_poseidon_mds_mul_naive(c: &mut Criterion) {
@@ -151,8 +149,8 @@ fn criterion_benchmark_poseidon2_inner_matrix_split_mul(c: &mut Criterion) {
 //     let state = [GoldilocksField::ONE; 12];
 //     let round = 1;
 //     c.bench_function("Poseidon apply_round_constants", |b| {
-//         b.iter(|| poseidon_goldilocks::apply_round_constants(&mut black_box(state), black_box(round)))
-//     });
+//         b.iter(|| poseidon_goldilocks::apply_round_constants(&mut black_box(state),
+// black_box(round)))     });
 // }
 
 fn criterion_benchmark_poseidon_apply_round_constants_statevec(c: &mut Criterion) {
@@ -309,13 +307,9 @@ fn criterion_benchmark_add_vectors_mixedgl(c: &mut Criterion) {
     // let bb: Vec<MixedGL> = boojum::utils::cast_check_alignment(bb);
 
     let mut aa: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &aa,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&aa));
     let bb: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &bb,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&bb));
 
     c.bench_function("MixedGL Vec add", |b| {
         // b.iter(|| boojum::experiments::vec_add_portable_simd(black_box(&mut aa), black_box(&bb)))
@@ -336,13 +330,9 @@ fn criterion_benchmark_mul_vectors_naive(c: &mut Criterion) {
         .collect();
 
     let mut aa: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &aa,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&aa));
     let bb: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &bb,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&bb));
 
     c.bench_function("MixedGL Vec add", |b| {
         // b.iter(|| boojum::experiments::vec_add_portable_simd(black_box(&mut aa), black_box(&bb)))
@@ -457,13 +447,9 @@ fn criterion_benchmark_mul_vectors_mixedgl(c: &mut Criterion) {
         .collect();
 
     let mut aa: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &aa,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&aa));
     let bb: Vec<MixedGL> =
-        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
-            &bb,
-        ));
+        MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&bb));
 
     c.bench_function("MixedGL Vec mul", |b| {
         // b.iter(|| boojum::experiments::vec_add_portable_simd(black_box(&mut aa), black_box(&bb)))
@@ -471,10 +457,12 @@ fn criterion_benchmark_mul_vectors_mixedgl(c: &mut Criterion) {
     });
 }
 
-use boojum::field::rand_from_rng;
-use boojum::field::traits::field_like::PrimeFieldLikeVectorized;
-use boojum::worker::Worker;
 use std::alloc::Global;
+
+use boojum::{
+    field::{rand_from_rng, traits::field_like::PrimeFieldLikeVectorized},
+    worker::Worker,
+};
 
 fn criterion_benchmark_fft_naive(c: &mut Criterion) {
     let worker = Worker::new();
@@ -692,17 +680,20 @@ criterion_group!(
     // // criterion_benchmark_add_vectors_simd,
     // // criterion_benchmark_add_vectors_portable_simd,
     // // criterion_benchmark_add_vectors_glps,
-    criterion_benchmark_add_vectors_mixedgl, //candidate #3
-                                             // criterion_benchmark_add_vectors_x86, //candidate #2
-                                             // criterion_benchmark_mul_vectors_naive,
-                                             // criterion_benchmark_mul_vectors_vectorized,
-                                             // // criterion_benchmark_mul_vectors_simd,
-                                             // // criterion_benchmark_mul_vectors_portable_simd_long,
-                                             // // criterion_benchmark_mul_vectors_vectorized_experimental,
-                                             // // criterion_benchmark_mul_vectors_portable_simd,
-                                             // // criterion_benchmark_mul_vectors_glps,
-                                             // criterion_benchmark_mul_vectors_mixedgl,
-                                             // // criterion_benchmark_mul_vectors_mixedgl_x86,
+    criterion_benchmark_add_vectors_mixedgl, /* candidate #3
+                                              * criterion_benchmark_add_vectors_x86, //candidate #2
+                                              * criterion_benchmark_mul_vectors_naive,
+                                              * criterion_benchmark_mul_vectors_vectorized,
+                                              * // criterion_benchmark_mul_vectors_simd,
+                                              * // criterion_benchmark_mul_vectors_portable_simd_long,
+                                              *
+                                              * // criterion_benchmark_mul_vectors_vectorized_experimental,
+                                              *
+                                              * // criterion_benchmark_mul_vectors_portable_simd,
+                                              *
+                                              * // criterion_benchmark_mul_vectors_glps,
+                                              * criterion_benchmark_mul_vectors_mixedgl,
+                                              * // criterion_benchmark_mul_vectors_mixedgl_x86, */
 );
 
 criterion_group!(

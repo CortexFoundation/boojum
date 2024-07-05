@@ -1,3 +1,4 @@
+use super::*;
 use crate::{
     config::CSSetupConfig,
     cs::{
@@ -6,8 +7,6 @@ use crate::{
     },
     field::PrimeField,
 };
-
-use super::*;
 
 // Allocates boolean variables
 
@@ -39,19 +38,12 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for BooleanConstraitEvaluator {
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 1,
-            num_witnesses: 0,
-            num_constants: 0,
-        }
+        GatePrincipalInstanceWidth { num_variables: 1, num_witnesses: 0, num_constants: 0 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -209,9 +201,7 @@ impl BooleanConstraintGate {
         debug_assert!(cs.gate_is_allowed::<Self>());
 
         let new_var = cs.alloc_variable_without_value();
-        let gate = Self {
-            var_to_enforce: new_var,
-        };
+        let gate = Self { var_to_enforce: new_var };
 
         let value = if witness_value { F::ONE } else { F::ZERO };
 
@@ -227,9 +217,7 @@ impl BooleanConstraintGate {
     ) {
         debug_assert!(cs.gate_is_allowed::<Self>());
 
-        let gate = Self {
-            var_to_enforce: variable,
-        };
+        let gate = Self { var_to_enforce: variable };
 
         gate.add_to_cs(cs);
     }

@@ -1,29 +1,24 @@
-use crate::cs::implementations::utils::precompute_twiddles_for_fft;
-use crate::cs::traits::GoodAllocator;
-use crate::field::{Field, PrimeField};
-use crate::worker::Worker;
-use std::ops::BitOr;
-use std::usize;
+use std::{
+    arch::x86_64::{
+        _mm256_load_epi32 as load_aligned_256_i32, _mm256_loadu_epi32 as load_unaligned_256_i32,
+        _mm512_add_epi64 as op_add, _mm512_cmpeq_epu64_mask as op_eq,
+        _mm512_cmplt_epu64_mask as op_less_then, _mm512_i32gather_epi64 as gather,
+        _mm512_i32scatter_epi64 as scatter, _mm512_load_epi64 as load_aligned,
+        _mm512_loadu_epi64 as load_unaligned, _mm512_mask_blend_epi64 as op_select,
+        _mm512_set1_epi64 as op_set1, _mm512_setzero_epi32 as op_setzero,
+        _mm512_store_epi64 as store_aligned, _mm512_storeu_epi64 as store_unaligned,
+        _mm512_sub_epi64 as op_sub,
+    },
+    ops::BitOr,
+    usize,
+};
 
 use super::GoldilocksField;
-
-use std::arch::x86_64::_mm512_add_epi64 as op_add;
-use std::arch::x86_64::_mm512_cmpeq_epu64_mask as op_eq;
-use std::arch::x86_64::_mm512_cmplt_epu64_mask as op_less_then;
-use std::arch::x86_64::_mm512_load_epi64 as load_aligned;
-use std::arch::x86_64::_mm512_loadu_epi64 as load_unaligned;
-use std::arch::x86_64::_mm512_mask_blend_epi64 as op_select;
-use std::arch::x86_64::_mm512_store_epi64 as store_aligned;
-use std::arch::x86_64::_mm512_storeu_epi64 as store_unaligned;
-use std::arch::x86_64::_mm512_sub_epi64 as op_sub;
-
-use std::arch::x86_64::_mm512_set1_epi64 as op_set1;
-use std::arch::x86_64::_mm512_setzero_epi32 as op_setzero;
-
-use std::arch::x86_64::_mm256_load_epi32 as load_aligned_256_i32;
-use std::arch::x86_64::_mm256_loadu_epi32 as load_unaligned_256_i32;
-use std::arch::x86_64::_mm512_i32gather_epi64 as gather;
-use std::arch::x86_64::_mm512_i32scatter_epi64 as scatter;
+use crate::{
+    cs::{implementations::utils::precompute_twiddles_for_fft, traits::GoodAllocator},
+    field::{Field, PrimeField},
+    worker::Worker,
+};
 
 #[derive(Hash, Clone, Copy)]
 #[repr(C, align(64))]
@@ -108,11 +103,11 @@ impl MixedGL {
         let a = load_aligned(this as *const i64);
         let b = load_aligned(other as *const i64);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over b
+        // additional reduction over b
         let b_reduced = op_add(b, epsilon_vec);
         let cmp = op_less_then(b_reduced, epsilon_vec);
         let b = op_select(cmp, b, b_reduced);
-        //a+b
+        // a+b
         let sum = op_add(a, b);
         let sum_reduced = op_add(sum, epsilon_vec);
         let cmp0 = op_less_then(sum_reduced, sum);
@@ -126,11 +121,11 @@ impl MixedGL {
         let a = load_aligned(this as *const i64);
         let b = load_aligned(other as *const i64);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over b
+        // additional reduction over b
         let b_reduced = op_add(b, epsilon_vec);
         let cmp = op_less_then(b_reduced, epsilon_vec);
         let b = op_select(cmp, b, b_reduced);
-        //a-b
+        // a-b
         let diff = op_sub(a, b);
         let diff_reduced = op_sub(diff, epsilon_vec);
         let cmp = op_less_then(a, b);
@@ -159,7 +154,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = op_add(v, epsilon_vec);
         let cmp = op_less_then(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -190,7 +185,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = op_add(v, epsilon_vec);
         let cmp = op_less_then(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -221,7 +216,7 @@ impl MixedGL {
         let u = gather::<8>(offset1, self.0.as_ptr() as *const u8);
         let v = gather::<8>(offset2, self.0.as_ptr() as *const u8);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = op_add(v, epsilon_vec);
         let cmp = op_less_then(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -251,7 +246,7 @@ impl MixedGL {
         let u = load_aligned(this as *const i64);
         let v = load_aligned(other as *const i64);
         let epsilon_vec = op_set1(Self::EPSILON as i64);
-        //additional reduction over v
+        // additional reduction over v
         let v_reduced = op_add(v, epsilon_vec);
         let cmp = op_less_then(v_reduced, epsilon_vec);
         let v = op_select(cmp, v, v_reduced);
@@ -492,7 +487,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::Twiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::fft_natural_to_bitreversed_cache_friendly(input, coset, twiddles);
 
         crate::fft::fft_natural_to_bitreversed_mixedgl(input, coset, twiddles);
@@ -505,7 +501,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::InverseTwiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::ifft_natural_to_natural_cache_friendly(input, coset, twiddles);
 
         crate::fft::ifft_natural_to_natural_mixedgl(input, coset, twiddles);
@@ -537,12 +534,15 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
 #[cfg(test)]
 mod test {
 
-    use crate::field::goldilocks::MixedGL;
-    use crate::field::rand_from_rng;
-    use crate::field::traits::field_like::PrimeFieldLike;
-    use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-    use crate::field::{goldilocks::GoldilocksField, Field};
-    use crate::utils::clone_respecting_allignment;
+    use crate::{
+        field::{
+            goldilocks::{GoldilocksField, MixedGL},
+            rand_from_rng,
+            traits::field_like::{PrimeFieldLike, PrimeFieldLikeVectorized},
+            Field,
+        },
+        utils::clone_respecting_allignment,
+    };
 
     #[test]
     fn test_mixedgl_negate() {

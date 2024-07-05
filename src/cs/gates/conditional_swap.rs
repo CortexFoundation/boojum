@@ -1,11 +1,10 @@
+use super::*;
 use crate::{
     config::CSSetupConfig,
     cs::cs_builder::{CsBuilder, CsBuilderImpl},
     field::PrimeField,
     gadgets::traits::castable::WitnessCastable,
 };
-
-use super::*;
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug, PartialEq, Eq, Hash)]
@@ -56,10 +55,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: N * 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: N * 2 }
     }
 
     #[inline]
@@ -331,8 +327,7 @@ impl<const N: usize> ConditionalSwapGate<N> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

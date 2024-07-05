@@ -1,6 +1,5 @@
 use super::*;
-use crate::cs::cs_builder::*;
-use crate::gadgets::traits::castable::WitnessCastable;
+use crate::{cs::cs_builder::*, gadgets::traits::castable::WitnessCastable};
 
 // for a, b, c being u8x4 we output a + b + c mod 2^32 as u8x4 and a + b + c / 2^32
 // without range checks
@@ -43,10 +42,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for U32TriAddCarryAsChunkConstrai
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -359,13 +355,7 @@ impl U32TriAddCarryAsChunkGate {
         let [out0, out1, out2, out3, carry] = output_variables;
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                c,
-                out: [out0, out1, out2, out3],
-                carry_out: carry,
-            };
+            let gate = Self { a, b, c, out: [out0, out1, out2, out3], carry_out: carry };
 
             gate.add_to_cs(cs);
         }
@@ -377,8 +367,7 @@ impl U32TriAddCarryAsChunkGate {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

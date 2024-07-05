@@ -1,17 +1,22 @@
-use self::implementations::lookup_table::{LookupTable, LookupTableWrapper, Wrappable};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Debug,
+};
 
-use self::traits::trace_source::TraceSource;
 use arrayvec::ArrayVec;
-
-use super::*;
-use crate::config::CSConfig;
-use crate::field::traits::field_like::TrivialContext;
-use crate::field::SmallField;
-use crate::worker::Worker;
 use derivative::Derivative;
 use smallvec::SmallVec;
-use std::collections::{HashMap, VecDeque};
-use std::fmt::Debug;
+
+use self::{
+    implementations::lookup_table::{LookupTable, LookupTableWrapper, Wrappable},
+    traits::trace_source::TraceSource,
+};
+use super::*;
+use crate::{
+    config::CSConfig,
+    field::{traits::field_like::TrivialContext, SmallField},
+    worker::Worker,
+};
 
 pub mod cs_builder;
 pub mod cs_builder_reference;
@@ -22,8 +27,7 @@ pub mod oracle;
 pub mod toolboxes;
 pub mod traits;
 
-pub use crate::cs::toolboxes::gate_config::*;
-pub use crate::cs::toolboxes::static_toolbox::*;
+pub use crate::cs::toolboxes::{gate_config::*, static_toolbox::*};
 
 // one of the most important set of traits is how do we want to approach a proof system
 // that is simultaneously easy to write for, and can utilize high complexity parallelism
@@ -53,7 +57,7 @@ impl Place {
     }
 
     pub fn get_type(&self) -> VariableType {
-        //std::mem::transmute::<bool, VariableType>((self.0 & Self::WITNESS_BIT_MASK) != 0)
+        // std::mem::transmute::<bool, VariableType>((self.0 & Self::WITNESS_BIT_MASK) != 0)
         if self.is_copiable_variable() {
             VariableType::CopyableVariable
         } else {

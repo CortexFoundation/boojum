@@ -1,22 +1,23 @@
 use super::*;
-use crate::config::*;
-use crate::cs::gates::find_next_gate_without_params;
-use crate::cs::gates::lookup_marker::LookupFormalGate;
-use crate::cs::gates::LookupTooling;
-use crate::cs::implementations::reference_cs::*;
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::dag::CircuitResolver;
+use crate::{
+    config::*,
+    cs::{
+        gates::{find_next_gate_without_params, lookup_marker::LookupFormalGate, LookupTooling},
+        implementations::reference_cs::*,
+        toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+        traits::cs::ConstraintSystem,
+    },
+    dag::CircuitResolver,
+};
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > CSReferenceImplementation<F, P, CFG, GC, T, CR>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> CSReferenceImplementation<F, P, CFG, GC, T, CR>
 {
     pub(crate) fn enforce_lookup_over_general_purpose_columns<const N: usize>(
         &mut self,
@@ -173,11 +174,8 @@ impl<
                 .gates_configuration
                 .get_params::<LookupFormalGate>()
                 .expect("gate must be allowed");
-            let gate = LookupFormalGate {
-                num_variables_to_use,
-                num_constants_to_use,
-                share_table_id,
-            };
+            let gate =
+                LookupFormalGate { num_variables_to_use, num_constants_to_use, share_table_id };
             self.place_gate_specialized(&gate, num_instances_already_placed, row);
             // ---------------------
             let mut offset = 0;

@@ -1,9 +1,5 @@
-use crate::gadgets::traits::selectable::Selectable;
-
-use super::*;
-
-use super::super::traits::NonNativeField;
-use crate::gadgets::boolean::Boolean;
+use super::{super::traits::NonNativeField, *};
+use crate::gadgets::{boolean::Boolean, traits::selectable::Selectable};
 
 impl<F: SmallField, T: pairing::ff::PrimeField, const N: usize> NonNativeField<F, T>
     for NonNativeFieldOverU16<F, T, N>

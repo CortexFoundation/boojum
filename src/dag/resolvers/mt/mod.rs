@@ -14,6 +14,10 @@ use std::{
     thread::JoinHandle,
 };
 
+use self::{
+    resolution_window::ResolutionWindow,
+    sorters::{ResolutionRecord, ResolverSortingMode},
+};
 use crate::{
     config::CSResolverConfig,
     cs::{
@@ -29,11 +33,6 @@ use crate::{
     field::SmallField,
     log,
     utils::{PipeOp as _, UnsafeCellEx},
-};
-
-use self::{
-    resolution_window::ResolutionWindow,
-    sorters::{ResolutionRecord, ResolverSortingMode},
 };
 
 pub(crate) const PARANOIA: bool = false;
@@ -270,17 +269,16 @@ impl<V: SmallField, RS: ResolverSortingMode<V>, CFG: CSResolverConfig>
         self.sorter.write_sequence();
 
         if cfg!(feature = "cr_paranoia_mode") || PARANOIA {
-            log!("CR {:?}", unsafe {
-                self.common.awaiters_broker.stats.u_deref()
-            });
+            log!("CR {:?}", unsafe { self.common.awaiters_broker.stats.u_deref() });
         }
     }
 
     pub fn retrieve_sequence(&mut self) -> &ResolutionRecord {
-        assert!(self
-            .comms
-            .registration_complete
-            .load(std::sync::atomic::Ordering::Relaxed));
+        assert!(
+            self.comms
+                .registration_complete
+                .load(std::sync::atomic::Ordering::Relaxed)
+        );
         self.sorter.retrieve_sequence()
     }
 
@@ -313,10 +311,7 @@ impl<V: SmallField, RS: ResolverSortingMode<V> + 'static, CFG: CSResolverConfig>
         let (r, md) = unsafe { self.common.values.u_deref().get_item_ref(variable) };
         // log!("gvu: {:0>8} -> {}", variable.0, r);
 
-        debug_assert!(
-            md.is_resolved(),
-            "Attempted to get value of unresolved variable."
-        );
+        debug_assert!(md.is_resolved(), "Attempted to get value of unresolved variable.");
 
         *r
     }
@@ -339,7 +334,9 @@ impl<V: SmallField, RS: ResolverSortingMode<V> + 'static, CFG: CSResolverConfig>
         let values = unsafe { self.common.values.u_deref() };
 
         if values.max_tracked < vars.iter().map(|x| x.as_any_index()).max().unwrap() as i64 {
-            panic!("The awaiter will never resolve since the awaited variable can't be computed based on currently available registrations. You have holes!!!");
+            panic!(
+                "The awaiter will never resolve since the awaited variable can't be computed based on currently available registrations. You have holes!!!"
+            );
         }
 
         // We're picking the item that will be resolved last among other inputs.
@@ -376,35 +373,30 @@ impl<V: SmallField, RS: ResolverSortingMode<V>, CFG: CSResolverConfig> Drop
 
 #[cfg(test)]
 mod test {
-    use std::collections::VecDeque;
-    use std::hint::spin_loop;
-    use std::rc::Rc;
-    use std::sync::Mutex;
+    use std::{collections::VecDeque, hint::spin_loop, rc::Rc, sync::Mutex};
 
     use itertools::Itertools as _;
 
-    use crate::config::Resolver;
-    use crate::cs::traits::cs::DstBuffer;
-    use crate::cs::Place;
-    use crate::dag::resolvers::mt::sorters::sorter_live::*;
-    use crate::dag::resolvers::mt::sorters::sorter_playback::PlaybackResolverSorter;
-    use crate::dag::resolvers::mt::sorters::ResolverSortingMode;
-    use crate::dag::resolvers::MtCircuitResolver;
-    use crate::dag::{
-        Awaiter, CircuitResolverOpts, WitnessSource as _, WitnessSourceAwaitable as _,
+    use super::{
+        sorters::{ResolutionRecordSource, ResolutionRecordWriter},
+        *,
     };
-
-    use crate::field::SmallField;
-    use crate::log;
-    use crate::utils::PipeOp as _;
     use crate::{
-        config::DoPerformRuntimeAsserts,
-        cs::Variable,
-        field::{goldilocks::GoldilocksField, Field},
+        config::{DoPerformRuntimeAsserts, Resolver},
+        cs::{traits::cs::DstBuffer, Place, Variable},
+        dag::{
+            resolvers::{
+                mt::sorters::{
+                    sorter_live::*, sorter_playback::PlaybackResolverSorter, ResolverSortingMode,
+                },
+                MtCircuitResolver,
+            },
+            Awaiter, CircuitResolverOpts, WitnessSource as _, WitnessSourceAwaitable as _,
+        },
+        field::{goldilocks::GoldilocksField, Field, SmallField},
+        log,
+        utils::PipeOp as _,
     };
-
-    use super::sorters::{ResolutionRecordSource, ResolutionRecordWriter};
-    use super::*;
 
     type F = GoldilocksField;
     type Cfg = Resolver<DoPerformRuntimeAsserts>;
@@ -481,9 +473,7 @@ mod test {
         tracks_values_populate(&mut storage, limit);
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -527,10 +517,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        assert_eq!(
-            storage.get_value_unchecked(init_var),
-            storage.get_value_unchecked(dep_var)
-        );
+        assert_eq!(storage.get_value_unchecked(init_var), storage.get_value_unchecked(dep_var));
     }
 
     #[test]
@@ -555,9 +542,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         println!("\n----- Recording finished -----\n");
 
@@ -568,10 +553,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        assert_eq!(
-            storage.get_value_unchecked(init_var),
-            storage.get_value_unchecked(dep_var)
-        );
+        assert_eq!(storage.get_value_unchecked(init_var), storage.get_value_unchecked(dep_var));
     }
 
     fn resolves_siblings_populate<F: SmallField, RS: ResolverSortingMode<F>>(
@@ -632,9 +614,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -689,10 +669,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        assert_eq!(
-            F::from_u64_with_reduction(16),
-            storage.get_value_unchecked(dep_var3)
-        );
+        assert_eq!(F::from_u64_with_reduction(16), storage.get_value_unchecked(dep_var3));
     }
 
     #[test]
@@ -707,9 +684,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -718,10 +693,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        assert_eq!(
-            F::from_u64_with_reduction(16),
-            storage.get_value_unchecked(dep_var3)
-        );
+        assert_eq!(F::from_u64_with_reduction(16), storage.get_value_unchecked(dep_var3));
     }
 
     #[test]
@@ -753,10 +725,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        assert_eq!(
-            F::from_u64_with_reduction(444),
-            storage.get_value_unchecked(dep_var)
-        );
+        assert_eq!(F::from_u64_with_reduction(444), storage.get_value_unchecked(dep_var));
     }
 
     #[test]
@@ -786,10 +755,7 @@ mod test {
 
         let times_invoked = Mutex::new(0).to(Arc::new);
 
-        let ctx = DroppedContext {
-            times_invoked: times_invoked.clone(),
-            value: 1,
-        };
+        let ctx = DroppedContext { times_invoked: times_invoked.clone(), value: 1 };
 
         storage.add_resolution(
             &[init_var],
@@ -858,9 +824,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -908,10 +872,7 @@ mod test {
 
         storage.get_awaiter([dep_var]).wait();
 
-        assert_eq!(
-            F::from_u64_with_reduction(123),
-            storage.get_value_unchecked(dep_var)
-        );
+        assert_eq!(F::from_u64_with_reduction(123), storage.get_value_unchecked(dep_var));
     }
 
     #[test]
@@ -937,9 +898,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -953,10 +912,7 @@ mod test {
 
         storage.get_awaiter([dep_var_2]).wait();
 
-        assert_eq!(
-            F::from_u64_with_reduction(123),
-            storage.get_value_unchecked(dep_var_2)
-        );
+        assert_eq!(F::from_u64_with_reduction(123), storage.get_value_unchecked(dep_var_2));
     }
 
     #[test]
@@ -1070,9 +1026,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -1136,9 +1090,7 @@ mod test {
         storage.try_get_value(dep_var);
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -1195,9 +1147,7 @@ mod test {
         storage.add_resolution(&[init_var], &[dep_var], res_fn);
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -1259,9 +1209,7 @@ mod test {
         storage.get_awaiter([dep_var_2]).wait();
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -1413,9 +1361,7 @@ mod test {
 
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);
@@ -1531,9 +1477,7 @@ mod test {
         correctness_simple_linear_populate(&mut storage, limit);
         storage.wait_till_resolved();
 
-        let rs = TestRecordStorage {
-            record: Rc::new(storage.retrieve_sequence().clone()),
-        };
+        let rs = TestRecordStorage { record: Rc::new(storage.retrieve_sequence().clone()) };
 
         let mut storage =
             MtCircuitResolver::<F, PlaybackResolverSorter<F, TestRecordStorage, Cfg>, Cfg>::new(rs);

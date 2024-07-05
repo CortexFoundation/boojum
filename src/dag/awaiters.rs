@@ -1,16 +1,17 @@
-use std::cell::UnsafeCell;
-use std::hint::spin_loop;
-use std::marker::PhantomData;
-use std::panic::resume_unwind;
-use std::sync::atomic::{fence, AtomicU64, Ordering};
-use std::thread::yield_now;
+use std::{
+    cell::UnsafeCell,
+    hint::spin_loop,
+    marker::PhantomData,
+    panic::resume_unwind,
+    sync::atomic::{fence, AtomicU64, Ordering},
+    thread::yield_now,
+};
 
-use crate::log;
-use crate::utils::{PipeOp, UnsafeCellEx};
-
-use super::primitives::Metadata;
-use super::resolvers::mt::ResolverComms;
-use super::TrackId;
+use super::{primitives::Metadata, resolvers::mt::ResolverComms, TrackId};
+use crate::{
+    log,
+    utils::{PipeOp, UnsafeCellEx},
+};
 
 #[derive(Debug)]
 pub(crate) struct AwaiterStats {
@@ -31,9 +32,7 @@ impl<T: TrackId> AwaitersBroker<T> {
             // It's ok to compare to 0, because this value represents 0'th span
             // which doesn't contain any resolvers due to giude implementation.
             max_resolved: AtomicU64::new(0),
-            stats: UnsafeCell::new(AwaiterStats {
-                total_registered: 0,
-            }),
+            stats: UnsafeCell::new(AwaiterStats { total_registered: 0 }),
             phantom: PhantomData,
         }
     }
@@ -73,11 +72,7 @@ impl<'a, T> Awaiter<'a, T> {
         comms: &'a ResolverComms,
         track_id: T,
     ) -> Self {
-        Self {
-            broker,
-            comms,
-            track_id,
-        }
+        Self { broker, comms, track_id }
     }
 }
 

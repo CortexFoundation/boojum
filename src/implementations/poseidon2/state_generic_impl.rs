@@ -1,11 +1,10 @@
 //! A set of generic constants for poseidon2, and an implementation of its sponge state.
-use super::poseidon_goldilocks_params;
-use super::suggested_mds;
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::traits::representation::U64Representable;
-use crate::field::Field;
 use std::usize;
+
 use unroll::unroll_for_loops;
+
+use super::{poseidon_goldilocks_params, suggested_mds};
+use crate::field::{goldilocks::GoldilocksField, traits::representation::U64Representable, Field};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct State(pub [GoldilocksField; 12]);
@@ -126,7 +125,7 @@ impl State {
         self.0
     }
 
-    //vectorized mds_mul
+    // vectorized mds_mul
     #[inline(always)]
     #[unroll_for_loops]
     pub fn suggested_mds_mul(&mut self) {
@@ -258,13 +257,12 @@ pub fn poseidon2_inner_mul_ext(state: &mut [GoldilocksField; 12]) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::{
+        field::{goldilocks::GoldilocksField, rand_from_rng, Field},
+        implementations::{poseidon_goldilocks_naive, suggested_mds},
+    };
 
-    use crate::field::rand_from_rng;
-    use crate::field::{goldilocks::GoldilocksField, Field};
-    use crate::implementations::poseidon_goldilocks_naive;
-    use crate::implementations::suggested_mds;
-
-    //test for apply_round_constants
+    // test for apply_round_constants
     #[test]
     fn test_apply_round_constants() {
         let mut rng = rand::thread_rng();
@@ -286,7 +284,7 @@ mod test {
         assert_eq!(state_ref, state_vec.0);
     }
 
-    //test for apply_non_linearity
+    // test for apply_non_linearity
     #[test]
     fn test_apply_non_linearity() {
         let mut rng = rand::thread_rng();
@@ -310,7 +308,7 @@ mod test {
         assert_eq!(state_ref, state_vec.0);
     }
 
-    //test for suggested_mds_mul
+    // test for suggested_mds_mul
     #[test]
     fn test_suggested_mds_mul() {
         let mut rng = rand::thread_rng();
@@ -332,7 +330,7 @@ mod test {
         assert_eq!(state_ref, state_vec.0);
     }
 
-    //test for poseidon2_permutation
+    // test for poseidon2_permutation
     #[test]
     fn test_poseidon2_permutation_generic_impl() {
         let mut rng = rand::thread_rng();

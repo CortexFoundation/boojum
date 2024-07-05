@@ -1,6 +1,5 @@
 use super::*;
-use crate::cs::traits::evaluator::PerChunkOffset;
-use crate::field::PrimeField;
+use crate::{cs::traits::evaluator::PerChunkOffset, field::PrimeField};
 
 pub trait TraceSource<F: PrimeField, P: field::traits::field_like::PrimeFieldLike>:
     Send + Sync

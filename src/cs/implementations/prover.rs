@@ -1,54 +1,60 @@
 //! Let's briefly describe how we want to prove things:
-//! 1) We do not want to use a rate that leads to LDEs < minimal degree that is required to evaluate the quotient in full
-//! 2) We HAVE TO run FRI over the extension field to be anywhere near the conditions where the conjecture is plausible, namely
+//! 1) We do not want to use a rate that leads to LDEs < minimal degree that is required to evaluate
+//!    the quotient in full
+//! 2) We HAVE TO run FRI over the extension field to be anywhere near the conditions where the
+//!    conjecture is plausible, namely
 //! field is much larger than code size. And 64 bits over 32 bits is not "large" IMHO
 //! 3) We will use a repeated protocol to materialize all polynomials that depend on challenges, so
 //! as soon as we commit to witness, we will have
 //! - N grand-products
 //! - N quotients
 //! - N random points
-//! - all of those are considered independent trials, so the protocol soundness is \epsion ^ N at this point
-//! - now we have to do FRI. Here we can pull the challenges directly from the extension field, to be plausibly within the conjecture
-//! 4) We modify the lookup argument, and instead of using aggregated sorted polynomials we use non-aggregated, and
+//! - all of those are considered independent trials, so the protocol soundness is \epsion ^ N at
+//!   this point
+//! - now we have to do FRI. Here we can pull the challenges directly from the extension field, to
+//!   be plausibly within the conjecture
+//! 4) We modify the lookup argument, and instead of using aggregated sorted polynomials we use
+//!    non-aggregated, and
 //! skip the intermediate step
-//! 5) We assume we're using quite a large number of columns, so we do NOT benefit from the trick of placing a full coset into
-//! the leaves of the original oracles for witness and other round oracles, and instead we DO materialize the first FRI oracle,
-//! where we actually place all coset values
-use std::alloc::Global;
+//! 5) We assume we're using quite a large number of columns, so we do NOT benefit from the trick of
+//!    placing a full coset into
+//! the leaves of the original oracles for witness and other round oracles, and instead we DO
+//! materialize the first FRI oracle, where we actually place all coset values
+use std::{alloc::Global, sync::Arc};
 
-use super::hints::*;
-use super::polynomial::lde::GenericLdeStorage;
-use super::polynomial::BitreversedLagrangeForm;
-use super::polynomial_storage::SetupStorage;
-use super::proof::Proof;
-use super::transcript::Transcript;
-use super::verifier::VerificationKey;
-use super::*;
-use crate::cs::implementations::buffering_source::*;
-use crate::cs::implementations::proof::SingleRoundQueries;
-use crate::cs::implementations::transcript::BoolsBuffer;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::field::traits::field_like::mul_assign_vectorized_in_extension;
-use std::sync::Arc;
-
-use super::pow::*;
-use crate::cs::gates::lookup_marker::LookupFormalGate;
-use crate::cs::implementations::witness::WitnessSet;
-use crate::utils::allocate_in_with_alignment_of;
-
-use crate::cs::implementations::fri::do_fri;
-use crate::cs::implementations::polynomial::MonomialForm;
-
-use crate::cs::implementations::polynomial_storage::TraceHolder;
-use crate::cs::implementations::polynomial_storage::*;
-use crate::cs::implementations::reference_cs::*;
-use crate::cs::implementations::utils::*;
-use crate::cs::oracle::merkle_tree::MerkleTreeWithCap;
-use crate::cs::oracle::TreeHasher;
-use crate::cs::traits::destination_view::*;
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::trace_source::*;
-use crate::cs::traits::GoodAllocator;
+use super::{
+    hints::*,
+    polynomial::{lde::GenericLdeStorage, BitreversedLagrangeForm},
+    polynomial_storage::SetupStorage,
+    pow::*,
+    proof::Proof,
+    transcript::Transcript,
+    verifier::VerificationKey,
+    *,
+};
+use crate::{
+    cs::{
+        gates::lookup_marker::LookupFormalGate,
+        implementations::{
+            buffering_source::*,
+            fri::do_fri,
+            polynomial::MonomialForm,
+            polynomial_storage::{TraceHolder, *},
+            proof::SingleRoundQueries,
+            reference_cs::*,
+            transcript::BoolsBuffer,
+            utils::*,
+            witness::WitnessSet,
+        },
+        oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
+        traits::{
+            destination_view::*, evaluator::*, gate::GatePlacementStrategy, trace_source::*,
+            GoodAllocator,
+        },
+    },
+    field::traits::field_like::mul_assign_vectorized_in_extension,
+    utils::allocate_in_with_alignment_of,
+};
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone, Debug, Hash, PartialEq, Eq)]
@@ -73,11 +79,11 @@ impl std::default::Default for ProofConfig {
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        A: GoodAllocator,
-    > CSReferenceAssembly<F, P, CFG, A>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    A: GoodAllocator,
+> CSReferenceAssembly<F, P, CFG, A>
 {
     pub fn take_witness(&mut self, worker: &Worker) -> WitnessSet<F> {
         // get our columns flattened out
@@ -85,7 +91,8 @@ impl<
         let witness_columns = self.materialize_witness_polynomials(worker);
         let mutliplicities_columns = self.materialize_multiplicities_polynomials(worker);
 
-        // now we can commit to public inputs also before potentially moving computations to vectorized form
+        // now we can commit to public inputs also before potentially moving computations to
+        // vectorized form
 
         let num_public_inputs = self.public_inputs.len();
         let mut public_inputs_only_values = Vec::with_capacity(num_public_inputs);
@@ -129,7 +136,8 @@ impl<
             self.materialize_witness_polynomials_from_dense_hint(worker, wits_hint);
         let mutliplicities_columns = self.materialize_multiplicities_polynomials(worker);
 
-        // now we can commit to public inputs also before potentially moving computations to vectorized form
+        // now we can commit to public inputs also before potentially moving computations to
+        // vectorized form
 
         let num_public_inputs = self.public_inputs.len();
         let mut public_inputs_only_values = Vec::with_capacity(num_public_inputs);
@@ -189,10 +197,7 @@ impl<
         let public_inputs_only_values = public_inputs_values;
         let public_inputs_with_values = public_inputs_with_locations;
 
-        assert_eq!(
-            public_inputs_only_values.len(),
-            public_inputs_with_values.len()
-        );
+        assert_eq!(public_inputs_only_values.len(), public_inputs_with_values.len());
 
         let interactive_soundness =
             (F::CAPACITY_BITS * 2) - base_system_degree.trailing_zeros() as usize;
@@ -253,14 +258,15 @@ impl<
             quotient_degree_from_gate_terms.next_power_of_two()
         };
 
-        // In our proof system RS code rate (we usually use "lde factor" that is an inverse of the rate)
-        // is decoupled from the minimal LDE factor we need to compute quotient degree at the end,
-        // so we propagate the parameters to the corresponding places
+        // In our proof system RS code rate (we usually use "lde factor" that is an inverse of the
+        // rate) is decoupled from the minimal LDE factor we need to compute quotient degree
+        // at the end, so we propagate the parameters to the corresponding places
         let quotient_degree = min_lde_degree_for_gates;
 
         dbg!(quotient_degree);
 
-        // now we can commit to public inputs also before potentially moving computations to vectorized form
+        // now we can commit to public inputs also before potentially moving computations to
+        // vectorized form
         for value in public_inputs_only_values.iter().copied() {
             transcript.witness_field_elements(&[value]);
         }
@@ -581,9 +587,9 @@ impl<
                     .copied()
                     .expect("gate must be allowed");
                 let num_repetitions = match placement_strategy {
-                    GatePlacementStrategy::UseSpecializedColumns {
-                        num_repetitions, ..
-                    } => num_repetitions,
+                    GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } => {
+                        num_repetitions
+                    }
                     _ => unreachable!(),
                 };
                 assert_eq!(evaluator.num_repetitions_on_row, num_repetitions);
@@ -627,10 +633,7 @@ impl<
 
         let inner_size = variables_columns[0].storage.len(); // counted in elements of P
 
-        let trace_holder = TraceHolder {
-            variables: witness_storage,
-            setup: setup.clone(),
-        };
+        let trace_holder = TraceHolder { variables: witness_storage, setup: setup.clone() };
 
         let sources = ProverTraceView::chunks_from_trace_for_degree(
             &trace_holder,
@@ -678,10 +681,7 @@ impl<
                     "evaluator {} has not contribution to quotient",
                     &evaluator.debug_name,
                 );
-                log!(
-                    "Will be evaluating {} over specialized columns",
-                    &evaluator.debug_name
-                );
+                log!("Will be evaluating {} over specialized columns", &evaluator.debug_name);
 
                 let num_terms = evaluator.num_quotient_terms;
                 let placement_strategy = self
@@ -789,15 +789,9 @@ impl<
                 challenge_offset += total_terms;
             }
 
-            assert_eq!(
-                challenge_offset,
-                total_num_gate_terms_for_specialized_columns
-            );
+            assert_eq!(challenge_offset, total_num_gate_terms_for_specialized_columns);
 
-            log!(
-                "Specialized gates contribution to quotient evaluation taken {:?}",
-                now.elapsed()
-            );
+            log!("Specialized gates contribution to quotient evaluation taken {:?}", now.elapsed());
         }
 
         profile_section!(sect_5);
@@ -855,11 +849,28 @@ impl<
                                 let mut normal_enumeration = idx.reverse_bits();
                                 normal_enumeration >>= usize::BITS - domain_size.trailing_zeros();
                                 if *selector_value == F::ONE {
-                                    assert_eq!(evaluator_idx, self.gates_application_sets[normal_enumeration], "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}", normal_enumeration, evaluator_idx, self.gates_application_sets[normal_enumeration]);
+                                    assert_eq!(
+                                        evaluator_idx,
+                                        self.gates_application_sets[normal_enumeration],
+                                        "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}",
+                                        normal_enumeration,
+                                        evaluator_idx,
+                                        self.gates_application_sets[normal_enumeration]
+                                    );
                                 } else if *selector_value == F::ZERO {
-                                    assert_ne!(evaluator_idx, self.gates_application_sets[normal_enumeration], "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}", normal_enumeration, evaluator_idx, self.gates_application_sets[normal_enumeration]);
+                                    assert_ne!(
+                                        evaluator_idx,
+                                        self.gates_application_sets[normal_enumeration],
+                                        "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}",
+                                        normal_enumeration,
+                                        evaluator_idx,
+                                        self.gates_application_sets[normal_enumeration]
+                                    );
                                 } else {
-                                    panic!("Selector value is undefined {:?} at row {} for gate idx {}", selector_value, normal_enumeration, evaluator_idx);
+                                    panic!(
+                                        "Selector value is undefined {:?} at row {} for gate idx {}",
+                                        selector_value, normal_enumeration, evaluator_idx
+                                    );
                                 }
                             }
                         }
@@ -920,8 +931,9 @@ impl<
                         .enumerate()
                     {
                         if evaluator.total_quotient_terms_over_all_repetitions == 0 {
-                            // we MAY formally have NOP gate in the set here, but we should not evaluate it.
-                            // NOP gate will affect selectors placement, but not the rest
+                            // we MAY formally have NOP gate in the set here, but we should not
+                            // evaluate it. NOP gate will affect
+                            // selectors placement, but not the rest
 
                             match evaluator.gate_purpose {
                                 GatePurpose::MarkerNeedsSelector => {
@@ -955,11 +967,34 @@ impl<
                                                 normal_enumeration >>=
                                                     usize::BITS - domain_size.trailing_zeros();
                                                 if *selector_value == F::ONE {
-                                                    assert_eq!(evaluator_idx, self.gates_application_sets[normal_enumeration], "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}", normal_enumeration, evaluator_idx, self.gates_application_sets[normal_enumeration]);
+                                                    assert_eq!(
+                                                        evaluator_idx,
+                                                        self.gates_application_sets
+                                                            [normal_enumeration],
+                                                        "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}",
+                                                        normal_enumeration,
+                                                        evaluator_idx,
+                                                        self.gates_application_sets
+                                                            [normal_enumeration]
+                                                    );
                                                 } else if *selector_value == F::ZERO {
-                                                    assert_ne!(evaluator_idx, self.gates_application_sets[normal_enumeration], "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}", normal_enumeration, evaluator_idx, self.gates_application_sets[normal_enumeration]);
+                                                    assert_ne!(
+                                                        evaluator_idx,
+                                                        self.gates_application_sets
+                                                            [normal_enumeration],
+                                                        "divergence at row {}: evaluator idx is {}, but in setup it's evaluator number {}",
+                                                        normal_enumeration,
+                                                        evaluator_idx,
+                                                        self.gates_application_sets
+                                                            [normal_enumeration]
+                                                    );
                                                 } else {
-                                                    panic!("Selector value is undefined {:?} at row {} for gate idx {}", selector_value, normal_enumeration, evaluator_idx);
+                                                    panic!(
+                                                        "Selector value is undefined {:?} at row {} for gate idx {}",
+                                                        selector_value,
+                                                        normal_enumeration,
+                                                        evaluator_idx
+                                                    );
                                                 }
                                             }
                                         }
@@ -979,7 +1014,12 @@ impl<
                                                     dbg!(&vars);
                                                     dbg!(&wits);
                                                     dbg!(&constants[constant_placement_offset..]);
-                                                    panic!("Unsatisfied at row {}, gate {}. Selector value = {}", normal_enumeration, &evaluator.debug_name, selector_value);
+                                                    panic!(
+                                                        "Unsatisfied at row {}, gate {}. Selector value = {}",
+                                                        normal_enumeration,
+                                                        &evaluator.debug_name,
+                                                        selector_value
+                                                    );
                                                 }
                                             }
                                         }
@@ -1079,7 +1119,10 @@ impl<
                         }
                     });
 
-                    log!("Gates over general purposes columns contribution to quotient evaluation taken {:?}", now.elapsed());
+                    log!(
+                        "Gates over general purposes columns contribution to quotient evaluation taken {:?}",
+                        now.elapsed()
+                    );
                 }
             }
         }
@@ -1100,10 +1143,7 @@ impl<
                         .evaluation_data_over_general_purpose_columns
                         .evaluators_over_general_purpose_columns[evaluator_idx]
                         .debug_name;
-                    panic!(
-                        "Unsatisfied at row {}, gate {}",
-                        normal_enumeration, gate_name
-                    );
+                    panic!("Unsatisfied at row {}, gate {}", normal_enumeration, gate_name);
                 }
             }
         }
@@ -1153,8 +1193,8 @@ impl<
             // (z(x) - 1) * L_1(x) term anyway
 
             // later on we will need terms like
-            // partial_product_i = partial_product_{i-1} * rational_function, but we have everything precomputed
-            // for it already
+            // partial_product_i = partial_product_{i-1} * rational_function, but we have everything
+            // precomputed for it already
 
             // the last part is z(x * omega) = partial_product_{n-1} * rational_function
 
@@ -1187,11 +1227,7 @@ impl<
             let mut dst = [q_c0_as_lde, q_c1_as_lde];
 
             if crate::config::DEBUG_SATISFIABLE == false {
-                let src = [
-                    z_poly_c0.clone(),
-                    z_poly_c1.clone(),
-                    unnormalized_l1_inverse,
-                ];
+                let src = [z_poly_c0.clone(), z_poly_c1.clone(), unnormalized_l1_inverse];
 
                 let op = #[inline(always)]
                 move |dst: &mut [ArcGenericLdeStorage<F, P, Global, Global>; 2],
@@ -1446,10 +1482,10 @@ impl<
 
         // now we can chunk every polynomial and LDE them
 
-        // NOTE: for all the polynomials below we will have an option to perform evaluation at random
-        // point by using barycentric formula, while for quotient we could potentially save monomial form
-        // for some time and use horner rule. We neglect small change of proof time in favor of simplicity
-        // and memory consumption
+        // NOTE: for all the polynomials below we will have an option to perform evaluation at
+        // random point by using barycentric formula, while for quotient we could
+        // potentially save monomial form for some time and use horner rule. We neglect
+        // small change of proof time in favor of simplicity and memory consumption
 
         let mut quotient_chunks = vec![];
         let [q_c0, q_c1] = quotient_monomials;
@@ -1599,12 +1635,7 @@ impl<
             second_stage_polys_storage
                 .intermediate_polys
                 .iter()
-                .map(|[a, b]| {
-                    [
-                        &a.storage[0].as_ref().storage,
-                        &b.storage[0].as_ref().storage,
-                    ]
-                })
+                .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                 .map(|[a, b]| evaluate_from_extension(a, b))
                 .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
         );
@@ -1634,12 +1665,7 @@ impl<
             second_stage_polys_storage
                 .lookup_witness_encoding_polys
                 .iter()
-                .map(|[a, b]| {
-                    [
-                        &a.storage[0].as_ref().storage,
-                        &b.storage[0].as_ref().storage,
-                    ]
-                })
+                .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                 .map(|[a, b]| evaluate_from_extension(a, b))
                 .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
         );
@@ -1647,12 +1673,7 @@ impl<
             second_stage_polys_storage
                 .lookup_multiplicities_encoding_polys
                 .iter()
-                .map(|[a, b]| {
-                    [
-                        &a.storage[0].as_ref().storage,
-                        &b.storage[0].as_ref().storage,
-                    ]
-                })
+                .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                 .map(|[a, b]| evaluate_from_extension(a, b))
                 .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
         );
@@ -1672,12 +1693,7 @@ impl<
         all_polys_at_zs.extend(
             quotient_chunks_ldes
                 .array_chunks::<2>()
-                .map(|[a, b]| {
-                    [
-                        &a.storage[0].as_ref().storage,
-                        &b.storage[0].as_ref().storage,
-                    ]
-                })
+                .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                 .map(|[a, b]| evaluate_from_extension(a, b))
                 .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
         );
@@ -1726,16 +1742,15 @@ impl<
             )
         };
 
-        let all_polys_at_zomegas = vec![ExtensionField::<F, 2, EXT>::from_coeff_in_base(
-            evaluate_from_extension(
+        let all_polys_at_zomegas =
+            vec![ExtensionField::<F, 2, EXT>::from_coeff_in_base(evaluate_from_extension(
                 &second_stage_polys_storage.z_poly[0].storage[0]
                     .as_ref()
                     .storage,
                 &second_stage_polys_storage.z_poly[1].storage[0]
                     .as_ref()
                     .storage,
-            ),
-        )];
+            ))];
         assert_eq!(all_polys_at_zomegas.len(), 1);
 
         for set in all_polys_at_zomegas.iter() {
@@ -1771,12 +1786,7 @@ impl<
                 second_stage_polys_storage
                     .lookup_witness_encoding_polys
                     .iter()
-                    .map(|[a, b]| {
-                        [
-                            &a.storage[0].as_ref().storage,
-                            &b.storage[0].as_ref().storage,
-                        ]
-                    })
+                    .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                     .map(|[a, b]| evaluate_from_extension(a, b))
                     .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
             );
@@ -1784,12 +1794,7 @@ impl<
                 second_stage_polys_storage
                     .lookup_multiplicities_encoding_polys
                     .iter()
-                    .map(|[a, b]| {
-                        [
-                            &a.storage[0].as_ref().storage,
-                            &b.storage[0].as_ref().storage,
-                        ]
-                    })
+                    .map(|[a, b]| [&a.storage[0].as_ref().storage, &b.storage[0].as_ref().storage])
                     .map(|[a, b]| evaluate_from_extension(a, b))
                     .map(|el| ExtensionField::<F, 2, EXT>::from_coeff_in_base(el)),
             );
@@ -1820,8 +1825,8 @@ impl<
         }
 
         // We have committed to all the polynomials and evaluated them at random point.
-        // Now we should perform quotening operation to compute terms of the form (f(x) - f(z))/(x - z)
-        // and simultaneously form a (presumably) RS code word
+        // Now we should perform quotening operation to compute terms of the form (f(x) - f(z))/(x -
+        // z) and simultaneously form a (presumably) RS code word
 
         // Since it will be the last step before FRI, we will use challenges from extension
 
@@ -1880,28 +1885,16 @@ impl<
 
         let mut sources = vec![];
         // witness
-        sources.extend(map_base_for_quotening(
-            &trace_holder.variables.variables_columns,
-        ));
-        sources.extend(map_base_for_quotening(
-            &trace_holder.variables.witness_columns,
-        ));
+        sources.extend(map_base_for_quotening(&trace_holder.variables.variables_columns));
+        sources.extend(map_base_for_quotening(&trace_holder.variables.witness_columns));
         // normal setup
         sources.extend(map_base_for_quotening(&trace_holder.setup.constant_columns));
-        sources.extend(map_base_for_quotening(
-            &trace_holder.setup.copy_permutation_polys,
-        ));
+        sources.extend(map_base_for_quotening(&trace_holder.setup.copy_permutation_polys));
         // copy permutation
-        sources.extend(map_extension_for_quotening(&[second_stage_polys_storage
-            .z_poly
-            .clone()]));
-        sources.extend(map_extension_for_quotening(
-            &second_stage_polys_storage.intermediate_polys,
-        ));
+        sources.extend(map_extension_for_quotening(&[second_stage_polys_storage.z_poly.clone()]));
+        sources.extend(map_extension_for_quotening(&second_stage_polys_storage.intermediate_polys));
         // lookup if exists
-        sources.extend(map_base_for_quotening(
-            &trace_holder.variables.lookup_multiplicities_polys,
-        ));
+        sources.extend(map_base_for_quotening(&trace_holder.variables.lookup_multiplicities_polys));
         sources.extend(map_extension_for_quotening(
             &second_stage_polys_storage.lookup_witness_encoding_polys,
         ));
@@ -1910,9 +1903,7 @@ impl<
         ));
         // lookup setup
         if self.lookup_parameters.lookup_is_allowed() {
-            sources.extend(map_base_for_quotening(
-                &trace_holder.setup.lookup_tables_columns,
-            ));
+            sources.extend(map_base_for_quotening(&trace_holder.setup.lookup_tables_columns));
         }
         // quotient
         let quotinents: Vec<_> = quotient_chunks_ldes.array_chunks::<2>().cloned().collect();
@@ -1943,9 +1934,7 @@ impl<
         // now at z_omega
 
         let mut sources = vec![];
-        sources.extend(map_extension_for_quotening(&[second_stage_polys_storage
-            .z_poly
-            .clone()]));
+        sources.extend(map_extension_for_quotening(&[second_stage_polys_storage.z_poly.clone()]));
 
         let num_challenges_required = sources.len();
 
@@ -2068,7 +2057,8 @@ impl<
 
         // now we just have to do FRI. In general our strategy is:
         // - access oracles at single evaluation point (path), and get wide leafs
-        // - simulate single element of RS code word by doing quotiening operation. It will be our first
+        // - simulate single element of RS code word by doing quotiening operation. It will be our
+        //   first
         // FRI oracle. We may want to have 8 or 4 elements per leaf, so we can have smaller
         // number of FRI intermediate oracles
 
@@ -2159,10 +2149,7 @@ impl<
         };
 
         let max_needed_bits = (domain_size * lde_factor_for_fri).trailing_zeros() as usize;
-        let mut bools_buffer = BoolsBuffer {
-            available: vec![],
-            max_needed: max_needed_bits,
-        };
+        let mut bools_buffer = BoolsBuffer { available: vec![], max_needed: max_needed_bits };
 
         let base_fri_source = (c0_as_poly, c1_as_poly);
 
@@ -2379,10 +2366,8 @@ pub fn materialize_ext_challenge_powers<F: SmallField, EXT: FieldExtension<2, Ba
     let mut result = Vec::with_capacity(num_challenges);
     result.push((F::ONE, F::ZERO));
     result.push((c0, c1));
-    let as_extension = ExtensionField::<F, 2, EXT> {
-        coeffs: [c0, c1],
-        _marker: std::marker::PhantomData,
-    };
+    let as_extension =
+        ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
     let mut current = as_extension;
     for _ in 2..num_challenges {
@@ -2454,7 +2439,8 @@ fn quotening_operation<
                     batch_inverse_inplace::<_, A>(&mut denoms);
                     let denoms = P::vec_from_base_vec(denoms);
 
-                    // buffers to compute c0 and c1 coefficients before placing them into destination
+                    // buffers to compute c0 and c1 coefficients before placing them into
+                    // destination
                     let mut buffer_c0 = Vec::with_capacity_in(end - start, A::default());
                     buffer_c0.resize(end - start, P::zero(&mut ctx));
 
@@ -2580,7 +2566,8 @@ fn quotening_operation_in_extension<
                         Vec::with_capacity_in(roots_minus_z_c0.len(), A::default());
                     at_c1_negated_vec.resize(roots_minus_z_c0.len(), at_c1_negated);
 
-                    // denominator for (x - z), but roots are in base, so only one subtraction is needed
+                    // denominator for (x - z), but roots are in base, so only one subtraction is
+                    // needed
                     for el in roots_minus_z_c0.iter_mut() {
                         el.sub_assign(&at_c0, &mut ctx);
                     }
@@ -2593,7 +2580,8 @@ fn quotening_operation_in_extension<
 
                     let zero = P::zero(&mut ctx);
 
-                    // buffers to compute c0 and c1 coefficients before placing them into destination
+                    // buffers to compute c0 and c1 coefficients before placing them into
+                    // destination
                     let mut buffer_c0 = Vec::with_capacity_in(end - start, A::default());
                     buffer_c0.resize(end - start, zero);
 
@@ -2634,7 +2622,8 @@ fn quotening_operation_in_extension<
                                 .zip(buffer_c0.iter_mut())
                                 .zip(buffer_c1.iter_mut())
                             {
-                                // src is in the base field, so in fact we do two independent operations
+                                // src is in the base field, so in fact we do two independent
+                                // operations
                                 let mut tmp_c0 = *src_c0;
                                 tmp_c0.sub_assign(&value_at_z_c0, &mut ctx);
 
@@ -2658,7 +2647,8 @@ fn quotening_operation_in_extension<
                                 .zip(buffer_c0.iter_mut())
                                 .zip(buffer_c1.iter_mut())
                             {
-                                // src is in the base field, so in fact we do two independent operations
+                                // src is in the base field, so in fact we do two independent
+                                // operations
                                 let mut tmp_c0 = *src;
                                 tmp_c0.sub_assign(&value_at_z_c0, &mut ctx);
 
@@ -2762,13 +2752,11 @@ fn flatten_presumably_bitreversed<T: Copy + Send + Sync, U, A: GoodAllocator, B:
     flattened
 }
 
-use crate::cs::implementations::polynomial::lde::ArcGenericLdeStorage;
-use crate::cs::implementations::polynomial::GenericPolynomial;
-use crate::fft::bitreverse_enumeration_inplace;
-use crate::field::Field;
-
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
+use crate::{
+    cs::implementations::polynomial::{lde::ArcGenericLdeStorage, GenericPolynomial},
+    fft::bitreverse_enumeration_inplace,
+    field::{ExtensionField, Field, FieldExtension},
+};
 
 // our path is a set of booleans true/false, and encode from the root,
 // so when we even encounter a path, we can check for all it's ascendants
@@ -2897,10 +2885,7 @@ pub fn compute_selector_subpath<
             for (j, el) in selector.iter().copied().enumerate() {
                 let idx = idx * P::SIZE_FACTOR + j;
                 if el != F::ZERO && el != F::ONE {
-                    panic!(
-                        "Lookup selector is non-binary at index {} with value {:?}",
-                        idx, el
-                    );
+                    panic!("Lookup selector is non-binary at index {} with value {:?}", idx, el);
                 }
                 if el == F::ONE {
                     at_least_one_used = true;

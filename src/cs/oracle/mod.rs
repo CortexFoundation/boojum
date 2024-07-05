@@ -28,12 +28,13 @@ impl<F: SmallField> FlattenIntoBase<u8, 8> for &F {
     }
 }
 
-use crate::algebraic_props::round_function::AbsorptionModeTrait;
-use crate::algebraic_props::round_function::AlgebraicRoundFunction;
-use crate::algebraic_props::sponge::SimpleAlgebraicSponge;
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
-use crate::field::PrimeField;
+use crate::{
+    algebraic_props::{
+        round_function::{AbsorptionModeTrait, AlgebraicRoundFunction},
+        sponge::SimpleAlgebraicSponge,
+    },
+    field::{ExtensionField, FieldExtension, PrimeField},
+};
 
 impl<F: SmallField, E: FieldExtension<2, BaseField = F>> FlattenIntoBase<F, 2>
     for &ExtensionField<F, 2, E>
@@ -112,13 +113,13 @@ pub trait TreeHasher<B: Sized>: 'static + Clone + Send + Sync {
 }
 
 impl<
-        F: SmallField,
-        R: AlgebraicRoundFunction<F, AW, SW, CW>,
-        M: AbsorptionModeTrait<F>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-    > TreeHasher<F> for SimpleAlgebraicSponge<F, AW, SW, CW, R, M>
+    F: SmallField,
+    R: AlgebraicRoundFunction<F, AW, SW, CW>,
+    M: AbsorptionModeTrait<F>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+> TreeHasher<F> for SimpleAlgebraicSponge<F, AW, SW, CW, R, M>
 {
     type Output = [F; CW];
     #[inline]

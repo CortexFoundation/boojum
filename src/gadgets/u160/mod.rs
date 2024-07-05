@@ -1,15 +1,22 @@
-use super::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::cs::Variable;
-use crate::field::SmallField;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::witnessable::WitnessHookable;
-use crate::gadgets::u32::UInt32;
-use crate::gadgets::u8::UInt8;
 use ethereum_types::Address;
+
+use super::*;
+use crate::{
+    cs::{
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::{
+        boolean::Boolean,
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            witnessable::WitnessHookable,
+        },
+        u32::UInt32,
+        u8::UInt8,
+    },
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, Hash)]
@@ -120,9 +127,7 @@ impl<F: SmallField> UInt160<F> {
     #[inline(always)]
     #[must_use]
     pub unsafe fn from_variables_unchecked(variables: [Variable; 5]) -> Self {
-        Self {
-            inner: variables.map(|el| UInt32::from_variable_unchecked(el)),
-        }
+        Self { inner: variables.map(|el| UInt32::from_variable_unchecked(el)) }
     }
 
     // Returns the value unchanges if `bit` is `true`, and 0 otherwise
@@ -195,9 +200,10 @@ impl<F: SmallField> Selectable<F> for UInt160<F> {
     }
 }
 
-use crate::gadgets::traits::castable::Convertor;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::traits::witnessable::CSWitnessable;
+use crate::gadgets::traits::{
+    castable::{Convertor, WitnessCastable},
+    witnessable::CSWitnessable,
+};
 
 impl<F: SmallField> WitnessCastable<F, [F; 5]> for Address {
     #[inline]

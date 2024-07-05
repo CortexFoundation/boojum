@@ -1,10 +1,9 @@
+use super::*;
 use crate::{
     config::CSSetupConfig,
     cs::cs_builder::{CsBuilder, CsBuilderImpl},
     field::PrimeField,
 };
-
-use super::*;
 
 // Allocates bootlean variables
 
@@ -48,10 +47,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for SelectionGateConstraintEvalua
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -201,12 +197,7 @@ impl SelectionGate {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                selector,
-                result: output_variable,
-            };
+            let gate = Self { a, b, selector, result: output_variable };
             gate.add_to_cs(cs);
         }
 

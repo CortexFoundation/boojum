@@ -1,19 +1,22 @@
-use crate::cs::implementations::proof::OracleQuery;
-use crate::cs::implementations::prover::ProofConfig;
-use crate::cs::implementations::verifier::VerificationKeyCircuitGeometry;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::utils::LSBIterator;
-
-use super::recursive_verifier::RecursiveVerifier;
-use super::*;
-use crate::cs::implementations::proof::Proof;
-use crate::cs::implementations::proof::SingleRoundQueries;
-use crate::field::FieldExtension;
-use crate::gadgets::num::Num;
-use crate::gadgets::recursion::recursive_tree_hasher::RecursiveTreeHasher;
-use crate::gadgets::traits::allocatable::allocate_num_elements;
+use super::{recursive_verifier::RecursiveVerifier, *};
+use crate::{
+    cs::{
+        implementations::{
+            proof::{OracleQuery, Proof, SingleRoundQueries},
+            prover::ProofConfig,
+            verifier::VerificationKeyCircuitGeometry,
+        },
+        traits::cs::ConstraintSystem,
+    },
+    field::FieldExtension,
+    gadgets::{
+        boolean::Boolean,
+        num::Num,
+        recursion::recursive_tree_hasher::RecursiveTreeHasher,
+        traits::allocatable::{allocate_num_elements, CSAllocatable},
+    },
+    utils::LSBIterator,
+};
 
 #[derive(derivative::Derivative)]
 #[derivative(Clone(bound = ""))]
@@ -37,10 +40,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> AllocatedOracleQuery<F, H
         let proof = witness.as_ref().map(|el| el.proof.iter().cloned());
         let proof = allocate_num_elements::<F, CS, H::CircuitOutput>(cs, num_elements, proof);
 
-        Self {
-            leaf_elements,
-            proof,
-        }
+        Self { leaf_elements, proof }
     }
 }
 
@@ -192,13 +192,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> AllocatedSingleRoundQueri
             fri_queries.push(query);
         }
 
-        Self {
-            witness_query,
-            stage_2_query,
-            quotient_query,
-            setup_query,
-            fri_queries,
-        }
+        Self { witness_query, stage_2_query, quotient_query, setup_query, fri_queries }
     }
 }
 
@@ -465,7 +459,8 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>, EXT: FieldExtension<2, Ba
 //             .collect();
 
 //         let final_fri_monomials =
-//             final_fri_monomials.map(|el| el.into_iter().map(|el| Num::allocate(cs, el)).collect());
+//             final_fri_monomials.map(|el| el.into_iter().map(|el| Num::allocate(cs,
+// el)).collect());
 
 //         let values_at_z = values_at_z
 //             .into_iter()

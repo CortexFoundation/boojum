@@ -34,19 +34,12 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 2 * N,
-            num_witnesses: 0,
-            num_constants: 0,
-        }
+        GatePrincipalInstanceWidth { num_variables: 2 * N, num_witnesses: 0, num_constants: 0 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -106,10 +99,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
         _global_constants: &Self::GlobalConstants<P>,
         ctx: &mut P::Context,
     ) {
-        let (a, b) = (
-            trace_source.get_variable_value(0),
-            trace_source.get_variable_value(1),
-        );
+        let (a, b) = (trace_source.get_variable_value(0), trace_source.get_variable_value(1));
 
         let mut contribution = a;
         contribution.mul_assign(&b, ctx);

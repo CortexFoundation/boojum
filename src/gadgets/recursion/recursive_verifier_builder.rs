@@ -1,31 +1,27 @@
-use crate::cs::implementations::verifier::VerifierPolyStorage;
-use crate::cs::implementations::verifier::VerifierRelationDestination;
-use crate::cs::traits::evaluator::GatePurpose;
-use crate::cs::traits::evaluator::GenericDynamicEvaluatorOverGeneralPurposeColumns;
-use crate::cs::traits::evaluator::GenericDynamicEvaluatorOverSpecializedColumns;
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::cs::GateTypeEntry;
-use crate::cs::Tool;
-use crate::cs::{
-    cs_builder::{CsBuilder, CsBuilderImpl},
-    gates::{lookup_marker::LookupFormalGate, LookupTooling},
-    traits::{
-        evaluator::{GateBatchEvaluationComparisonFunction, GateConstraintEvaluator},
-        gate::Gate,
-    },
-    CSGeometry, GateConfigurationHolder, LookupParameters, StaticToolboxHolder,
-};
-use crate::gadgets::num::prime_field_like::*;
+use std::{any::TypeId, collections::HashMap};
+
+use derivative::*;
+
 use crate::{
-    cs::traits::{
-        cs::ConstraintSystem,
-        evaluator::{GatePlacementType, PerChunkOffset},
+    cs::{
+        cs_builder::{CsBuilder, CsBuilderImpl},
+        gates::{lookup_marker::LookupFormalGate, LookupTooling},
+        implementations::verifier::{VerifierPolyStorage, VerifierRelationDestination},
+        traits::{
+            cs::ConstraintSystem,
+            evaluator::{
+                GateBatchEvaluationComparisonFunction, GateConstraintEvaluator, GatePlacementType,
+                GatePurpose, GenericDynamicEvaluatorOverGeneralPurposeColumns,
+                GenericDynamicEvaluatorOverSpecializedColumns, PerChunkOffset, *,
+            },
+            gate::{Gate, GatePlacementStrategy},
+        },
+        CSGeometry, GateConfigurationHolder, GateTypeEntry, LookupParameters, StaticToolboxHolder,
+        Tool,
     },
     field::{FieldExtension, SmallField},
+    gadgets::num::prime_field_like::*,
 };
-use derivative::*;
-use std::{any::TypeId, collections::HashMap};
 
 #[derive(Derivative)]
 #[derivative(Debug)]
@@ -249,12 +245,8 @@ pub struct CsRecursiveVerifierBuilder<
     pub(crate) total_num_constants_for_specialized_columns: usize,
 }
 
-impl<
-        'a,
-        F: SmallField,
-        EXT: FieldExtension<2, BaseField = F>,
-        CS: ConstraintSystem<F> + 'static,
-    > CsRecursiveVerifierBuilder<'a, F, EXT, CS>
+impl<'a, F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<F> + 'static>
+    CsRecursiveVerifierBuilder<'a, F, EXT, CS>
 {
     pub fn new_from_parameters(cs: &'a mut CS, parameters: CSGeometry) -> Self {
         Self {
@@ -279,12 +271,8 @@ impl<
 
 use super::recursive_verifier::*;
 
-impl<
-        'a,
-        F: SmallField,
-        EXT: FieldExtension<2, BaseField = F>,
-        CS: ConstraintSystem<F> + 'static,
-    > CsBuilderImpl<F, CsRecursiveVerifierBuilder<'a, F, EXT, CS>>
+impl<'a, F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<F> + 'static>
+    CsBuilderImpl<F, CsRecursiveVerifierBuilder<'a, F, EXT, CS>>
     for CsRecursiveVerifierBuilder<'a, F, EXT, CS>
 {
     type Final<GC: GateConfigurationHolder<F>, TB: StaticToolboxHolder> =
@@ -357,7 +345,8 @@ impl<
                         let idx = this.evaluators_over_general_purpose_columns.len();
                         this.evaluators_over_general_purpose_columns
                             .push(dynamic_evaluator);
-                        // evaluator_type_id_into_evaluator_index_over_general_purpose_columns.insert(evaluator_type_id, idx);
+                        // evaluator_type_id_into_evaluator_index_over_general_purpose_columns.
+                        // insert(evaluator_type_id, idx);
                         comparison_fns.push((comparator, idx));
                     }
 
@@ -375,15 +364,13 @@ impl<
                     this.evaluators_over_general_purpose_columns
                         .push(dynamic_evaluator);
                     // gate_type_ids_for_general_purpose_columns.push(gate_type_id);
-                    // evaluator_type_id_into_evaluator_index_over_general_purpose_columns.insert(evaluator_type_id, idx);
+                    // evaluator_type_id_into_evaluator_index_over_general_purpose_columns.
+                    // insert(evaluator_type_id, idx);
                     this.general_purpose_evaluators_comparison_functions
                         .insert(evaluator_type_id, vec![(comparator, idx)]);
                 }
             }
-            GatePlacementStrategy::UseSpecializedColumns {
-                num_repetitions,
-                share_constants,
-            } => {
+            GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants } => {
                 // we always add an evaluator
 
                 let (dynamic_evaluator, _comparator) =
@@ -402,7 +389,8 @@ impl<
                     .push(gate_type_id);
                 this.evaluators_over_specialized_columns
                     .push(dynamic_evaluator);
-                // gate_type_id_into_evaluator_index_over_specialized_columns.insert(gate_type_id, idx);
+                // gate_type_id_into_evaluator_index_over_specialized_columns.insert(gate_type_id,
+                // idx);
 
                 let principal_width = evaluator.instance_width();
                 let mut total_width = principal_width;
@@ -419,9 +407,7 @@ impl<
 
                 if share_constants {
                     match evaluator.placement_type() {
-                        GatePlacementType::MultipleOnRow {
-                            per_chunk_offset: _,
-                        } => {}
+                        GatePlacementType::MultipleOnRow { per_chunk_offset: _ } => {}
                         GatePlacementType::UniqueOnRow => {
                             panic!("Can not share constants if placement type is unique");
                         }
@@ -433,7 +419,7 @@ impl<
                         + this.total_num_variables_for_specialized_columns,
                     witnesses_offset: this.parameters.num_witness_columns
                         + this.total_num_witnesses_for_specialized_columns,
-                    constants_offset: this.total_num_constants_for_specialized_columns, // we use separate vector for them
+                    constants_offset: this.total_num_constants_for_specialized_columns, /* we use separate vector for them */
                 };
 
                 let offset_per_repetition = if share_constants == false {
@@ -478,10 +464,7 @@ impl<
             }
         }
 
-        CsBuilder {
-            gates_config: new_configuration,
-            ..builder
-        }
+        CsBuilder { gates_config: new_configuration, ..builder }
     }
 
     fn add_tool<
@@ -499,10 +482,7 @@ impl<
         // hold the type in the phantom.
         let new_toolbox = builder.toolbox.add_tool(tool);
 
-        CsBuilder {
-            toolbox: new_toolbox,
-            ..builder
-        }
+        CsBuilder { toolbox: new_toolbox, ..builder }
     }
 
     // type GcWithLookup<GC: GateConfigurationHolder<F>> = GC;
@@ -532,14 +512,8 @@ impl<
                         false,
                     )
                 }
-                LookupParameters::TableIdAsVariable {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsVariable { width, share_table_id } => {
+                    assert!(share_table_id == false, "other option is not yet implemented");
                     // we need to resize multiplicities
                     assert!(
                         builder
@@ -556,14 +530,8 @@ impl<
                         share_table_id,
                     )
                 }
-                LookupParameters::TableIdAsConstant {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsConstant { width, share_table_id } => {
+                    assert!(share_table_id == true, "other option is not yet implemented");
                     assert!(
                         builder
                             .implementation
@@ -584,10 +552,7 @@ impl<
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == false, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {
@@ -604,10 +569,7 @@ impl<
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == true, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {

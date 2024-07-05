@@ -1,5 +1,6 @@
-// To configure the CS we will need some tools that are global for the CS (not tied to specific gates),
-// so we do the same thing as with gates and do the inlining trick to have access to those tools
+// To configure the CS we will need some tools that are global for the CS (not tied to specific
+// gates), so we do the same thing as with gates and do the inlining trick to have access to those
+// tools
 
 pub trait StaticToolboxHolder: 'static + Send + Sync {
     fn tool_exists<M: 'static + Send + Sync>(&self) -> bool;
@@ -33,13 +34,7 @@ impl StaticToolboxHolder for () {
         self,
         tool: T,
     ) -> (Tool<M, T>, Self) {
-        (
-            Tool {
-                marker: std::marker::PhantomData,
-                tool,
-            },
-            (),
-        )
+        (Tool { marker: std::marker::PhantomData, tool }, ())
     }
 }
 
@@ -92,18 +87,9 @@ impl<MM: 'static + Send + Sync + Clone, TT: 'static + Send + Sync, U: StaticTool
         tool: T,
     ) -> (Tool<M, T>, Self) {
         if self.tool_exists::<M>() {
-            panic!(
-                "Tool type {} is already in the system",
-                std::any::type_name::<M>()
-            );
+            panic!("Tool type {} is already in the system", std::any::type_name::<M>());
         }
 
-        (
-            Tool {
-                marker: std::marker::PhantomData,
-                tool,
-            },
-            self,
-        )
+        (Tool { marker: std::marker::PhantomData, tool }, self)
     }
 }

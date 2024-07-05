@@ -1,23 +1,17 @@
-use super::cs::ConstraintSystem;
-use super::*;
+use super::{cs::ConstraintSystem, *};
 use crate::cs::traits::evaluator::*;
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GatePlacementStrategy {
-    UseSpecializedColumns {
-        num_repetitions: usize,
-        share_constants: bool,
-    },
+    UseSpecializedColumns { num_repetitions: usize, share_constants: bool },
     UseGeneralPurposeColumns,
 }
 
 impl GatePlacementStrategy {
     pub fn specialized_num_repetitions(&self) -> Option<usize> {
         match self {
-            Self::UseSpecializedColumns {
-                num_repetitions, ..
-            } => Some(*num_repetitions),
+            Self::UseSpecializedColumns { num_repetitions, .. } => Some(*num_repetitions),
             Self::UseGeneralPurposeColumns => None,
         }
     }
@@ -118,8 +112,8 @@ pub trait Gate<F: SmallField>:
     }
     // if gate is placed over specialized columns then it should be able to fill
     // the corresponding columns, and potentially few sets of them, with proper witness
-    fn columns_finalization_function<CS: ConstraintSystem<F>>(
-    ) -> Option<GateColumnsCleanupFunction<CS>> {
+    fn columns_finalization_function<CS: ConstraintSystem<F>>()
+    -> Option<GateColumnsCleanupFunction<CS>> {
         // assume by default that we do not need to cleanup
         None
     }

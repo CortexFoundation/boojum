@@ -1,5 +1,6 @@
-use crate::cs::toolboxes::simplified::type_map::EmptySet;
 use std::any::TypeId;
+
+use crate::cs::toolboxes::simplified::type_map::EmptySet;
 
 pub trait KVSet: 'static + Send + Sync {
     // we can walk over and get the next one
@@ -30,11 +31,7 @@ impl KVSet for EmptySet {
         self,
         value: T,
     ) -> Self::ExtendedSet<K, T> {
-        KVSetEntry {
-            value,
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        KVSetEntry { value, next: self, _marker: std::marker::PhantomData }
     }
 }
 
@@ -80,10 +77,6 @@ impl<KK: 'static + Send + Sync, TT: 'static + Send + Sync, NEXT: KVSet> KVSet
         self,
         value: T,
     ) -> Self::ExtendedSet<K, T> {
-        KVSetEntry {
-            value,
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        KVSetEntry { value, next: self, _marker: std::marker::PhantomData }
     }
 }

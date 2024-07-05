@@ -3,13 +3,14 @@ use super::{
     polynomial_storage::{SecondStageProductsStorage, SetupStorage, WitnessStorage},
     *,
 };
-use crate::cs::implementations::utils::*;
-use crate::utils::*;
 use crate::{
-    cs::implementations::polynomial::lde::GenericLdeStorage,
-    field::traits::field_like::mul_assign_vectorized_in_extension,
+    cs::{
+        implementations::{polynomial::lde::GenericLdeStorage, utils::*},
+        traits::GoodAllocator,
+    },
+    field::{traits::field_like::mul_assign_vectorized_in_extension, PrimeField},
+    utils::*,
 };
-use crate::{cs::traits::GoodAllocator, field::PrimeField};
 
 pub fn num_intermediate_partial_product_relations(
     num_copys_under_copy_permutation: usize,
@@ -558,9 +559,10 @@ pub(crate) fn compute_partial_products<
     let mut subsets = Vec::with_capacity_in(betas.len(), B::default());
 
     for (beta, gamma) in betas.into_iter().zip(gammas.into_iter()) {
-        // even though to compute z(x) we need to make full product starting from the fact that Z(1) == 1, and then making
-        // Z(omega), Z(omega^1), etc, we can transpose into parallel computations over larger sizes and keep some partial products
-        // along the way, and then make z(x) and intermediate values using it
+        // even though to compute z(x) we need to make full product starting from the fact that Z(1)
+        // == 1, and then making Z(omega), Z(omega^1), etc, we can transpose into parallel
+        // computations over larger sizes and keep some partial products along the way, and
+        // then make z(x) and intermediate values using it
 
         let mut partial_elementwise_products = Vec::new_in(B::default());
 
@@ -614,7 +616,8 @@ pub(crate) fn compute_partial_products<
         // z(x * omega) = partial_{n-1} * partial_elementwise_products[n]
 
         if partial_elementwise_products.len() == 1 {
-            // there are no intermediate products in practice, we can go directly from z(x) to z(x * omega)
+            // there are no intermediate products in practice, we can go directly from z(x) to z(x *
+            // omega)
             subsets.push((z_poly, Vec::new_in(B::default())))
         } else {
             // we have to compute intermediates
@@ -642,8 +645,7 @@ pub(crate) fn compute_partial_products<
     subsets
 }
 
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
+use crate::field::{ExtensionField, FieldExtension};
 
 // Evaluated over main domain (no coset, no LDE)
 pub(crate) fn compute_partial_products_in_extension<
@@ -676,9 +678,10 @@ pub(crate) fn compute_partial_products_in_extension<
     let num_polys = all_copy_permutation_columns.len();
     let non_residues = non_residues_for_copy_permutation::<F, B>(domain_size, num_polys);
 
-    // even though to compute z(x) we need to make full product starting from the fact that Z(1) == 1, and then making
-    // Z(omega), Z(omega^1), etc, we can transpose into parallel computations over larger sizes and keep some partial products
-    // along the way, and then make z(x) and intermediate values using it
+    // even though to compute z(x) we need to make full product starting from the fact that Z(1) ==
+    // 1, and then making Z(omega), Z(omega^1), etc, we can transpose into parallel computations
+    // over larger sizes and keep some partial products along the way, and then make z(x) and
+    // intermediate values using it
 
     let mut partial_elementwise_products = Vec::new_in(B::default());
 
@@ -715,10 +718,8 @@ pub(crate) fn compute_partial_products_in_extension<
             ctx,
         );
 
-        partial_elementwise_products.push([
-            partial_elementwise_product_c0,
-            partial_elementwise_product_c1,
-        ]);
+        partial_elementwise_products
+            .push([partial_elementwise_product_c0, partial_elementwise_product_c1]);
     }
 
     let [almost_z_poly_c0, almost_z_poly_c1] =
@@ -745,7 +746,8 @@ pub(crate) fn compute_partial_products_in_extension<
     // z(x * omega) = partial_{n-1} * partial_elementwise_products[n]
 
     if partial_elementwise_products.len() == 1 {
-        // there are no intermediate products in practice, we can go directly from z(x) to z(x * omega)
+        // there are no intermediate products in practice, we can go directly from z(x) to z(x *
+        // omega)
         ([z_poly_c0, z_poly_c1], partial_elementwise_products)
     } else {
         // we have to compute intermediates
@@ -881,15 +883,15 @@ pub(crate) fn compute_partial_products_in_extension<
 //             .map(|el| el.subset_for_degree(degree)),
 //     );
 
-//     let mut columns_chunks = Vec::with_capacity_in(witness.variables_columns.len(), B::default());
-//     witness
+//     let mut columns_chunks = Vec::with_capacity_in(witness.variables_columns.len(),
+// B::default());     witness
 //         .variables_columns
 //         .iter()
 //         .map(|el| el.subset_for_degree(degree))
 //         .collect_into(&mut columns_chunks);
 
-//     let mut sigmas_chunks = Vec::with_capacity_in(setup.copy_permutation_polys.len(), B::default());
-//     setup
+//     let mut sigmas_chunks = Vec::with_capacity_in(setup.copy_permutation_polys.len(),
+// B::default());     setup
 //         .copy_permutation_polys
 //         .iter()
 //         .map(|el| el.subset_for_degree(degree))
@@ -934,8 +936,8 @@ pub(crate) fn compute_partial_products_in_extension<
 //                             // denominator is w + beta * sigma(x) + gamma
 //                             let mut subres = sigma.storage[outer].storage[inner];
 //                             subres.mul_assign(&beta, &mut ctx);
-//                             subres.add_assign(&variables.storage[outer].storage[inner], &mut ctx);
-//                             subres.add_assign(&gamma, &mut ctx);
+//                             subres.add_assign(&variables.storage[outer].storage[inner], &mut
+// ctx);                             subres.add_assign(&gamma, &mut ctx);
 //                             lhs_contribution.mul_assign(&subres, &mut ctx);
 //                         }
 
@@ -946,8 +948,8 @@ pub(crate) fn compute_partial_products_in_extension<
 //                             let mut subres = x_poly_value;
 //                             subres.mul_assign(&non_res, &mut ctx);
 //                             subres.mul_assign(&beta, &mut ctx);
-//                             subres.add_assign(&variables.storage[outer].storage[inner], &mut ctx);
-//                             subres.add_assign(&gamma, &mut ctx);
+//                             subres.add_assign(&variables.storage[outer].storage[inner], &mut
+// ctx);                             subres.add_assign(&gamma, &mut ctx);
 //                             rhs_contribution.mul_assign(&subres, &mut ctx);
 //                         }
 
@@ -1076,10 +1078,7 @@ pub(crate) fn compute_quotient_terms_in_extension<
         .map(|el| el.owned_subset_for_degree(degree));
 
     if crate::config::DEBUG_SATISFIABLE == true {
-        assert_eq!(
-            P::slice_into_base_slice(&[z_poly[0].storage[0].storage[0]])[0],
-            F::ONE
-        );
+        assert_eq!(P::slice_into_base_slice(&[z_poly[0].storage[0].storage[0]])[0], F::ONE);
     }
 
     let rhs = [z_poly].into_iter().chain(

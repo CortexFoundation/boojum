@@ -60,9 +60,7 @@ where
             }
         }
 
-        let visitor = ArrayVisitor::<_, N> {
-            element: std::marker::PhantomData,
-        };
+        let visitor = ArrayVisitor::<_, N> { element: std::marker::PhantomData };
         deserializer.deserialize_tuple(N, visitor)
     }
 }

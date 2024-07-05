@@ -1,8 +1,8 @@
 use super::*;
-use crate::cs::traits::cs::*;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::round_function::gates::*;
+use crate::{
+    cs::traits::{cs::*, gate::GatePlacementStrategy},
+    gadgets::{num::Num, traits::round_function::gates::*},
+};
 
 pub trait CircuitRoundFunction<F: SmallField, const AW: usize, const SW: usize, const CW: usize>:
     'static + Send + Sync + Clone
@@ -79,11 +79,10 @@ pub trait CircuitRoundFunction<F: SmallField, const AW: usize, const SW: usize, 
     }
 }
 
-use crate::cs::cs_builder::*;
-use crate::cs::*;
-
-use crate::gadgets::traits::configuration::ConfigurationFunction;
-use crate::gadgets::traits::configuration::IdentityConfiguration;
+use crate::{
+    cs::{cs_builder::*, *},
+    gadgets::traits::configuration::{ConfigurationFunction, IdentityConfiguration},
+};
 
 pub trait BuildableCircuitRoundFunction<
     F: SmallField,

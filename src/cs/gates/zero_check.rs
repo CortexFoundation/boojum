@@ -1,7 +1,12 @@
 use super::*;
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-use crate::cs::traits::gate::FinalizationHintSerialized;
-use crate::{config::CSSetupConfig, field::PrimeField};
+use crate::{
+    config::CSSetupConfig,
+    cs::{
+        cs_builder::{CsBuilder, CsBuilderImpl},
+        traits::gate::FinalizationHintSerialized,
+    },
+    field::PrimeField,
+};
 
 //  input * inverse_wit = (1 - flag)
 //  input * flag = 0
@@ -31,9 +36,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for ZeroCheckEvaluator {
 
     #[inline(always)]
     fn new_from_parameters(params: Self::UniqueParameterizationParams) -> Self {
-        Self {
-            use_witness_column_for_inversion: params,
-        }
+        Self { use_witness_column_for_inversion: params }
     }
 
     #[inline(always)]
@@ -49,42 +52,23 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for ZeroCheckEvaluator {
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
         GatePrincipalInstanceWidth {
-            num_variables: if self.use_witness_column_for_inversion {
-                2
-            } else {
-                3
-            },
-            num_witnesses: if self.use_witness_column_for_inversion {
-                1
-            } else {
-                0
-            },
+            num_variables: if self.use_witness_column_for_inversion { 2 } else { 3 },
+            num_witnesses: if self.use_witness_column_for_inversion { 1 } else { 0 },
             num_constants: 0,
         }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 2 }
     }
 
     #[inline]
     fn placement_type(&self) -> GatePlacementType {
         GatePlacementType::MultipleOnRow {
             per_chunk_offset: PerChunkOffset {
-                variables_offset: if self.use_witness_column_for_inversion {
-                    2
-                } else {
-                    3
-                },
-                witnesses_offset: if self.use_witness_column_for_inversion {
-                    1
-                } else {
-                    0
-                },
+                variables_offset: if self.use_witness_column_for_inversion { 2 } else { 3 },
+                witnesses_offset: if self.use_witness_column_for_inversion { 1 } else { 0 },
                 constants_offset: 0,
             },
         }
@@ -92,16 +76,8 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for ZeroCheckEvaluator {
 
     #[inline]
     fn num_repetitions_in_geometry(&self, geometry: &CSGeometry) -> usize {
-        let num_required_copiable = if self.use_witness_column_for_inversion {
-            2
-        } else {
-            3
-        };
-        let num_required_witness = if self.use_witness_column_for_inversion {
-            1
-        } else {
-            0
-        };
+        let num_required_copiable = if self.use_witness_column_for_inversion { 2 } else { 3 };
+        let num_required_witness = if self.use_witness_column_for_inversion { 1 } else { 0 };
         let limit_from_copiable =
             geometry.num_columns_under_copy_permutation / num_required_copiable;
         let limit_from_witnesses = if num_required_witness == 0 {
@@ -180,16 +156,8 @@ impl<F: SmallField> Gate<F> for ZeroCheckGate {
     #[inline(always)]
     fn check_compatible_with_cs<CS: ConstraintSystem<F>>(&self, cs: &CS) -> bool {
         let geometry = cs.get_params();
-        let num_required_copiable = if self.use_witness_column_for_inversion {
-            2
-        } else {
-            3
-        };
-        let num_required_witness = if self.use_witness_column_for_inversion {
-            1
-        } else {
-            0
-        };
+        let num_required_copiable = if self.use_witness_column_for_inversion { 2 } else { 3 };
+        let num_required_witness = if self.use_witness_column_for_inversion { 1 } else { 0 };
         geometry.max_allowed_constraint_degree >= 2
             && geometry.num_columns_under_copy_permutation >= num_required_copiable
             && geometry.num_witness_columns >= num_required_witness
@@ -205,8 +173,8 @@ impl<F: SmallField> Gate<F> for ZeroCheckGate {
     }
 
     // it has non-trivial cleanup
-    fn row_finalization_function<CS: ConstraintSystem<F>>(
-    ) -> Option<traits::gate::GateRowCleanupFunction<CS>> {
+    fn row_finalization_function<CS: ConstraintSystem<F>>()
+    -> Option<traits::gate::GateRowCleanupFunction<CS>> {
         let closure = move |cs: &mut CS, hint: &Option<FinalizationHintSerialized>| {
             // we need to fill our witnesses with non-trivial values
 
@@ -299,8 +267,8 @@ impl<F: SmallField> Gate<F> for ZeroCheckGate {
         Some(Box::new(closure) as _)
     }
 
-    fn columns_finalization_function<CS: ConstraintSystem<F>>(
-    ) -> Option<traits::gate::GateColumnsCleanupFunction<CS>> {
+    fn columns_finalization_function<CS: ConstraintSystem<F>>()
+    -> Option<traits::gate::GateColumnsCleanupFunction<CS>> {
         let closure =
             move |cs: &mut CS, min_bound: usize, hint: &Option<FinalizationHintSerialized>| {
                 // we need to fill our witnesses with non-trivial values
@@ -426,16 +394,10 @@ impl ZeroCheckGate {
                     find_next_gate_without_params(tooling, capacity_per_row, offered_row_idx);
                 drop(tooling);
 
-                let num_required_copiable = if self.use_witness_column_for_inversion {
-                    2
-                } else {
-                    3
-                };
-                let num_required_witness = if self.use_witness_column_for_inversion {
-                    1
-                } else {
-                    0
-                };
+                let num_required_copiable =
+                    if self.use_witness_column_for_inversion { 2 } else { 3 };
+                let num_required_witness =
+                    if self.use_witness_column_for_inversion { 1 } else { 0 };
 
                 // now we can use methods of CS to inform it of low level operations
                 let mut variables_offset = num_instances_already_placed * num_required_copiable;
@@ -569,8 +531,7 @@ impl ZeroCheckGate {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

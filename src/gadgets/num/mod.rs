@@ -1,24 +1,28 @@
-use super::boolean::Boolean;
-use super::impls::lc::linear_combination_collapse;
-use super::*;
-use crate::cs::gates::zero_check::ZeroCheckGate;
-use crate::cs::gates::{ConditionalSwapGate, ConstantAllocatableCS, ZeroCheckMemoizableCS};
-use crate::cs::gates::{DotProductGate, ParallelSelectionGate, ReductionGate, SelectionGate};
-
-use crate::config::*;
-use crate::cs::gates::fma_gate_without_constant::{
-    FmaGateInBaseFieldWithoutConstant, FmaGateInBaseWithoutConstantParams,
-};
-use crate::cs::gates::ReductionByPowersGate;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::gadgets::impls::limbs_decompose::*;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::u8::UInt8;
-use crate::gadgets::u8::*;
-use crate::utils::LSBIterator;
-use crate::{cs::Variable, field::SmallField};
 use arrayvec::ArrayVec;
+
+use super::{boolean::Boolean, impls::lc::linear_combination_collapse, *};
+use crate::{
+    config::*,
+    cs::{
+        gates::{
+            fma_gate_without_constant::{
+                FmaGateInBaseFieldWithoutConstant, FmaGateInBaseWithoutConstantParams,
+            },
+            zero_check::ZeroCheckGate,
+            ConditionalSwapGate, ConstantAllocatableCS, DotProductGate, ParallelSelectionGate,
+            ReductionByPowersGate, ReductionGate, SelectionGate, ZeroCheckMemoizableCS,
+        },
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::{
+        impls::limbs_decompose::*,
+        traits::allocatable::CSAllocatable,
+        u8::{UInt8, *},
+    },
+    utils::LSBIterator,
+};
 
 pub mod prime_field_like;
 
@@ -42,10 +46,7 @@ impl<F: SmallField> CSAllocatable<F> for Num<F> {
     fn allocate_without_value<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
         let var = cs.alloc_variable_without_value();
 
-        Self {
-            variable: var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: var, _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -53,10 +54,7 @@ impl<F: SmallField> CSAllocatable<F> for Num<F> {
     fn allocate<CS: ConstraintSystem<F>>(cs: &mut CS, witness: Self::Witness) -> Self {
         let var = cs.alloc_single_variable_from_witness(witness);
 
-        Self {
-            variable: var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: var, _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -64,17 +62,15 @@ impl<F: SmallField> CSAllocatable<F> for Num<F> {
     fn allocate_constant<CS: ConstraintSystem<F>>(cs: &mut CS, witness: Self::Witness) -> Self {
         let var = cs.allocate_constant(witness);
 
-        Self {
-            variable: var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: var, _marker: std::marker::PhantomData }
     }
 }
 
+use super::traits::{
+    castable::{Convertor, WitnessCastable},
+    witnessable::WitnessHookable,
+};
 use crate::gadgets::traits::witnessable::CSWitnessable;
-
-use super::traits::castable::{Convertor, WitnessCastable};
-use super::traits::witnessable::WitnessHookable;
 
 impl<F: SmallField> CSWitnessable<F, 1> for Num<F> {
     type ConversionFunction = Convertor<F, [F; 1], F>;
@@ -138,10 +134,7 @@ impl<F: SmallField> Selectable<F> for Num<F> {
             let result_var =
                 SelectionGate::select(cs, a.get_variable(), b.get_variable(), flag.get_variable());
 
-            Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result_var, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -200,10 +193,7 @@ impl<F: SmallField> Num<F> {
     #[inline(always)]
     #[must_use]
     pub const fn from_variable(var: Variable) -> Self {
-        Self {
-            variable: var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: var, _marker: std::marker::PhantomData }
     }
 
     #[inline]
@@ -211,10 +201,7 @@ impl<F: SmallField> Num<F> {
     pub fn allocated_constant<CS: ConstraintSystem<F>>(cs: &mut CS, constant: F) -> Self {
         let constant_var = cs.allocate_constant(constant);
 
-        Self {
-            variable: constant_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: constant_var, _marker: std::marker::PhantomData }
     }
 
     #[inline]
@@ -234,10 +221,7 @@ impl<F: SmallField> Num<F> {
 
         cs.set_is_zero_memoization(self.variable, result_var);
 
-        Boolean {
-            variable: result_var,
-            _marker: std::marker::PhantomData,
-        }
+        Boolean { variable: result_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -252,10 +236,7 @@ impl<F: SmallField> Num<F> {
                 other.get_variable(),
             );
 
-            Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result_var, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -273,10 +254,7 @@ impl<F: SmallField> Num<F> {
                 other.get_variable(),
             );
 
-            Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result_var, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -293,10 +271,7 @@ impl<F: SmallField> Num<F> {
                 other.get_variable(),
             );
 
-            Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result_var, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -502,10 +477,7 @@ impl<F: SmallField> Num<F> {
         if num_bytes == 1 {
             range_check_u8(cs, self.get_variable());
 
-            result.push(UInt8 {
-                variable: self.get_variable(),
-                _marker: std::marker::PhantomData,
-            })
+            result.push(UInt8 { variable: self.get_variable(), _marker: std::marker::PhantomData })
         } else if num_bytes == 2 {
             let zero_var = cs.allocate_constant(F::ZERO);
 
@@ -654,10 +626,7 @@ impl<F: SmallField> Num<F> {
         let mut it = input.iter().copied();
         linear_combination_collapse(cs, &mut it, Some(result_var));
 
-        Self {
-            variable: result_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: result_var, _marker: std::marker::PhantomData }
     }
 
     #[track_caller]
@@ -791,10 +760,8 @@ impl<F: SmallField> Num<F> {
                 length += 1;
             }
             if length <= 4 {
-                let mut gate = DotProductGate::<4> {
-                    terms: [Variable::placeholder(); 8],
-                    result: final_var,
-                };
+                let mut gate =
+                    DotProductGate::<4> { terms: [Variable::placeholder(); 8], result: final_var };
 
                 if length < 4 {
                     let zero_var = cs.allocate_constant(F::ZERO);
@@ -1088,10 +1055,7 @@ impl<F: SmallField> Num<F> {
                 should_swap.get_variable(),
             );
 
-            (
-                new_a.map(|el| Num::from_variable(el)),
-                new_b.map(|el| Num::from_variable(el)),
-            )
+            (new_a.map(|el| Num::from_variable(el)), new_b.map(|el| Num::from_variable(el)))
         } else {
             // two selectes
             let new_a = Self::parallel_select(cs, should_swap, b, a);

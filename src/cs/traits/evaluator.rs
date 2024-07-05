@@ -1,12 +1,12 @@
-use std::any::TypeId;
-use std::hash::Hash;
+use std::{any::TypeId, hash::Hash};
 
-use super::destination_view::{EvaluationDestination, EvaluationDestinationDrivable};
-use super::gate::GatePlacementStrategy;
-use super::trace_source::{TraceSource, TraceSourceDerivable};
-use super::*;
-use crate::field::traits::field_like::BaseField;
-use crate::field::PrimeField;
+use super::{
+    destination_view::{EvaluationDestination, EvaluationDestinationDrivable},
+    gate::GatePlacementStrategy,
+    trace_source::{TraceSource, TraceSourceDerivable},
+    *,
+};
+use crate::field::{traits::field_like::BaseField, PrimeField};
 
 /// Defines the column composition of a gate.
 #[derive(Derivative)]
@@ -27,11 +27,7 @@ pub struct PerChunkOffset {
 
 impl PerChunkOffset {
     pub const fn zero() -> Self {
-        Self {
-            variables_offset: 0,
-            witnesses_offset: 0,
-            constants_offset: 0,
-        }
+        Self { variables_offset: 0, witnesses_offset: 0, constants_offset: 0 }
     }
 
     #[inline]
@@ -52,10 +48,7 @@ pub enum GatePlacementType {
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GatePurpose {
-    Evaluatable {
-        max_constraint_degree: usize,
-        num_quotient_terms: usize,
-    },
+    Evaluatable { max_constraint_degree: usize, num_quotient_terms: usize },
     MarkerNeedsSelector,   // Nop, Lookup
     MarkerWithoutSelector, // Public input
 }
@@ -63,10 +56,7 @@ pub enum GatePurpose {
 impl GatePurpose {
     pub const fn needs_selector(&self) -> bool {
         match self {
-            GatePurpose::Evaluatable {
-                max_constraint_degree,
-                num_quotient_terms,
-            } => {
+            GatePurpose::Evaluatable { max_constraint_degree, num_quotient_terms } => {
                 debug_assert!(*max_constraint_degree > 0 && *num_quotient_terms > 0);
 
                 true
@@ -270,10 +260,13 @@ impl GateBatchEvaluationComparisonFunction {
     }
 }
 
-use crate::cs::implementations::buffering_source::BufferedGateEvaluationReducingDestinationChunk;
-use crate::cs::implementations::polynomial_storage::{ProverTraceView, SatisfiabilityCheckRowView};
+use crate::cs::implementations::{
+    buffering_source::BufferedGateEvaluationReducingDestinationChunk,
+    polynomial_storage::{ProverTraceView, SatisfiabilityCheckRowView},
+};
 
-// set of traits that will allow dynamic dispatch, but also to drive evaluation as efficient as possible
+// set of traits that will allow dynamic dispatch, but also to drive evaluation as efficient as
+// possible
 pub(crate) trait DynamicEvaluatorOverSpecializedColumns<
     F: PrimeField,
     P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
@@ -302,10 +295,10 @@ pub(crate) struct ColumnwiseEvaluator<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        E: GateConstraintEvaluator<F>,
-    > DynamicEvaluatorOverSpecializedColumns<F, P> for ColumnwiseEvaluator<F, P, E>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    E: GateConstraintEvaluator<F>,
+> DynamicEvaluatorOverSpecializedColumns<F, P> for ColumnwiseEvaluator<F, P, E>
 {
     fn evaluate_over_columns(
         &self,
@@ -368,10 +361,10 @@ pub(crate) struct RowwiseEvaluator<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        E: GateConstraintEvaluator<F>,
-    > DynamicEvaluatorOverGeneralPurposeColumns<F, P> for RowwiseEvaluator<F, P, E>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    E: GateConstraintEvaluator<F>,
+> DynamicEvaluatorOverGeneralPurposeColumns<F, P> for RowwiseEvaluator<F, P, E>
 {
     fn evaluate_over_general_purpose_columns(
         &self,
@@ -428,12 +421,12 @@ pub struct GenericRowwiseEvaluator<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLike<Base = F>,
-        S: TraceSourceDerivable<F, P>,
-        D: EvaluationDestinationDrivable<F, P>,
-        E: GateConstraintEvaluator<F>,
-    > GenericDynamicEvaluatorOverGeneralPurposeColumns<F, P, S, D>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLike<Base = F>,
+    S: TraceSourceDerivable<F, P>,
+    D: EvaluationDestinationDrivable<F, P>,
+    E: GateConstraintEvaluator<F>,
+> GenericDynamicEvaluatorOverGeneralPurposeColumns<F, P, S, D>
     for GenericRowwiseEvaluator<F, P, E>
 {
     fn evaluate_over_general_purpose_columns(
@@ -464,7 +457,8 @@ impl<
     }
 }
 
-// set of traits that will allow dynamic dispatch, but also to drive evaluation as efficient as possible
+// set of traits that will allow dynamic dispatch, but also to drive evaluation as efficient as
+// possible
 pub trait GenericDynamicEvaluatorOverSpecializedColumns<
     F: PrimeField,
     P: field::traits::field_like::PrimeFieldLike<Base = F>,
@@ -490,12 +484,12 @@ pub struct GenericColumnwiseEvaluator<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLike<Base = F>,
-        S: TraceSourceDerivable<F, P>,
-        D: EvaluationDestinationDrivable<F, P>,
-        E: GateConstraintEvaluator<F>,
-    > GenericDynamicEvaluatorOverSpecializedColumns<F, P, S, D>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLike<Base = F>,
+    S: TraceSourceDerivable<F, P>,
+    D: EvaluationDestinationDrivable<F, P>,
+    E: GateConstraintEvaluator<F>,
+> GenericDynamicEvaluatorOverSpecializedColumns<F, P, S, D>
     for GenericColumnwiseEvaluator<F, P, E>
 {
     fn evaluate_over_columns(&self, source: &mut S, destination: &mut D, ctx: &mut P::Context) {
@@ -518,8 +512,9 @@ impl<
     }
 }
 
-use crate::gpu_synthesizer::get_evaluator_name;
 use std::alloc::Global;
+
+use crate::gpu_synthesizer::get_evaluator_name;
 
 // Now we can define a structure that will do type erasure
 // and can be stored by CS implementation

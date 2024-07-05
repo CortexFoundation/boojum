@@ -1,13 +1,21 @@
-use self::resolvers::mt::sorters::sorter_live::LiveResolverSorter;
-use std::fmt::Debug;
-use std::hint::spin_loop;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::{
+    fmt::Debug,
+    hint::spin_loop,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use crate::config::CSResolverConfig;
-use crate::cs::traits::cs::{CSWitnessSource, DstBuffer};
-use crate::cs::Place;
-use crate::field::SmallField;
+use self::resolvers::mt::sorters::sorter_live::LiveResolverSorter;
+use crate::{
+    config::CSResolverConfig,
+    cs::{
+        traits::cs::{CSWitnessSource, DstBuffer},
+        Place,
+    },
+    field::SmallField,
+};
 
 mod awaiters;
 mod guide;
@@ -43,12 +51,7 @@ impl<F: SmallField, const N: usize, S: WitnessSource<F>> CSWitnessValues<F, N, S
         match self {
             Self::Placeholder => None,
             Self::Ready(value) => Some(*value),
-            Self::Waiting {
-                barrier,
-                witness_source,
-                sources,
-                ..
-            } => {
+            Self::Waiting { barrier, witness_source, sources, .. } => {
                 let mut ready = false;
                 for _ in 0..Self::NUM_SPINS {
                     if barrier.load(Ordering::Relaxed) == false {
@@ -104,19 +107,13 @@ pub struct CircuitResolverOpts {
 
 impl CircuitResolverOpts {
     pub fn new(max_variables: usize) -> Self {
-        Self {
-            max_variables,
-            desired_parallelism: 1 << 12,
-        }
+        Self { max_variables, desired_parallelism: 1 << 12 }
     }
 }
 
 impl From<usize> for CircuitResolverOpts {
     fn from(value: usize) -> Self {
-        Self {
-            max_variables: value,
-            desired_parallelism: 1 << 12,
-        }
+        Self { max_variables: value, desired_parallelism: 1 << 12 }
     }
 }
 

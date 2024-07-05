@@ -1,9 +1,9 @@
-use super::primitives::OrderIx;
-use super::TrackId;
-use crate::{config::*, utils::PipeOp};
-use crate::{field::SmallField, log};
-use smallvec::SmallVec;
 use std::{fmt::Debug, marker::PhantomData, ops::Range};
+
+use smallvec::SmallVec;
+
+use super::{primitives::OrderIx, TrackId};
+use crate::{config::*, field::SmallField, log, utils::PipeOp};
 
 // TODO: Move to a more fitting location.
 pub(crate) type RegistrationNum = u32;
@@ -30,10 +30,7 @@ pub struct GuideLoc {
 
 impl GuideLoc {
     pub fn from_u64(v: u64) -> Self {
-        Self {
-            id: SpanId((v >> 32) as u32),
-            pos: (v & 0xFFFF_FFFF) as u32,
-        }
+        Self { id: SpanId((v >> 32) as u32), pos: (v & 0xFFFF_FFFF) as u32 }
     }
 
     pub fn to_u64(self) -> u64 {
@@ -101,7 +98,8 @@ enum GuideRecord {
 pub(crate) struct SpansGuide<F: SmallField, Cfg> {
     /// Desired parallelism. It can be lower, but the guide will try to keep it somewhat above.
     parallelism: usize,
-    /// Points to the end of the acqiusition. This is last acquision +1, not the acquisition itself.
+    /// Points to the end of the acqiusition. This is last acquision +1, not the acquisition
+    /// itself.
     pub end: OrderIx,
     /// Only public for support of the sync resolution. The 0'th span's pointer is used as the only
     /// pointer in the guide.
@@ -118,10 +116,7 @@ pub(crate) struct Span {
 
 impl Span {
     fn new(origin: Pointer) -> Self {
-        Self {
-            next: Pointer::new_at(origin.index),
-            origin,
-        }
+        Self { next: Pointer::new_at(origin.index), origin }
     }
 }
 
@@ -272,12 +267,7 @@ struct BufferSpan<T, F: SmallField, Cfg: CSResolverConfig> {
 
 impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferSpan<T, F, Cfg> {
     fn new(id: SpanId, size: u32) -> Self {
-        Self {
-            id,
-            buffer: Vec::with_capacity(size as usize),
-            phantom: PhantomData,
-            size,
-        }
+        Self { id, buffer: Vec::with_capacity(size as usize), phantom: PhantomData, size }
     }
 
     fn push(&mut self, value: OrderInfo<T>) -> u32 {
@@ -319,18 +309,11 @@ pub struct GuideMetadata {
 
 impl GuideMetadata {
     pub fn new(parallelism: u16, added_at: RegistrationNum, accepted_at: RegistrationNum) -> Self {
-        Self {
-            parallelism,
-            added_at,
-            accepted_at,
-        }
+        Self { parallelism, added_at, accepted_at }
     }
 
     pub fn with_parallelism(&self, parallelism: u16) -> Self {
-        Self {
-            parallelism,
-            ..*self
-        }
+        Self { parallelism, ..*self }
     }
 
     pub fn parallelism(&self) -> usize {
@@ -385,11 +368,7 @@ impl<'a, T: Copy + Debug, F: SmallField, Cfg: CSResolverConfig> GuideOrder<'a, T
         }
 
         if cfg!(feature = "cr_paranoia_mode") && self.guide.tracing {
-            log!(
-                "Released span {}: {:?}",
-                self.guide.spans[0].id.0,
-                self.guide.spans[0].buffer
-            );
+            log!("Released span {}: {:?}", self.guide.spans[0].id.0, self.guide.spans[0].buffer);
         }
 
         start..pos.into()
@@ -625,7 +604,8 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
                 // position and an independent item is being pushed.
                 // This will never occur for second or further buffers as
                 // they are never chosen if full.
-                // TODO: Bug. Seems like `&& i == 1` is missing. Or perhaps it should be `pos + 1 > self.parallelism`?
+                // TODO: Bug. Seems like `&& i == 1` is missing. Or perhaps it should be `pos + 1 >
+                // self.parallelism`?
                 pos if pos + 1 >= self.parallelism => {
                     // The 1'st span is full, so 0'th span can't gain any
                     // more parallelism. Release it.
@@ -635,10 +615,7 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
 
                     self.calculate_parallelism(0);
 
-                    let order = BufferGuideOrder {
-                        guide: self,
-                        released_spans: 1,
-                    };
+                    let order = BufferGuideOrder { guide: self, released_spans: 1 };
 
                     (GuideLoc { id, pos }, order)
                 }
@@ -646,13 +623,7 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
                     let loc = GuideLoc { id: span.id, pos };
 
                     // Empty.
-                    (
-                        loc,
-                        BufferGuideOrder {
-                            guide: self,
-                            released_spans: 0,
-                        },
-                    )
+                    (loc, BufferGuideOrder { guide: self, released_spans: 0 })
                 }
             },
             MatchedSpan::New(n) => {
@@ -673,10 +644,7 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
 
                 // The presentation is the same, it's just going to have less items.
                 // This is going to be handled in the order drop.
-                let order = BufferGuideOrder {
-                    guide: self,
-                    released_spans: n,
-                };
+                let order = BufferGuideOrder { guide: self, released_spans: n };
 
                 (loc, order)
             }
@@ -790,12 +758,9 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
                 // Where A is filled with N items and B is filled with M items:
                 // A combination of cases 2 and 3.
                 // For x when:
-                // - x < N, x < M:
-                //   B[x] - A[x] = size of A (N) (similar to case 3).
-                // - M < x < N:
-                //   A is more filled than B. In this case, last N - M items of
-                //   A are affected by the fill ratio of B, as in case 2: size
-                //   of B + tail in A.
+                // - x < N, x < M: B[x] - A[x] = size of A (N) (similar to case 3).
+                // - M < x < N: A is more filled than B. In this case, last N - M items of A are
+                //   affected by the fill ratio of B, as in case 2: size of B + tail in A.
                 // Those are only two possibilities, as x must be smaller than
                 // N. We consider both cases and take the smaller constraint.
                 //
@@ -826,9 +791,8 @@ impl<T: Debug, F: SmallField, Cfg: CSResolverConfig> BufferGuide<T, F, Cfg> {
 
     // TODO: Optimization: can rotate n times, not just 1.
     fn expropriate_span(&mut self) {
-        self.next_target.jump(
-            self.spans[0].buffer.len() as u32, /* Never larger than `parallelism` */
-        );
+        self.next_target
+            .jump(self.spans[0].buffer.len() as u32 /* Never larger than `parallelism` */);
 
         // Using last span as a refernce point.
         let last_span = &self.spans[GUIDE_SIZE - 1];
@@ -905,39 +869,21 @@ impl std::ops::Add<u32> for &Pointer {
 
 #[cfg(test)]
 mod general_tests {
-    use crate::dag::guide::SpanId;
-
     use super::GuideLoc;
+    use crate::dag::guide::SpanId;
 
     #[test]
     fn guide_loc_ordering() {
         use std::cmp::Ordering;
 
+        assert_eq!(Ordering::Equal, GuideLoc::default().cmp(&GuideLoc::default()));
         assert_eq!(
-            Ordering::Equal,
-            GuideLoc::default().cmp(&GuideLoc::default())
+            Ordering::Greater,
+            GuideLoc { id: SpanId(1), pos: 0 }.cmp(&GuideLoc { id: SpanId(0), pos: 1 })
         );
         assert_eq!(
             Ordering::Greater,
-            GuideLoc {
-                id: SpanId(1),
-                pos: 0
-            }
-            .cmp(&GuideLoc {
-                id: SpanId(0),
-                pos: 1
-            })
-        );
-        assert_eq!(
-            Ordering::Greater,
-            GuideLoc {
-                id: SpanId(1),
-                pos: 2
-            }
-            .cmp(&GuideLoc {
-                id: SpanId(0),
-                pos: 1
-            })
+            GuideLoc { id: SpanId(1), pos: 2 }.cmp(&GuideLoc { id: SpanId(0), pos: 1 })
         );
     }
 }
@@ -1073,14 +1019,13 @@ mod spans_guide_tests {
 mod buffer_guide_tests {
     use itertools::Itertools;
 
+    use super::{BufferGuide, GUIDE_SIZE};
     use crate::{
         config::{DoPerformRuntimeAsserts, Resolver},
         dag::guide::{GuideLoc, GuideMetadata, GuideOrder, OrderInfo},
         field::goldilocks::GoldilocksField,
         log,
     };
-
-    use super::{BufferGuide, GUIDE_SIZE};
 
     #[test]
     fn independent_pushes_are_sequentional() {
@@ -1099,11 +1044,7 @@ mod buffer_guide_tests {
             results[P..P * 2].windows(2).all(|x| { x[0].id == x[1].id }),
             "Should be placed in the same span."
         );
-        assert_eq!(
-            results[0].id.0 + 1,
-            results[P].id.0,
-            "Span ids are not sequential."
-        );
+        assert_eq!(results[0].id.0 + 1, results[P].id.0, "Span ids are not sequential.");
 
         assert_eq!(
             [0, 1, 2, 3],
@@ -1389,7 +1330,8 @@ mod buffer_guide_tests {
             actual
         );
 
-        // Assert that the parallelism of each element is not greater than the expected value. On failure, print the actual slices.
+        // Assert that the parallelism of each element is not greater than the expected value. On
+        // failure, print the actual slices.
         for (i, (e, a)) in expected.iter().zip(actual.iter()).enumerate() {
             assert!(
                 a <= e,

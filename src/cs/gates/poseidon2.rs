@@ -1,7 +1,10 @@
 use super::*;
-use crate::algebraic_props::matrix_parameters::MatrixParameters;
-use crate::algebraic_props::poseidon2_parameters::Poseidon2Parameters;
-use crate::cs::cs_builder::*;
+use crate::{
+    algebraic_props::{
+        matrix_parameters::MatrixParameters, poseidon2_parameters::Poseidon2Parameters,
+    },
+    cs::cs_builder::*,
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug, PartialEq, Eq, Hash)]
@@ -18,12 +21,12 @@ pub struct Poseidon2RoundFunctionFlattenedEvaluator<
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        PAR: Poseidon2Parameters<F, AW, SW, CW>,
-    > GateConstraintEvaluator<F> for Poseidon2RoundFunctionFlattenedEvaluator<F, AW, SW, CW, PAR>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    PAR: Poseidon2Parameters<F, AW, SW, CW>,
+> GateConstraintEvaluator<F> for Poseidon2RoundFunctionFlattenedEvaluator<F, AW, SW, CW, PAR>
 where
     [(); PAR::NUM_FULL_ROUNDS]:,
     [(); PAR::NUM_PARTIAL_ROUNDS]:,
@@ -41,10 +44,7 @@ where
 
     #[inline(always)]
     fn unique_params(&self) -> Self::UniqueParameterizationParams {
-        (
-            self.num_copiable_columns_used,
-            self.num_witness_columns_used,
-        )
+        (self.num_copiable_columns_used, self.num_witness_columns_used)
     }
 
     #[inline]
@@ -141,12 +141,7 @@ where
             *dst = P::constant(*src, ctx);
         }
 
-        (
-            external_matrix,
-            full_round_constants,
-            inner_matrix,
-            partial_round_constants,
-        )
+        (external_matrix, full_round_constants, inner_matrix, partial_round_constants)
     }
 
     type RowSharedConstants<P: field::traits::field_like::PrimeFieldLike<Base = F>> = ();
@@ -201,7 +196,8 @@ where
         // }
         // mds_mul_naive(state);
 
-        // and we merge multiplication by MDS with addition of round constants everywhere, but on the last full round
+        // and we merge multiplication by MDS with addition of round constants everywhere, but on
+        // the last full round
 
         let mut copiable_var_offset = SW;
         // we place output early
@@ -212,12 +208,12 @@ where
 
         let mut witness_offset = 0;
 
-        // we try to first use witness columns, and then use copiable. Limits are determined by the gate
-        // that creates this evaluator
+        // we try to first use witness columns, and then use copiable. Limits are determined by the
+        // gate that creates this evaluator
 
         for round in 0..PAR::HALF_NUM_FULL_ROUNDS {
-            // we try to first use witness columns, and then use copiable. Limits are determined by the gate
-            // that creates this evaluator
+            // we try to first use witness columns, and then use copiable. Limits are determined by
+            // the gate that creates this evaluator
 
             if round != 0 {
                 // we "reset" the degree
@@ -277,8 +273,8 @@ where
 
         // fn partial_round_poseidon2(&mut self, round_counter: &mut usize) {
         //     // add constant
-        //     self.0[0].add_assign(&Self::ALL_INNER_ROUND_CONSTANTS_AS_FIELD_ELEMENTS[*round_counter]);
-        //     // apply non-linearity to the single element
+        //     self.0[0].add_assign(&Self::ALL_INNER_ROUND_CONSTANTS_AS_FIELD_ELEMENTS[*
+        // round_counter]);     // apply non-linearity to the single element
         //     let mut t = self.0[0];
         //     self.0[0].square();
         //     t.mul_assign(&self.0[0]);
@@ -343,8 +339,8 @@ where
         let round_counter = PAR::HALF_NUM_FULL_ROUNDS;
 
         for round_idx in 0..PAR::HALF_NUM_FULL_ROUNDS {
-            // we try to first use witness columns, and then use copiable. Limits are determined by the gate
-            // that creates this evaluator
+            // we try to first use witness columns, and then use copiable. Limits are determined by
+            // the gate that creates this evaluator
 
             let round = round_counter + round_idx;
 
@@ -404,12 +400,12 @@ where
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        PAR: Poseidon2Parameters<F, AW, SW, CW>,
-    > Poseidon2RoundFunctionFlattenedEvaluator<F, AW, SW, CW, PAR>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    PAR: Poseidon2Parameters<F, AW, SW, CW>,
+> Poseidon2RoundFunctionFlattenedEvaluator<F, AW, SW, CW, PAR>
 {
     const fn min_num_required_copiable_variables() -> usize {
         2 * SW
@@ -455,12 +451,12 @@ pub struct Poseidon2FlattenedGate<
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        PAR: Poseidon2Parameters<F, AW, SW, CW>,
-    > Gate<F> for Poseidon2FlattenedGate<F, AW, SW, CW, PAR>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    PAR: Poseidon2Parameters<F, AW, SW, CW>,
+> Gate<F> for Poseidon2FlattenedGate<F, AW, SW, CW, PAR>
 where
     [(); PAR::NUM_FULL_ROUNDS]:,
     [(); PAR::NUM_PARTIAL_ROUNDS]:,
@@ -488,12 +484,12 @@ where
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        PAR: Poseidon2Parameters<F, AW, SW, CW>,
-    > Poseidon2FlattenedGate<F, AW, SW, CW, PAR>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    PAR: Poseidon2Parameters<F, AW, SW, CW>,
+> Poseidon2FlattenedGate<F, AW, SW, CW, PAR>
 where
     [(); PAR::NUM_FULL_ROUNDS]:,
     [(); PAR::NUM_PARTIAL_ROUNDS]:,
@@ -514,8 +510,10 @@ where
         assert!(
             max_instances > 0,
             "can not allocate a gate, need at least {} copiable vars and {} vars + witnesses in total. CS has {} copiable vars and {} witnesses",
-            min_copiable_required, total_vars_required,
-            num_copiable, num_witnesses
+            min_copiable_required,
+            total_vars_required,
+            num_copiable,
+            num_witnesses
         );
 
         let in_witness_per_copy = num_witnesses / max_instances;
@@ -606,11 +604,7 @@ where
         let geometry = builder.get_params();
         let (_, (total_num_variables, num_new_witnesses)) = Self::compute_strategy(&geometry);
 
-        builder.allow_gate(
-            placement_strategy,
-            (total_num_variables, num_new_witnesses),
-            None,
-        )
+        builder.allow_gate(placement_strategy, (total_num_variables, num_new_witnesses), None)
     }
 
     pub(crate) fn witness_evaluation_function<const PRODUCE_OUTPUT: bool>(
@@ -701,14 +695,14 @@ where
         let round_counter = PAR::HALF_NUM_FULL_ROUNDS;
 
         for round_idx in 0..PAR::HALF_NUM_FULL_ROUNDS {
-            // we try to first use witness columns, and then use copiable. Limits are determined by the gate
-            // that creates this evaluator
+            // we try to first use witness columns, and then use copiable. Limits are determined by
+            // the gate that creates this evaluator
 
             let round = round_counter + round_idx;
 
             {
-                // we "reset" the degree. We have to reset it for all because MDS matrix mixed high-degree
-                // state[0] into all other elements
+                // we "reset" the degree. We have to reset it for all because MDS matrix mixed
+                // high-degree state[0] into all other elements
                 for (_idx, dst) in state.iter().enumerate() {
                     let output_value = *dst;
                     output_buffer.push(output_value);
@@ -885,12 +879,11 @@ where
 mod test {
     use std::alloc::Global;
 
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::dag::CircuitResolverOpts;
-    use crate::field::Field;
-
     use super::*;
-    use crate::worker::Worker;
+    use crate::{
+        cs::gates::testing_tools::test_evaluator, dag::CircuitResolverOpts, field::Field,
+        worker::Worker,
+    };
     type F = crate::field::goldilocks::GoldilocksField;
     type RCfg = <DevCSConfig as CSConfig>::ResolverConfig;
     use crate::implementations::poseidon2::Poseidon2Goldilocks;

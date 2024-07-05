@@ -1,17 +1,17 @@
-use crate::{cs::traits::GoodAllocator, field::traits::field_like::BaseField};
-use std::alloc::Global;
+use std::{alloc::Global, ops::Range, sync::Arc};
 
-use crate::cs::traits::evaluator::PerChunkOffset;
-
-use super::{fast_serialization::MemcopySerializable, *};
-
-use super::polynomial::lde::*;
-use super::polynomial::*;
-use crate::cs::implementations::polynomial::Polynomial;
-use crate::cs::implementations::setup::TreeNode;
-use crate::field::PrimeField;
-use std::ops::Range;
-use std::sync::Arc;
+use super::{
+    fast_serialization::MemcopySerializable,
+    polynomial::{lde::*, *},
+    *,
+};
+use crate::{
+    cs::{
+        implementations::{polynomial::Polynomial, setup::TreeNode},
+        traits::{evaluator::PerChunkOffset, GoodAllocator},
+    },
+    field::{traits::field_like::BaseField, PrimeField},
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug)]
@@ -74,11 +74,11 @@ pub struct SetupBaseStorage<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > MemcopySerializable for SetupBaseStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> MemcopySerializable for SetupBaseStorage<F, P, A, B>
 where
     Self: 'static,
 {
@@ -142,17 +142,18 @@ pub struct SetupStorage<
     pub constant_columns: Vec<ArcGenericLdeStorage<F, P, A, B>, B>,
     #[serde(serialize_with = "crate::utils::serialize_vec_with_allocator")]
     #[serde(deserialize_with = "crate::utils::deserialize_vec_with_allocator")]
-    pub lookup_tables_columns: Vec<ArcGenericLdeStorage<F, P, A, B>, B>, // include the ID of the TABLE itself
+    pub lookup_tables_columns: Vec<ArcGenericLdeStorage<F, P, A, B>, B>, /* include the ID of
+                                                                          * the TABLE itself */
     pub table_ids_column_idxes: Vec<usize>,
     pub used_lde_degree: usize,
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > MemcopySerializable for SetupStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> MemcopySerializable for SetupStorage<F, P, A, B>
 where
     Self: 'static,
 {
@@ -240,11 +241,11 @@ pub struct TraceHolder<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > TraceHolder<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> TraceHolder<F, P, A, B>
 {
     pub(crate) fn dump_row_in_main_domain(&self, row: usize) -> (Vec<P>, Vec<P>, Vec<P>) {
         assert!(crate::config::DEBUG_SATISFIABLE);
@@ -284,11 +285,11 @@ pub struct ProverTraceView<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > ProverTraceView<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> ProverTraceView<F, P, A, B>
 {
     #[inline]
     pub(crate) fn from_full_trace(trace: &TraceHolder<F, P, A, B>) -> Self {
@@ -422,11 +423,11 @@ use crate::cs::traits::trace_source::{TraceSource, TraceSourceDerivable};
 // me "trusted", so getting "current" value can be without range checks
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > TraceSource<F, P> for ProverTraceView<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> TraceSource<F, P> for ProverTraceView<F, P, A, B>
 {
     #[inline(always)]
     fn get_variable_value(&self, variable_idx: usize) -> P {
@@ -440,8 +441,8 @@ impl<
         );
 
         // unsafe {
-        //     *self.variables.get_unchecked(self.gate_chunks_offset.variables_offset + variable_idx)
-        //         .storage.get_unchecked(outer)
+        //     *self.variables.get_unchecked(self.gate_chunks_offset.variables_offset +
+        // variable_idx)         .storage.get_unchecked(outer)
         //         .storage.get_unchecked(inner)
         // }
         self.variables[self.gate_chunks_offset.variables_offset + variable_idx].storage[outer]
@@ -452,7 +453,8 @@ impl<
     fn get_constant_value(&self, constant_idx: usize) -> P {
         let (outer, inner) = self.iterator.current();
         debug_assert!(
-            self.constants_offset + self.gate_chunks_offset.constants_offset + constant_idx < self.constants.len(),
+            self.constants_offset + self.gate_chunks_offset.constants_offset + constant_idx
+                < self.constants.len(),
             "trying to access a constants column number {} (zero enumerated) at chunk offset {} and gate offset {}, but there are only {} columns in the system",
             constant_idx,
             self.gate_chunks_offset.constants_offset,
@@ -460,8 +462,8 @@ impl<
             self.constants.len()
         );
         // unsafe {
-        //     *self.constants.get_unchecked(self.gate_chunks_offset.constants_offset + constant_idx)
-        //         .storage.get_unchecked(outer)
+        //     *self.constants.get_unchecked(self.gate_chunks_offset.constants_offset +
+        // constant_idx)         .storage.get_unchecked(outer)
         //         .storage.get_unchecked(inner)
         // }
         self.constants
@@ -506,11 +508,11 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > TraceSourceDerivable<F, P> for ProverTraceView<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> TraceSourceDerivable<F, P> for ProverTraceView<F, P, A, B>
 {
     #[inline]
     fn num_iterations(&self) -> usize {
@@ -658,11 +660,11 @@ impl<F: BaseField, A: GoodAllocator, B: GoodAllocator> TraceSourceDerivable<F, F
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > SetupStorage<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> SetupStorage<F, P, A, B>
 {
     pub(crate) fn flattened_source(
         &self,
@@ -675,11 +677,11 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > WitnessStorage<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> WitnessStorage<F, P, A, B>
 {
     pub(crate) fn flattened_source(
         &self,
@@ -692,11 +694,11 @@ impl<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > SecondStageProductsStorage<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> SecondStageProductsStorage<F, P, A, B>
 {
     pub(crate) fn flattened_source(
         &self,
@@ -711,9 +713,8 @@ impl<
 
 #[cfg(test)]
 mod test {
-    use crate::field::Field;
-
     use super::*;
+    use crate::field::Field;
     type F = crate::field::goldilocks::GoldilocksField;
 
     #[test]

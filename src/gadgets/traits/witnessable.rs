@@ -1,12 +1,19 @@
-use crate::cs::{Place, Variable};
-use crate::dag::WitnessSource;
-use crate::field::SmallField;
-use std::mem::MaybeUninit;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::{
+    mem::MaybeUninit,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-// we need some "get value" thing, kind of the callback, and this will be a property of the gadget itself,
-// and will use some lowest level primitive from the CS
+use crate::{
+    cs::{Place, Variable},
+    dag::WitnessSource,
+    field::SmallField,
+};
+
+// we need some "get value" thing, kind of the callback, and this will be a property of the gadget
+// itself, and will use some lowest level primitive from the CS
 
 // NOTE: witness is not "serde" by default because it still doesn't work nicely with const generics
 
@@ -66,12 +73,12 @@ pub enum WitnessValue<
 }
 
 impl<
-        F: SmallField,
-        T: 'static + Clone + Send + Sync + std::fmt::Debug,
-        const N: usize,
-        S: WitnessSource<F>,
-        FN: FnOnce([F; N]) -> T + 'static + Send + Sync,
-    > WitnessValue<F, T, N, S, FN>
+    F: SmallField,
+    T: 'static + Clone + Send + Sync + std::fmt::Debug,
+    const N: usize,
+    S: WitnessSource<F>,
+    FN: FnOnce([F; N]) -> T + 'static + Send + Sync,
+> WitnessValue<F, T, N, S, FN>
 {
     const NUM_SPINS: usize = 16;
     const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(1);
@@ -80,13 +87,7 @@ impl<
         match self {
             Self::Placeholder => None,
             Self::Ready(value) => Some(value.clone()),
-            Self::Waiting {
-                barrier,
-                witness_source,
-                sources,
-                cast_fn,
-                ..
-            } => {
+            Self::Waiting { barrier, witness_source, sources, cast_fn, .. } => {
                 let mut ready = false;
                 for _ in 0..Self::NUM_SPINS {
                     if barrier.load(Ordering::Relaxed) == false {
@@ -115,8 +116,7 @@ impl<
     }
 }
 
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::gadgets::traits::allocatable::CSAllocatable;
+use crate::{cs::traits::cs::ConstraintSystem, gadgets::traits::allocatable::CSAllocatable};
 
 pub trait CSWitnessable<F: SmallField, const N: usize>: CSAllocatable<F> {
     type ConversionFunction: FnOnce([F; N]) -> Self::Witness + Send + Sync + Default;
@@ -144,18 +144,15 @@ pub trait CSWitnessable<F: SmallField, const N: usize>: CSAllocatable<F> {
                 let as_witness = Self::witness_from_set_of_values(values);
                 WitnessValue::Ready(as_witness)
             }
-            CSWitnessValues::Waiting {
-                barrier,
-                witness_source,
-                sources,
-                _marker,
-            } => WitnessValue::Waiting {
-                barrier,
-                witness_source,
-                sources,
-                cast_fn: Self::ConversionFunction::default(),
-                _marker: std::marker::PhantomData,
-            },
+            CSWitnessValues::Waiting { barrier, witness_source, sources, _marker } => {
+                WitnessValue::Waiting {
+                    barrier,
+                    witness_source,
+                    sources,
+                    cast_fn: Self::ConversionFunction::default(),
+                    _marker: std::marker::PhantomData,
+                }
+            }
         }
     }
 }

@@ -15,9 +15,7 @@ impl<F: SmallField, const N: usize, PAR: MatrixParameters<F, N>> GateConstraintE
 
     #[inline(always)]
     fn new_from_parameters(_params: Self::UniqueParameterizationParams) -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -30,19 +28,12 @@ impl<F: SmallField, const N: usize, PAR: MatrixParameters<F, N>> GateConstraintE
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: N * 2,
-            num_witnesses: 0,
-            num_constants: 0,
-        }
+        GatePrincipalInstanceWidth { num_variables: N * 2, num_witnesses: 0, num_constants: 0 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 1,
-            num_quotient_terms: N,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 1, num_quotient_terms: N }
     }
 
     #[inline]
@@ -147,9 +138,7 @@ impl<F: SmallField, const N: usize, PAR: MatrixParameters<F, N>> Gate<F>
 
     #[inline]
     fn evaluator(&self) -> Self::Evaluator {
-        MatrixMultiplicationEvaluator {
-            _marker: std::marker::PhantomData,
-        }
+        MatrixMultiplicationEvaluator { _marker: std::marker::PhantomData }
     }
 }
 
@@ -239,11 +228,7 @@ impl<F: SmallField, const N: usize, PAR: MatrixParameters<F, N>>
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                input,
-                output: output_variables,
-                _marker: std::marker::PhantomData,
-            };
+            let gate = Self { input, output: output_variables, _marker: std::marker::PhantomData };
 
             gate.add_to_cs(cs);
         }

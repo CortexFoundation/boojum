@@ -71,10 +71,7 @@ where
         let (r, md) = self.values.get_item_ref(variable);
 
         if CFG::DebugConfig::PERFORM_RUNTIME_ASSERTS {
-            debug_assert!(
-                md.is_resolved(),
-                "Attempted to get value of unresolved variable."
-            );
+            debug_assert!(md.is_resolved(), "Attempted to get value of unresolved variable.");
         }
 
         *r
@@ -90,9 +87,10 @@ where
 
     fn get_awaiter<const N: usize>(&mut self, vars: [crate::cs::Place; N]) -> Self::Awaiter<'_> {
         if CFG::DebugConfig::PERFORM_RUNTIME_ASSERTS {
-            assert!(vars
-                .iter()
-                .all(|x| self.values.get_item_ref(*x).1.is_resolved()));
+            assert!(
+                vars.iter()
+                    .all(|x| self.values.get_item_ref(*x).1.is_resolved())
+            );
         }
 
         // TODO: check registrar is empty
@@ -152,10 +150,7 @@ impl<F: SmallField, CFG: CSResolverConfig> StCircuitResolver<F, CFG> {
             .map(|(v, md)| (v, md))
             .unzip();
 
-        f(
-            ins_vs.as_slice(),
-            &mut DstBuffer::MutSliceIndirect(out_vs.as_mut_slice(), false, 0),
-        );
+        f(ins_vs.as_slice(), &mut DstBuffer::MutSliceIndirect(out_vs.as_mut_slice(), false, 0));
 
         out_mds
             .into_iter()
@@ -279,9 +274,11 @@ impl<F: SmallField, CFG: CSResolverConfig> CircuitResolver<F, CFG> for StCircuit
         let mut input_packs = inputs.iter().map(|x| self.values.get_item_ref(*x));
 
         if CFG::DebugConfig::PERFORM_RUNTIME_ASSERTS {
-            assert!(outputs
-                .iter()
-                .all(|x| x.as_any_index() < self.options.max_variables as u64));
+            assert!(
+                outputs
+                    .iter()
+                    .all(|x| x.as_any_index() < self.options.max_variables as u64)
+            );
 
             assert!(inputs.iter().all(|i| outputs.contains(i) == false));
         }
@@ -308,9 +305,7 @@ struct Deferrer {
 
 impl Deferrer {
     fn new() -> Self {
-        Self {
-            resolvers: VecDeque::new(),
-        }
+        Self { resolvers: VecDeque::new() }
     }
 
     fn defer(&mut self, resolver_ix: ResolverIx, place: Place) {
@@ -327,16 +322,13 @@ impl Deferrer {
 
 #[cfg(test)]
 mod test {
-    use crate::dag::resolvers::StCircuitResolverParams;
-    use crate::dag::*;
+    use super::StCircuitResolver;
     use crate::{
         config::{CSConfig, DevCSConfig},
         cs::{traits::cs::DstBuffer, Place},
-        dag::CircuitResolver,
+        dag::{resolvers::StCircuitResolverParams, CircuitResolver, *},
         field::{goldilocks::GoldilocksField, U64Representable},
     };
-
-    use super::StCircuitResolver;
 
     type F = GoldilocksField;
     type Cfg = <DevCSConfig as CSConfig>::ResolverConfig;

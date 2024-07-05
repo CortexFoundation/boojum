@@ -1,16 +1,20 @@
-use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-use crate::algebraic_props::sponge::GenericAlgebraicSpongeState;
-use crate::algebraic_props::sponge::GoldilocksPoseidon2Sponge;
-use crate::cs::oracle::TreeHasher;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::SmallField;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::encodable::CircuitVarLengthEncodable;
-use crate::gadgets::traits::round_function::CircuitRoundFunction;
-use crate::implementations::poseidon2::Poseidon2Goldilocks;
+use crate::{
+    algebraic_props::{
+        round_function::AbsorptionModeOverwrite,
+        sponge::{GenericAlgebraicSpongeState, GoldilocksPoseidon2Sponge},
+    },
+    cs::{oracle::TreeHasher, traits::cs::ConstraintSystem},
+    field::{goldilocks::GoldilocksField, SmallField},
+    gadgets::{
+        boolean::Boolean,
+        num::Num,
+        traits::{
+            allocatable::CSAllocatable, encodable::CircuitVarLengthEncodable,
+            round_function::CircuitRoundFunction,
+        },
+    },
+    implementations::poseidon2::Poseidon2Goldilocks,
+};
 
 pub trait CircuitTreeHasher<F: SmallField, B: Sized + CSAllocatable<F>>:
     'static + Clone + Send + Sync
@@ -88,13 +92,13 @@ pub trait RecursiveTreeHasher<F: SmallField, B: Sized + CSAllocatable<F>>:
 use crate::gadgets::round_function::CircuitSimpleAlgebraicSponge;
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-        const ABSORB_BY_REPLACEMENT: bool,
-    > CircuitTreeHasher<F, Num<F>>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+    const ABSORB_BY_REPLACEMENT: bool,
+> CircuitTreeHasher<F, Num<F>>
     for CircuitSimpleAlgebraicSponge<F, AW, SW, CW, R, ABSORB_BY_REPLACEMENT>
 {
     type CircuitOutput = [Num<F>; 4];
@@ -103,10 +107,7 @@ impl<
         let filler = Num::zero(cs);
         let buffer = GenericAlgebraicSpongeState::empty_from_filler(filler);
 
-        Self {
-            buffer,
-            _marker: std::marker::PhantomData,
-        }
+        Self { buffer, _marker: std::marker::PhantomData }
     }
     fn placeholder_output<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self::CircuitOutput {
         let zero_num = Num::zero(cs);
@@ -114,10 +115,7 @@ impl<
         [zero_num; 4]
     }
     fn accumulate_into_leaf<CS: ConstraintSystem<F>>(&mut self, cs: &mut CS, value: &Num<F>) {
-        assert!(
-            ABSORB_BY_REPLACEMENT == true,
-            "unimplemented for other absorbtion modes"
-        );
+        assert!(ABSORB_BY_REPLACEMENT == true, "unimplemented for other absorbtion modes");
         self.buffer.buffer[self.buffer.filled] = *value;
         self.buffer.filled += 1;
         if self.buffer.filled == AW {

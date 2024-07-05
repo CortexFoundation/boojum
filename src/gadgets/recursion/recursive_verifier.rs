@@ -1,36 +1,30 @@
-use crate::log;
-use std::{any::TypeId, collections::HashMap};
+use std::{alloc::Global, any::TypeId, collections::HashMap};
 
-use crate::cs::traits::gate::GatePlacementStrategy;
 use crate::{
     cs::{
-        implementations::{prover::ProofConfig, verifier::VerificationKeyCircuitGeometry},
-        traits::{cs::ConstraintSystem, evaluator::PerChunkOffset},
+        gates::lookup_marker::{LookupFormalGate, LookupGateMarkerFormalEvaluator},
+        implementations::{
+            prover::ProofConfig,
+            transcript::Transcript,
+            verifier::{SizeCalculator, VerificationKeyCircuitGeometry},
+        },
+        oracle::TreeHasher,
+        traits::{cs::ConstraintSystem, evaluator::PerChunkOffset, gate::GatePlacementStrategy},
+        CSGeometry, GateConfigurationHolder, LookupParameters, StaticToolboxHolder,
     },
-    field::{FieldExtension, SmallField},
-    gadgets::{boolean::Boolean, traits::selectable::Selectable},
+    field::{traits::field_like::PrimeFieldLike, FieldExtension, SmallField},
+    gadgets::{
+        boolean::Boolean,
+        num::{prime_field_like::*, Num},
+        recursion::{
+            allocated_proof::AllocatedProof, allocated_vk::AllocatedVerificationKey,
+            circuit_pow::RecursivePoWRunner, recursive_transcript::*, recursive_tree_hasher::*,
+            recursive_verifier_builder::TypeErasedGateEvaluationRecursiveVerificationFunction,
+        },
+        traits::selectable::Selectable,
+    },
+    log,
 };
-
-use crate::cs::{
-    gates::lookup_marker::LookupFormalGate,
-    LookupParameters,
-    {oracle::TreeHasher, CSGeometry, GateConfigurationHolder, StaticToolboxHolder},
-};
-
-use crate::cs::gates::lookup_marker::LookupGateMarkerFormalEvaluator;
-use crate::cs::implementations::transcript::Transcript;
-use crate::cs::implementations::verifier::SizeCalculator;
-use crate::field::traits::field_like::PrimeFieldLike;
-use crate::gadgets::num::prime_field_like::*;
-use crate::gadgets::num::Num;
-use crate::gadgets::recursion::allocated_proof::AllocatedProof;
-use crate::gadgets::recursion::allocated_vk::AllocatedVerificationKey;
-use crate::gadgets::recursion::recursive_transcript::*;
-use crate::gadgets::recursion::recursive_tree_hasher::*;
-use crate::gadgets::recursion::recursive_verifier_builder::TypeErasedGateEvaluationRecursiveVerificationFunction;
-use std::alloc::Global;
-
-use crate::gadgets::recursion::circuit_pow::RecursivePoWRunner;
 
 fn materialize_powers_serial<
     F: SmallField,
@@ -87,12 +81,12 @@ pub struct RecursiveVerifierProxy<
 }
 
 impl<
-        F: SmallField,
-        EXT: FieldExtension<2, BaseField = F>,
-        CS: ConstraintSystem<F> + 'static,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-    > RecursiveVerifierProxy<F, EXT, CS, GC, T>
+    F: SmallField,
+    EXT: FieldExtension<2, BaseField = F>,
+    CS: ConstraintSystem<F> + 'static,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+> RecursiveVerifierProxy<F, EXT, CS, GC, T>
 {
     pub fn into_verifier(self) -> RecursiveVerifier<F, EXT, CS> {
         let Self {
@@ -379,18 +373,20 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
     }
 
     pub fn verify<
-        H: RecursiveTreeHasher<F, Num<F>>, // Doesn't work, and this is strange by, because RecursiveTreeHasher<F, Num<F>> is TreeHasher<Num<F>::Witness> == TreeHasher<F>
+        H: RecursiveTreeHasher<F, Num<F>>, /* Doesn't work, and this is strange by, because
+                                            * RecursiveTreeHasher<F, Num<F>> is
+                                            * TreeHasher<Num<F>::Witness> == TreeHasher<F> */
         // H: RecursiveTreeHasher<F, Num<F>> + TreeHasher<F>,
         TR: RecursiveTranscript<
-            F,
-            CompatibleCap = <H::NonCircuitSimulator as TreeHasher<F>>::Output,
-            CircuitReflection = CTR,
-        >,
+                F,
+                CompatibleCap = <H::NonCircuitSimulator as TreeHasher<F>>::Output,
+                CircuitReflection = CTR,
+            >,
         CTR: CircuitTranscript<
-            F,
-            CircuitCompatibleCap = <H as CircuitTreeHasher<F, Num<F>>>::CircuitOutput,
-            TransciptParameters = TR::TransciptParameters,
-        >,
+                F,
+                CircuitCompatibleCap = <H as CircuitTreeHasher<F, Num<F>>>::CircuitOutput,
+                TransciptParameters = TR::TransciptParameters,
+            >,
         POW: RecursivePoWRunner<F>,
     >(
         &self,
@@ -518,9 +514,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                     .copied()
                     .expect("gate must be allowed");
                 let num_repetitions = match placement_strategy {
-                    GatePlacementStrategy::UseSpecializedColumns {
-                        num_repetitions, ..
-                    } => num_repetitions,
+                    GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } => {
+                        num_repetitions
+                    }
                     _ => unreachable!(),
                 };
                 assert_eq!(evaluator.num_repetitions_on_row, num_repetitions);
@@ -622,8 +618,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
 
         // run verifier at z
         {
-            use crate::cs::implementations::copy_permutation::non_residues_for_copy_permutation;
-            use crate::cs::implementations::verifier::*;
+            use crate::cs::implementations::{
+                copy_permutation::non_residues_for_copy_permutation, verifier::*,
+            };
 
             let non_residues_for_copy_permutation = non_residues_for_copy_permutation::<F, Global>(
                 fixed_parameters.domain_size as usize,
@@ -744,14 +741,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
 
                 // lookup argument related parts
                 match self.lookup_parameters {
-                    LookupParameters::TableIdAsVariable {
-                        width: _,
-                        share_table_id: _,
-                    }
-                    | LookupParameters::TableIdAsConstant {
-                        width: _,
-                        share_table_id: _,
-                    } => {
+                    LookupParameters::TableIdAsVariable { width: _, share_table_id: _ }
+                    | LookupParameters::TableIdAsConstant { width: _, share_table_id: _ } => {
                         // exists by our setup
                         let lookup_evaluator_id = 0;
                         let selector_subpath = fixed_parameters
@@ -769,7 +760,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                                 || fixed_parameters.table_ids_column_idxes.len() == 1
                         );
 
-                        // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+                        // this is our lookup width, either counted by number of witness columns
+                        // only, or if one includes setup
                         let num_lookup_columns = column_elements_per_subargument
                             + ((fixed_parameters.table_ids_column_idxes.len() == 1) as usize);
                         assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
@@ -910,7 +902,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                                 || fixed_parameters.table_ids_column_idxes.len() == 1
                         );
 
-                        // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+                        // this is our lookup width, either counted by number of witness columns
+                        // only, or if one includes setup
                         let num_lookup_columns = column_elements_per_subargument
                             + ((fixed_parameters.table_ids_column_idxes.len() == 1) as usize);
                         assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
@@ -1162,10 +1155,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                     challenges_offset += total_terms;
                 }
 
-                assert_eq!(
-                    challenges_offset,
-                    total_num_gate_terms_for_specialized_columns
-                );
+                assert_eq!(challenges_offset, total_num_gate_terms_for_specialized_columns);
             }
 
             // log!("Evaluating general purpose gates");
@@ -1192,8 +1182,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                     }
 
                     if evaluator.total_quotient_terms_over_all_repetitions == 0 {
-                        // we MAY formally have NOP gate in the set here, but we should not evaluate it.
-                        // NOP gate will affect selectors placement, but not the rest
+                        // we MAY formally have NOP gate in the set here, but we should not evaluate
+                        // it. NOP gate will affect selectors placement, but
+                        // not the rest
                         continue;
                     }
 
@@ -1235,10 +1226,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
                     }
                 }
 
-                assert_eq!(
-                    challenges_offset,
-                    total_num_gate_terms_for_general_purpose_columns
-                );
+                assert_eq!(challenges_offset, total_num_gate_terms_for_general_purpose_columns);
             }
 
             // then copy_permutation algorithm
@@ -1477,10 +1465,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
         }
 
         assert_eq!(final_expected_degree, expected_degree as usize);
-        assert_eq!(
-            proof.final_fri_monomials[0].len(),
-            proof.final_fri_monomials[1].len()
-        );
+        assert_eq!(proof.final_fri_monomials[0].len(), proof.final_fri_monomials[1].len());
         assert_eq!(expected_degree as usize, proof.final_fri_monomials[0].len());
         assert_eq!(expected_degree as usize, proof.final_fri_monomials[1].len());
         assert!(proof.final_fri_monomials[0].len() > 0);
@@ -1506,10 +1491,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
         let max_needed_bits = (fixed_parameters.domain_size
             * fixed_parameters.fri_lde_factor as u64)
             .trailing_zeros() as usize;
-        let mut bools_buffer = BoolsBuffer::<F> {
-            available: vec![],
-            max_needed: max_needed_bits,
-        };
+        let mut bools_buffer = BoolsBuffer::<F> { available: vec![], max_needed: max_needed_bits };
 
         let num_bits_for_in_coset_index =
             max_needed_bits - fixed_parameters.fri_lde_factor.trailing_zeros() as usize;
@@ -1581,10 +1563,11 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
 
             // we consider it to be some convenient for us encoding of coset + inner index.
 
-            // Small note on indexing: when we commit to elements we use bitreversal enumeration everywhere.
-            // So index `i` in the tree corresponds to the element of `omega^bitreverse(i)`.
-            // This gives us natural separation of LDE cosets, such that subtrees form independent cosets,
-            // and if cosets are in the form of `{1, gamma, ...} x {1, omega, ...} where gamma^lde_factor == omega,
+            // Small note on indexing: when we commit to elements we use bitreversal enumeration
+            // everywhere. So index `i` in the tree corresponds to the element of
+            // `omega^bitreverse(i)`. This gives us natural separation of LDE cosets,
+            // such that subtrees form independent cosets, and if cosets are in the form
+            // of `{1, gamma, ...} x {1, omega, ...} where gamma^lde_factor == omega,
             // then subtrees are enumerated by bitreverse powers of gamma
 
             // let inner_idx = &query_index_lsb_first_bits[0..num_bits_for_in_coset_index];
@@ -1622,10 +1605,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
             );
             validity_flags.push(is_included);
 
-            assert_eq!(
-                quotient_leaf_size,
-                queries.quotient_query.leaf_elements.len()
-            );
+            assert_eq!(quotient_leaf_size, queries.quotient_query.leaf_elements.len());
             let leaf_hash = <H as CircuitTreeHasher<F, Num<F>>>::hash_into_leaf(
                 cs,
                 &queries.quotient_query.leaf_elements,
@@ -1658,10 +1638,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>, CS: ConstraintSystem<
             // now perform the quotiening operation
             let mut simulated_ext_element = zero_ext;
 
-            assert_eq!(
-                query_index_lsb_first_bits.len(),
-                precomputed_powers.len() - 1
-            );
+            assert_eq!(query_index_lsb_first_bits.len(), precomputed_powers.len() - 1);
 
             let domain_element =
                 pow_from_precomputations(cs, &precomputed_powers[1..], &query_index_lsb_first_bits);
@@ -2194,21 +2171,26 @@ pub(crate) fn binary_select<F: SmallField, T: Selectable<F>, CS: ConstraintSyste
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-    use crate::algebraic_props::sponge::GoldilocksPoseidon2Sponge;
-    use crate::config::{CSConfig, DevCSConfig};
-    use crate::cs::cs_builder::new_builder;
-    use crate::cs::cs_builder_reference::CsReferenceImplementationBuilder;
-    use crate::cs::cs_builder_verifier::CsVerifierBuilder;
-    use crate::cs::gates::Poseidon2FlattenedGate;
-    use crate::cs::gates::*;
-    use crate::cs::implementations::pow::NoPow;
-    use crate::cs::implementations::transcript::*;
-    use crate::dag::CircuitResolverOpts;
-    use crate::field::goldilocks::{GoldilocksExt2, GoldilocksField};
-    use crate::gadgets::recursion::recursive_verifier_builder::CsRecursiveVerifierBuilder;
-    use crate::gadgets::traits::witnessable::WitnessHookable;
-    use crate::implementations::poseidon2::Poseidon2Goldilocks;
+    use crate::{
+        algebraic_props::{
+            round_function::AbsorptionModeOverwrite, sponge::GoldilocksPoseidon2Sponge,
+        },
+        config::{CSConfig, DevCSConfig},
+        cs::{
+            cs_builder::new_builder,
+            cs_builder_reference::CsReferenceImplementationBuilder,
+            cs_builder_verifier::CsVerifierBuilder,
+            gates::{Poseidon2FlattenedGate, *},
+            implementations::{pow::NoPow, transcript::*},
+        },
+        dag::CircuitResolverOpts,
+        field::goldilocks::{GoldilocksExt2, GoldilocksField},
+        gadgets::{
+            recursion::recursive_verifier_builder::CsRecursiveVerifierBuilder,
+            traits::witnessable::WitnessHookable,
+        },
+        implementations::poseidon2::Poseidon2Goldilocks,
+    };
 
     #[test]
     fn test_recursive_verification() {
@@ -2281,8 +2263,7 @@ mod test {
         let mut vk_file = std::fs::File::open("vk.json").unwrap();
         let mut proof_file = std::fs::File::open("proof.json").unwrap();
 
-        use crate::cs::implementations::proof::*;
-        use crate::cs::implementations::verifier::VerificationKey;
+        use crate::cs::implementations::{proof::*, verifier::VerificationKey};
 
         let vk: VerificationKey<F, H> = serde_json::from_reader(&mut vk_file).unwrap();
         let proof: Proof<F, H, Ext> = serde_json::from_reader(&mut proof_file).unwrap();
@@ -2291,13 +2272,12 @@ mod test {
             CsVerifierBuilder::<F, Ext>::new_from_parameters(vk.fixed_parameters.parameters);
         let builder = new_builder::<_, GoldilocksField>(builder_impl);
         // copy parameters from actual circuit
-        let builder = builder.allow_lookup(
-            LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
+        let builder =
+            builder.allow_lookup(LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
                 width: 3,
                 num_repetitions: 8,
                 share_table_id: true,
-            },
-        );
+            });
 
         let builder = ConstantsAllocatorGate::configure_builder(
             builder,
@@ -2373,13 +2353,12 @@ mod test {
         );
         let builder = new_builder::<_, GoldilocksField>(builder_impl);
         // copy parameters from actual circuit
-        let builder = builder.allow_lookup(
-            LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
+        let builder =
+            builder.allow_lookup(LookupParameters::UseSpecializedColumnsWithTableIdAsConstant {
                 width: 3,
                 num_repetitions: 8,
                 share_table_id: true,
-            },
-        );
+            });
 
         let builder = ConstantsAllocatorGate::configure_builder(
             builder,

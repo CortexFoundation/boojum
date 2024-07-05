@@ -1,11 +1,11 @@
-use crate::algebraic_props::matrix_parameters::MatrixParameters;
-use crate::cs::traits::cs::DstBuffer;
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::PrimeField;
-use crate::implementations::poseidon2;
-use crate::implementations::poseidon2::Poseidon2Goldilocks;
-use crate::implementations::poseidon_goldilocks_params;
 use derivative::*;
+
+use crate::{
+    algebraic_props::matrix_parameters::MatrixParameters,
+    cs::traits::cs::DstBuffer,
+    field::{goldilocks::GoldilocksField, PrimeField},
+    implementations::{poseidon2, poseidon2::Poseidon2Goldilocks, poseidon_goldilocks_params},
+};
 
 /// Exposes all the needed constants for the Poseidon2 hash function.
 pub trait Poseidon2Parameters<F: PrimeField, const AW: usize, const SW: usize, const CW: usize>:

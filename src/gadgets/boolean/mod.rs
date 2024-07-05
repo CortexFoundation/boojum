@@ -1,20 +1,24 @@
 use super::*;
-
-use crate::cs::gates::{
-    BoundedBooleanConstraintGate, ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
-    FmaGateInBaseWithoutConstantParams,
+use crate::{
+    config::*,
+    cs::{
+        gates::{
+            boolean_allocator::BooleanConstraintGate, BoundedBooleanConstraintGate,
+            ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
+            FmaGateInBaseWithoutConstantParams,
+        },
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::{
+        num::Num,
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            castable::WitnessCastable,
+        },
+    },
 };
-
-use crate::cs::gates::boolean_allocator::BooleanConstraintGate;
-
-use crate::config::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::{cs::Variable, field::SmallField};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -71,10 +75,8 @@ impl<F: SmallField> CSAllocatableExt<F> for Boolean<F> {
     }
 }
 
+use super::traits::{castable::Convertor, witnessable::WitnessHookable};
 use crate::gadgets::traits::witnessable::CSWitnessable;
-
-use super::traits::castable::Convertor;
-use super::traits::witnessable::WitnessHookable;
 
 impl<F: SmallField> CSWitnessable<F, 1> for Boolean<F> {
     type ConversionFunction = Convertor<F, [F; 1], bool>;
@@ -110,8 +112,7 @@ impl<F: SmallField> WitnessHookable<F> for Boolean<F> {
     }
 }
 
-use crate::cs::gates::SelectionGate;
-use crate::gadgets::traits::selectable::Selectable;
+use crate::{cs::gates::SelectionGate, gadgets::traits::selectable::Selectable};
 
 impl<F: SmallField> Selectable<F> for Boolean<F> {
     #[must_use]
@@ -128,10 +129,7 @@ impl<F: SmallField> Selectable<F> for Boolean<F> {
         if cs.gate_is_allowed::<SelectionGate>() {
             let result_var = SelectionGate::select(cs, a.variable, b.variable, flag.variable);
 
-            Self {
-                variable: result_var,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result_var, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -172,10 +170,7 @@ impl<F: SmallField> Boolean<F> {
     #[inline]
     #[must_use]
     pub const fn into_num(self) -> Num<F> {
-        Num {
-            variable: self.variable,
-            _marker: std::marker::PhantomData,
-        }
+        Num { variable: self.variable, _marker: std::marker::PhantomData }
     }
 
     #[inline]
@@ -203,10 +198,7 @@ impl<F: SmallField> Boolean<F> {
             unimplemented!()
         }
 
-        Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable, _marker: std::marker::PhantomData }
     }
 
     /// # Safety
@@ -215,10 +207,7 @@ impl<F: SmallField> Boolean<F> {
     #[inline(always)]
     #[must_use]
     pub const unsafe fn from_variable_unchecked(variable: Variable) -> Self {
-        Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -227,10 +216,7 @@ impl<F: SmallField> Boolean<F> {
 
         let constant_var = cs.allocate_constant(F::from_u64_unchecked(constant as u64));
 
-        Self {
-            variable: constant_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: constant_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -258,10 +244,7 @@ impl<F: SmallField> Boolean<F> {
         let existing = tooling.insert(self.variable, result_var);
         debug_assert!(existing.is_none());
 
-        Self {
-            variable: result_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: result_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -274,10 +257,7 @@ impl<F: SmallField> Boolean<F> {
             other.variable,
         );
 
-        Self {
-            variable: result_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: result_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -287,8 +267,9 @@ impl<F: SmallField> Boolean<F> {
 
         // ab-a-b+c=0
 
-        use crate::cs::gates::dot_product_gate::DotProductGate;
-        use crate::cs::gates::quadratic_combination::QuadraticCombinationGate;
+        use crate::cs::gates::{
+            dot_product_gate::DotProductGate, quadratic_combination::QuadraticCombinationGate,
+        };
 
         if cs.gate_is_allowed::<DotProductGate<4>>() {
             let minus_one_var = cs.allocate_constant(F::MINUS_ONE);
@@ -304,11 +285,7 @@ impl<F: SmallField> Boolean<F> {
                     let a = <bool as WitnessCastable<F, F>>::cast_from_source(a);
                     let b = <bool as WitnessCastable<F, F>>::cast_from_source(b);
 
-                    if a || b {
-                        [F::ONE]
-                    } else {
-                        [F::ZERO]
-                    }
+                    if a || b { [F::ONE] } else { [F::ZERO] }
                 };
 
                 let dependencies = Place::from_variables([self.variable, other.variable]);
@@ -335,10 +312,7 @@ impl<F: SmallField> Boolean<F> {
                 gate.add_to_cs(cs);
             }
 
-            Self {
-                variable: result,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result, _marker: std::marker::PhantomData }
         } else if cs.gate_is_allowed::<QuadraticCombinationGate<4>>() {
             let minus_one_var = cs.allocate_constant(F::MINUS_ONE);
             let one_var = cs.allocate_constant(F::ONE);
@@ -352,11 +326,7 @@ impl<F: SmallField> Boolean<F> {
                     let a = <bool as WitnessCastable<F, F>>::cast_from_source(a);
                     let b = <bool as WitnessCastable<F, F>>::cast_from_source(b);
 
-                    if a || b {
-                        [F::ONE]
-                    } else {
-                        [F::ZERO]
-                    }
+                    if a || b { [F::ONE] } else { [F::ZERO] }
                 };
 
                 let dependencies = Place::from_variables([self.variable, other.variable]);
@@ -377,10 +347,7 @@ impl<F: SmallField> Boolean<F> {
                 gate.add_to_cs(cs);
             }
 
-            Self {
-                variable: result,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result, _marker: std::marker::PhantomData }
         } else if cs.gate_is_allowed::<FmaGateInBaseFieldWithoutConstant<F>>() {
             let result = cs.alloc_variable_without_value();
 
@@ -391,11 +358,7 @@ impl<F: SmallField> Boolean<F> {
                     let a = <bool as WitnessCastable<F, F>>::cast_from_source(a);
                     let b = <bool as WitnessCastable<F, F>>::cast_from_source(b);
 
-                    if a || b {
-                        [F::ONE]
-                    } else {
-                        [F::ZERO]
-                    }
+                    if a || b { [F::ONE] } else { [F::ZERO] }
                 };
 
                 let dependencies = Place::from_variables([self.variable, other.variable]);
@@ -436,10 +399,7 @@ impl<F: SmallField> Boolean<F> {
                 gate.add_to_cs(cs);
             }
 
-            Self {
-                variable: result,
-                _marker: std::marker::PhantomData,
-            }
+            Self { variable: result, _marker: std::marker::PhantomData }
         } else {
             unimplemented!()
         }
@@ -496,10 +456,9 @@ impl<F: SmallField> Boolean<F> {
         should_enforce: Self,
     ) {
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
-            if let (Some(this), Some(should_enforce)) = (
-                (self.witness_hook(cs))(),
-                (should_enforce.witness_hook(cs))(),
-            ) {
+            if let (Some(this), Some(should_enforce)) =
+                ((self.witness_hook(cs))(), (should_enforce.witness_hook(cs))())
+            {
                 if should_enforce {
                     assert!(this, "conditional enforce to `true` failed");
                 }
@@ -539,10 +498,9 @@ impl<F: SmallField> Boolean<F> {
         // so self * should_enforce == 0
 
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
-            if let (Some(this), Some(should_enforce)) = (
-                (self.witness_hook(cs))(),
-                (should_enforce.witness_hook(cs))(),
-            ) {
+            if let (Some(this), Some(should_enforce)) =
+                ((self.witness_hook(cs))(), (should_enforce.witness_hook(cs))())
+            {
                 if should_enforce {
                     assert!(this == false, "conditional enforce to `false` failed");
                 }
@@ -694,11 +652,7 @@ impl<F: SmallField> Boolean<F> {
     #[inline]
     #[must_use]
     pub fn equals<CS: ConstraintSystem<F>>(cs: &mut CS, a: &Self, b: &Self) -> Boolean<F> {
-        Num::equals(
-            cs,
-            &Num::from_variable(a.variable),
-            &Num::from_variable(b.variable),
-        )
+        Num::equals(cs, &Num::from_variable(a.variable), &Num::from_variable(b.variable))
     }
 }
 

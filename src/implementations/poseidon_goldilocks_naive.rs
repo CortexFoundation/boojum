@@ -1,7 +1,7 @@
-use super::poseidon_goldilocks_params::*;
 use derivative::*;
 use unroll::unroll_for_loops;
 
+use super::poseidon_goldilocks_params::*;
 use crate::field::{goldilocks::GoldilocksField, Field, SmallField};
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
@@ -112,9 +112,7 @@ pub const fn apply_non_linearity(el: &mut GoldilocksField) {
 #[unroll_for_loops]
 pub const fn apply_round_constants(state: &mut [GoldilocksField; STATE_WIDTH], round: usize) {
     for i in 0..12 {
-        state[i].add_assign_impl(&GoldilocksField(
-            ALL_ROUND_CONSTANTS[round * STATE_WIDTH + i],
-        ));
+        state[i].add_assign_impl(&GoldilocksField(ALL_ROUND_CONSTANTS[round * STATE_WIDTH + i]));
     }
 }
 

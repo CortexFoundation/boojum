@@ -1,8 +1,7 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-
 use super::*;
+use crate::field::traits::field_like::PrimeFieldLikeVectorized;
 
 #[derive(Derivative)]
 #[derivative(Default)]
@@ -57,10 +56,9 @@ pub fn test_evaluator<F: SmallField, E: GateConstraintEvaluator<F>>(evaluator: E
     // and that whatever "column" gate requires it uses
 
     let expected_num_terms = match E::gate_purpose() {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: _,
-            num_quotient_terms,
-        } => num_quotient_terms,
+        GatePurpose::Evaluatable { max_constraint_degree: _, num_quotient_terms } => {
+            num_quotient_terms
+        }
         a => {
             unreachable!("testing is not usable for evaluator with purpose {:?}", a);
         }
@@ -74,13 +72,7 @@ pub fn test_evaluator<F: SmallField, E: GateConstraintEvaluator<F>>(evaluator: E
     let source = TestSource::<F, F>::default();
     let mut destination = TestDestination::<F, F>::default();
 
-    evaluator.evaluate_once(
-        &source,
-        &mut destination,
-        &row_constants,
-        &global_constants,
-        &mut (),
-    );
+    evaluator.evaluate_once(&source, &mut destination, &row_constants, &global_constants, &mut ());
 
     assert!(
         expected_num_terms == destination.num_terms,

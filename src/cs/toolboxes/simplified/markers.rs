@@ -28,15 +28,11 @@ pub struct MarkerProxy<T: 'static + Send + Sync> {
 
 impl<T: 'static + Send + Sync> MarkerProxy<T> {
     pub const fn new() -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 
     pub const fn wrap_marker<M: TypeMarker>(_other: M) -> MarkerProxy<(T, M)> {
-        MarkerProxy::<(T, M)> {
-            _marker: std::marker::PhantomData,
-        }
+        MarkerProxy::<(T, M)> { _marker: std::marker::PhantomData }
     }
 }
 
@@ -48,8 +44,6 @@ pub struct KVQueryMarker<K: TypeMarker, V: 'static + Send + Sync> {
 
 impl<K: TypeMarker, V: 'static + Send + Sync> KVQueryMarker<K, V> {
     pub const fn new() -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 }

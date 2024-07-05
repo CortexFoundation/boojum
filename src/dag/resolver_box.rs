@@ -1,19 +1,17 @@
 #![allow(clippy::overly_complex_bool_expr)]
 #![allow(clippy::nonminimal_bool)]
 
+use std::{marker::PhantomData, mem::size_of};
+
 use itertools::Itertools;
 
-use crate::field::SmallField;
-use crate::log;
-use std::marker::PhantomData;
-use std::mem::size_of;
-
+use super::{guide::RegistrationNum, primitives::ResolverIx};
 use crate::{
     cs::{traits::cs::DstBuffer, Place},
+    field::SmallField,
+    log,
     utils::PipeOp,
 };
-
-use super::{guide::RegistrationNum, primitives::ResolverIx};
 
 pub trait ResolutionFn<V> = FnOnce(&[V], &mut DstBuffer<V>) + Send + Sync;
 
@@ -37,11 +35,7 @@ impl<V> ResolverBox<V> {
     pub fn new_with_capacity(size_power: Option<usize>) -> Self {
         let size_power = size_power.unwrap_or(26 /* 128MB */);
 
-        ResolverBox {
-            container: Container::new(size_power),
-            allocations: 0,
-            phantom: PhantomData,
-        }
+        ResolverBox { container: Container::new(size_power), allocations: 0, phantom: PhantomData }
     }
 
     pub fn push<F>(
@@ -59,13 +53,7 @@ impl<V> ResolverBox<V> {
         // smaller.
         debug_assert!(size_of::<F>() < u16::MAX as usize);
 
-        let ctor = ResolverDstCtor {
-            inputs,
-            outputs,
-            registration_num,
-            resolve_fn,
-            bind_fn_ref,
-        };
+        let ctor = ResolverDstCtor { inputs, outputs, registration_num, resolve_fn, bind_fn_ref };
         let (loc, ptr) = self.container.reserve(ctor.size());
 
         unsafe { ctor.write(ptr as *mut _) };
@@ -84,7 +72,8 @@ impl<V> ResolverBox<V> {
     ///
     /// Safety: The index must be one of the provided values from `push` calls.
     pub unsafe fn get(&self, ix: ResolverIx) -> &Resolver {
-        // TODO: `ix.normalized()` is unrelated to this domain, create `OrderValue` and clear `ResolverIx`.
+        // TODO: `ix.normalized()` is unrelated to this domain, create `OrderValue` and clear
+        // `ResolverIx`.
         let ptr = (self.container.get_ptr(ix.normalized())) as *const ResolverHeader;
 
         Resolver::from(&*ptr)
@@ -179,10 +168,7 @@ impl ContainerPage {
             );
         }
 
-        Self {
-            allocation,
-            commited,
-        }
+        Self { allocation, commited }
     }
 
     #[inline(always)]
@@ -233,11 +219,7 @@ where
         // This is a fix for a closure that was found in nature. I haven't been
         // able to reproduce it, but it was a 4 byte closure that was aligned to
         // 4 bytes.
-        let closure_size = if size_of::<F>() == 4 {
-            8
-        } else {
-            size_of::<F>()
-        };
+        let closure_size = if size_of::<F>() == 4 { 8 } else { size_of::<F>() };
 
         let r = ((self.inputs.len() + self.outputs.len()) * size_of::<Place>())
             + size_of::<ResolverHeader>()
@@ -259,21 +241,9 @@ where
     }
 
     fn mk_header(&self) -> ResolverHeader {
-        assert!(
-            self.inputs.len() < u16::MAX as usize,
-            "Too many inputs: {}",
-            self.inputs.len()
-        );
-        assert!(
-            self.outputs.len() < u16::MAX as usize,
-            "Too many outputs: {}",
-            self.outputs.len()
-        );
-        assert!(
-            size_of::<F>() < u16::MAX as usize,
-            "Closure is too large: {}",
-            size_of::<F>()
-        );
+        assert!(self.inputs.len() < u16::MAX as usize, "Too many inputs: {}", self.inputs.len());
+        assert!(self.outputs.len() < u16::MAX as usize, "Too many outputs: {}", self.outputs.len());
+        assert!(size_of::<F>() < u16::MAX as usize, "Closure is too large: {}", size_of::<F>());
 
         ResolverHeader {
             input_count: self.inputs.len() as u16,
@@ -315,11 +285,7 @@ where
         let f_ptr = plc_ptr.add(self.outputs.len()) as *mut F;
         debug_assert_eq!(0, f_ptr as usize % std::mem::align_of_val(&f_ptr));
 
-        let closure_size = if size_of::<F>() == 4 {
-            8
-        } else {
-            size_of::<F>()
-        };
+        let closure_size = if size_of::<F>() == 4 { 8 } else { size_of::<F>() };
 
         debug_assert_eq!(
             self.size(),
@@ -481,14 +447,13 @@ mod test {
 
     use rand::random;
 
+    use super::{invocation_binder, Resolver, ResolverBox};
     use crate::{
         cs::{traits::cs::DstBuffer, Place, Variable},
         dag::{guide::RegistrationNum, resolver_box::ResolverHeader},
         field::{goldilocks::GoldilocksField, Field},
         log,
     };
-
-    use super::{invocation_binder, Resolver, ResolverBox};
 
     type F = GoldilocksField;
 
@@ -514,22 +479,13 @@ mod test {
 
         let base_addr = &header as *const _ as usize;
 
-        log!(
-            "input_count offset: {}",
-            &header.input_count as *const _ as usize - base_addr
-        );
-        log!(
-            "output_count offset: {}",
-            &header.output_count as *const _ as usize - base_addr
-        );
+        log!("input_count offset: {}", &header.input_count as *const _ as usize - base_addr);
+        log!("output_count offset: {}", &header.output_count as *const _ as usize - base_addr);
         log!(
             "resolve_fn_size offset: {}",
             &header.resolve_fn_size as *const _ as usize - base_addr
         );
-        log!(
-            "bind_fn_ref offset: {}",
-            &header.bind_fn_ref as *const _ as usize - base_addr
-        );
+        log!("bind_fn_ref offset: {}", &header.bind_fn_ref as *const _ as usize - base_addr);
 
         assert_eq!(size_of::<ResolverHeader>(), 24);
         assert_eq!(align_of::<ResolverHeader>(), 8);
@@ -783,10 +739,7 @@ mod test {
 
         let mut drop_invoked = 0;
 
-        let ctx = DroppedContext {
-            times_invoked: &mut drop_invoked,
-            value: 1,
-        };
+        let ctx = DroppedContext { times_invoked: &mut drop_invoked, value: 1 };
 
         let resolution_fn = move |_: &[F], outs: &mut DstBuffer<F>| {
             let ctx = ctx;

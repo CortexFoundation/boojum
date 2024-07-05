@@ -1,3 +1,4 @@
+use super::*;
 use crate::{
     config::CSSetupConfig,
     cs::{
@@ -6,8 +7,6 @@ use crate::{
     },
     field::PrimeField,
 };
-
-use super::*;
 
 // Allocates boolean variables, but doesn't span all the columns
 
@@ -44,19 +43,12 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for BoundedBooleanConstraitEvalua
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 1,
-            num_witnesses: 0,
-            num_constants: 0,
-        }
+        GatePrincipalInstanceWidth { num_variables: 1, num_witnesses: 0, num_constants: 0 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -144,9 +136,7 @@ impl<F: SmallField> Gate<F> for BoundedBooleanConstraintGate {
 
     #[inline]
     fn evaluator(&self) -> Self::Evaluator {
-        BoundedBooleanConstraitEvaluator {
-            max_on_row: self.max_on_row,
-        }
+        BoundedBooleanConstraitEvaluator { max_on_row: self.max_on_row }
     }
 }
 
@@ -209,10 +199,7 @@ impl BoundedBooleanConstraintGate {
         debug_assert!(cs.gate_is_allowed::<Self>());
 
         let new_var = cs.alloc_variable_without_value();
-        let gate = Self {
-            var_to_enforce: new_var,
-            max_on_row: 0,
-        };
+        let gate = Self { var_to_enforce: new_var, max_on_row: 0 };
 
         let value = if witness_value { F::ONE } else { F::ZERO };
 
@@ -230,10 +217,7 @@ impl BoundedBooleanConstraintGate {
 
         let max_on_row = cs.get_gate_params::<Self>();
 
-        let gate = Self {
-            var_to_enforce: variable,
-            max_on_row,
-        };
+        let gate = Self { var_to_enforce: variable, max_on_row };
 
         gate.add_to_cs(cs);
     }

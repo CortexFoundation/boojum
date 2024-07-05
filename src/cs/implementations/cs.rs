@@ -1,37 +1,37 @@
-use super::lookup_table::{LookupTableWrapper, Wrappable};
+use std::{any::TypeId, sync::atomic::AtomicU32};
 
-use super::*;
-use crate::config::*;
-use crate::cs::gates::{
-    assert_no_placeholder_variables, assert_not_placeholder_variable, ConstantAllocatableCS,
+use super::{
+    lookup_table::{LookupTableWrapper, Wrappable},
+    *,
 };
-use crate::cs::gates::{assert_no_placeholders, lookup_marker::*, LookupTooling};
-
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::utils::PipeOp;
-use std::any::TypeId;
-use std::sync::atomic::AtomicU32;
-
-use crate::dag::CircuitResolver;
-
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::traits::cs::{ConstraintSystem, DstBuffer};
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::Gate;
-
-use crate::dag::CSWitnessValues;
-
-use crate::cs::implementations::reference_cs::*;
+use crate::{
+    config::*,
+    cs::{
+        gates::{
+            assert_no_placeholder_variables, assert_no_placeholders,
+            assert_not_placeholder_variable, lookup_marker::*, ConstantAllocatableCS,
+            LookupTooling,
+        },
+        implementations::reference_cs::*,
+        toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+        traits::{
+            cs::{ConstraintSystem, DstBuffer},
+            evaluator::*,
+            gate::{Gate, GatePlacementStrategy},
+        },
+    },
+    dag::{CSWitnessValues, CircuitResolver},
+    utils::PipeOp,
+};
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > ConstraintSystem<F> for CSReferenceImplementation<F, P, CFG, GC, T, CR>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> ConstraintSystem<F> for CSReferenceImplementation<F, P, CFG, GC, T, CR>
 {
     type Config = CFG;
     type WitnessSource = CR;
@@ -99,8 +99,8 @@ impl<
     fn set_values<const N: usize>(&mut self, places: &[Place; N], values: [F; N]) {
         if CFG::WitnessConfig::EVALUATE_WITNESS == true {
             // places.iter().zip(values).for_each(|(a, b)| {
-            //     self.storage_debug_trace_file.get_mut().unwrap().write(format!("set {:?} <- {}\n", a, b.as_raw_u64()).as_bytes()).unwrap();
-            // });
+            //     self.storage_debug_trace_file.get_mut().unwrap().write(format!("set {:?} <-
+            // {}\n", a, b.as_raw_u64()).as_bytes()).unwrap(); });
 
             places.iter().zip(values).for_each(|(a, b)| {
                 self.variables_storage.get_mut().unwrap().set_value(*a, b);
@@ -399,11 +399,7 @@ impl<
                 .constants_requested_per_row
                 .get_mut(row)
                 .expect("trying to place constants into non-existing row at non-zero offset");
-            debug_assert_eq!(
-                placement.len(),
-                offset,
-                "placement of constants must be continuous"
-            );
+            debug_assert_eq!(placement.len(), offset, "placement of constants must be continuous");
             placement.extend_from_slice(gate_constants);
         }
     }
@@ -458,10 +454,7 @@ impl<
             debug_assert!(self.gates_application_sets.len() == row);
             self.gates_application_sets.push(idx);
         } else {
-            debug_assert!(matches!(
-                gate.placement_type(),
-                GatePlacementType::MultipleOnRow { .. }
-            ));
+            debug_assert!(matches!(gate.placement_type(), GatePlacementType::MultipleOnRow { .. }));
             debug_assert!(self.gates_application_sets[row] == idx);
         }
 
@@ -501,9 +494,8 @@ impl<
             .gates_configuration
             .placement_strategy::<G>()
             .expect("gate must be allowed");
-        let GatePlacementStrategy::UseSpecializedColumns {
-            num_repetitions, ..
-        } = placement_strategy
+        let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } =
+            placement_strategy
         else {
             unreachable!();
         };
@@ -517,7 +509,12 @@ impl<
         let (mut initial_offset, offset_per_repetition, _) = self
             .evaluation_data_over_specialized_columns
             .offsets_for_specialized_evaluators[idx];
-        assert!(repetition < num_repetitions, "gate is configured to have at most {} repetitions, but trying to place when {} already exist", num_repetitions, repetition);
+        assert!(
+            repetition < num_repetitions,
+            "gate is configured to have at most {} repetitions, but trying to place when {} already exist",
+            num_repetitions,
+            repetition
+        );
         for _ in 0..repetition {
             initial_offset.add_offset(&offset_per_repetition);
         }
@@ -572,9 +569,8 @@ impl<
             .gates_configuration
             .placement_strategy::<G>()
             .expect("gate must be allowed");
-        let GatePlacementStrategy::UseSpecializedColumns {
-            num_repetitions, ..
-        } = placement_strategy
+        let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } =
+            placement_strategy
         else {
             unreachable!();
         };
@@ -588,7 +584,12 @@ impl<
         let (mut initial_offset, offset_per_repetition, _) = self
             .evaluation_data_over_specialized_columns
             .offsets_for_specialized_evaluators[idx];
-        assert!(repetition < num_repetitions, "gate is configured to have at most {} repetitions, but trying to place when {} already exist", num_repetitions, repetition);
+        assert!(
+            repetition < num_repetitions,
+            "gate is configured to have at most {} repetitions, but trying to place when {} already exist",
+            num_repetitions,
+            repetition
+        );
         for _ in 0..repetition {
             initial_offset.add_offset(&offset_per_repetition);
         }
@@ -614,7 +615,8 @@ impl<
             return;
         }
 
-        assert!(row < self.max_trace_len,
+        assert!(
+            row < self.max_trace_len,
             "can not place more specialized instances of gate {}: max trace length is {}, but trying to use row {}",
             std::any::type_name::<G>(),
             self.max_trace_len,
@@ -659,10 +661,8 @@ impl<
             .gates_configuration
             .placement_strategy::<G>()
             .expect("gate must be allowed");
-        let GatePlacementStrategy::UseSpecializedColumns {
-            num_repetitions,
-            share_constants,
-        } = placement_strategy
+        let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants } =
+            placement_strategy
         else {
             unreachable!();
         };
@@ -676,7 +676,12 @@ impl<
         let (initial_offsets, offset_per_repetition, total_constants_available) = self
             .evaluation_data_over_specialized_columns
             .offsets_for_specialized_evaluators[idx];
-        assert!(repetition < num_repetitions, "gate is configured to have at most {} repetitions, but trying to place when {} already exist", num_repetitions, repetition);
+        assert!(
+            repetition < num_repetitions,
+            "gate is configured to have at most {} repetitions, but trying to place when {} already exist",
+            num_repetitions,
+            repetition
+        );
         let mut constants_offset = initial_offsets.constants_offset;
         if share_constants == false {
             for _ in 0..repetition {
@@ -760,9 +765,8 @@ impl<
             .gates_configuration
             .placement_strategy::<G>()
             .expect("gate must be allowed");
-        let GatePlacementStrategy::UseSpecializedColumns {
-            num_repetitions, ..
-        } = placement_strategy
+        let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } =
+            placement_strategy
         else {
             unreachable!();
         };
@@ -957,7 +961,9 @@ impl<
         let table_size = table.table_size();
 
         if self.lookups_tables_total_len() > self.max_trace_len {
-            unimplemented!("breaking encoding of lookup tables into multiple subcolumns is not yet implemented");
+            unimplemented!(
+                "breaking encoding of lookup tables into multiple subcolumns is not yet implemented"
+            );
         }
 
         self.lookup_table_marker_into_id
@@ -984,10 +990,7 @@ impl<
                     .expect("tooling must exist");
 
                 tooling.0.resize(1, None);
-                assert!(
-                    tooling.1 == 0,
-                    "must declare tables before placing anything"
-                );
+                assert!(tooling.1 == 0, "must declare tables before placing anything");
 
                 // we need to resize multiplicities
                 let mut column = Vec::with_capacity(table_size);
@@ -1005,10 +1008,7 @@ impl<
                     .expect("tooling must exist");
 
                 tooling.0.resize(id as usize, None);
-                assert!(
-                    tooling.1 == 0,
-                    "must declare tables before placing anything"
-                );
+                assert!(tooling.1 == 0, "must declare tables before placing anything");
 
                 // we need to resize multiplicities
                 let mut column = Vec::with_capacity(table_size);
@@ -1020,7 +1020,8 @@ impl<
             }
         }
 
-        assert!(self.lookups_tables_total_len() <= self.max_trace_len,
+        assert!(
+            self.lookups_tables_total_len() <= self.max_trace_len,
             "max trace is not large enough to fit all the tables for setup: max length is {} and tables require {} rows",
             self.max_trace_len,
             self.lookups_tables_total_len(),
@@ -1051,23 +1052,27 @@ mod test {
     use std::alloc::Global;
 
     use super::*;
-    use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-    use crate::algebraic_props::sponge::GoldilocksPoseidonSponge;
-    use crate::cs::cs_builder::*;
-    use crate::cs::cs_builder_reference::CsReferenceImplementationBuilder;
-    use crate::cs::cs_builder_verifier::CsVerifierBuilder;
-    use crate::cs::gates::{fma_gate_without_constant::*, NopGate, ReductionGate, ZeroCheckGate};
-
-    use crate::cs::implementations::pow::NoPow;
-    use crate::cs::implementations::prover::ProofConfig;
-    use crate::cs::implementations::transcript::GoldilocksPoisedonTranscript;
-
-    use crate::dag::CircuitResolverOpts;
-    use crate::field::goldilocks::GoldilocksExt2;
-
     use crate::{
-        cs::gates::boolean_allocator::BooleanConstraintGate,
-        field::{goldilocks::GoldilocksField, Field, U64Representable},
+        algebraic_props::{
+            round_function::AbsorptionModeOverwrite, sponge::GoldilocksPoseidonSponge,
+        },
+        cs::{
+            cs_builder::*,
+            cs_builder_reference::CsReferenceImplementationBuilder,
+            cs_builder_verifier::CsVerifierBuilder,
+            gates::{
+                boolean_allocator::BooleanConstraintGate, fma_gate_without_constant::*, NopGate,
+                ReductionGate, ZeroCheckGate,
+            },
+            implementations::{
+                pow::NoPow, prover::ProofConfig, transcript::GoldilocksPoisedonTranscript,
+            },
+        },
+        dag::CircuitResolverOpts,
+        field::{
+            goldilocks::{GoldilocksExt2, GoldilocksField},
+            Field, U64Representable,
+        },
     };
 
     type F = GoldilocksField;
@@ -1168,11 +1173,8 @@ mod test {
         let cs = cs.into_assembly::<Global>();
 
         let lde_factor_to_use = 16;
-        let proof_config = ProofConfig {
-            fri_lde_factor: lde_factor_to_use,
-            pow_bits: 0,
-            ..Default::default()
-        };
+        let proof_config =
+            ProofConfig { fri_lde_factor: lde_factor_to_use, pow_bits: 0, ..Default::default() };
 
         let (proof, vk) = cs.prove_one_shot::<
             GoldilocksExt2,
@@ -1288,11 +1290,10 @@ mod test {
             builder
         }
 
-        let builder = new_builder(CsReferenceImplementationBuilder::<
-            GoldilocksField,
-            P,
-            DevCSConfig,
-        >::new(geometry, 128));
+        let builder =
+            new_builder(CsReferenceImplementationBuilder::<GoldilocksField, P, DevCSConfig>::new(
+                geometry, 128,
+            ));
         let builder = configure(builder);
         let mut cs = builder.build(CircuitResolverOpts::new(512));
 
@@ -1328,11 +1329,8 @@ mod test {
         let cs = cs.into_assembly::<Global>();
 
         let lde_factor_to_use = 16;
-        let proof_config = ProofConfig {
-            fri_lde_factor: lde_factor_to_use,
-            pow_bits: 0,
-            ..Default::default()
-        };
+        let proof_config =
+            ProofConfig { fri_lde_factor: lde_factor_to_use, pow_bits: 0, ..Default::default() };
 
         let (proof, vk) = cs.prove_one_shot::<
             GoldilocksExt2,
@@ -1429,11 +1427,8 @@ mod test {
         // assert!(cs.check_if_satisfied(&worker));
 
         let lde_factor_to_use = 16;
-        let proof_config = ProofConfig {
-            fri_lde_factor: lde_factor_to_use,
-            pow_bits: 0,
-            ..Default::default()
-        };
+        let proof_config =
+            ProofConfig { fri_lde_factor: lde_factor_to_use, pow_bits: 0, ..Default::default() };
 
         let (proof, vk) = cs.prove_one_shot::<
             GoldilocksExt2,
@@ -1655,11 +1650,8 @@ mod test {
         assert!(cs.check_if_satisfied(&worker));
 
         let lde_factor_to_use = 16;
-        let proof_config = ProofConfig {
-            fri_lde_factor: lde_factor_to_use,
-            pow_bits: 0,
-            ..Default::default()
-        };
+        let proof_config =
+            ProofConfig { fri_lde_factor: lde_factor_to_use, pow_bits: 0, ..Default::default() };
 
         // let witness = cs.take_witness(&worker);
         // dbg!(&witness.multiplicities[0].storage);

@@ -1,14 +1,15 @@
-use super::*;
-
-use crate::cs::implementations::polynomial::LagrangeForm;
-use crate::cs::traits::GoodAllocator;
-use crate::fft::bitreverse_enumeration_inplace;
-use crate::field::traits::field_like::mul_assign_in_extension;
-use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-use crate::field::ExtensionField;
-use crate::field::{FieldExtension, PrimeField};
-use crate::utils::*;
 use std::sync::Arc;
+
+use super::*;
+use crate::{
+    cs::{implementations::polynomial::LagrangeForm, traits::GoodAllocator},
+    fft::bitreverse_enumeration_inplace,
+    field::{
+        traits::field_like::{mul_assign_in_extension, PrimeFieldLikeVectorized},
+        ExtensionField, FieldExtension, PrimeField,
+    },
+    utils::*,
+};
 
 pub fn domain_generator_for_size<F: PrimeField>(size: u64) -> F {
     debug_assert!(size.is_power_of_two());
@@ -154,8 +155,7 @@ pub fn precompute_twiddles_for_fft_natural<
     P::vec_from_base_vec(powers)
 }
 
-use crate::cs::implementations::polynomial::lde::ArcGenericLdeStorage;
-use crate::cs::implementations::polynomial::*;
+use crate::cs::implementations::polynomial::{lde::ArcGenericLdeStorage, *};
 
 pub(crate) fn transform_from_trace_to_lde<
     F: SmallField,
@@ -380,14 +380,12 @@ pub(crate) fn transform_monomials_to_lde<
 
     drop(do_work);
     profile_section!(finalize);
-    // transpose them back. In "all_ldes" we have first coset for every poly, then next one for every, etc
-    // and we need to place them into individual cosets for into poly
+    // transpose them back. In "all_ldes" we have first coset for every poly, then next one for
+    // every, etc and we need to place them into individual cosets for into poly
 
     let mut columns = Vec::with_capacity_in(num_polys, B::default());
-    columns.resize(
-        num_polys,
-        ArcGenericLdeStorage::empty_with_capacity_in(lde_degree, B::default()),
-    );
+    columns
+        .resize(num_polys, ArcGenericLdeStorage::empty_with_capacity_in(lde_degree, B::default()));
 
     for (idx, el) in all_ldes.into_iter().enumerate() {
         let dst_poly_idx = idx % num_polys;
@@ -1014,10 +1012,7 @@ pub fn precompute_for_barycentric_evaluation_in_extension<
     bitreverse_enumeration_inplace(&mut result_c0);
     bitreverse_enumeration_inplace(&mut result_c1);
 
-    [
-        P::vec_from_base_vec(result_c0),
-        P::vec_from_base_vec(result_c1),
-    ]
+    [P::vec_from_base_vec(result_c0), P::vec_from_base_vec(result_c1)]
 }
 
 // No parallelism here - we parallelize externally
@@ -1671,10 +1666,10 @@ pub trait Binop<T: 'static + Send + Sync, CTX: 'static + Send + Sync>:
 }
 
 impl<
-        T: 'static + Send + Sync,
-        CTX: 'static + Send + Sync,
-        F: Fn(&mut T, &T, &T, &mut CTX) + 'static + Send + Sync,
-    > Binop<T, CTX> for F
+    T: 'static + Send + Sync,
+    CTX: 'static + Send + Sync,
+    F: Fn(&mut T, &T, &T, &mut CTX) + 'static + Send + Sync,
+> Binop<T, CTX> for F
 {
     #[inline(always)]
     fn apply(&self, into: &mut T, a: &T, b: &T, ctx: &mut CTX) {
@@ -1689,10 +1684,10 @@ pub trait Ternop<T: 'static + Send + Sync, CTX: 'static + Send + Sync>:
 }
 
 impl<
-        T: 'static + Send + Sync,
-        CTX: 'static + Send + Sync,
-        F: Fn(&mut T, &T, &T, &T, &mut CTX) + 'static + Send + Sync,
-    > Ternop<T, CTX> for F
+    T: 'static + Send + Sync,
+    CTX: 'static + Send + Sync,
+    F: Fn(&mut T, &T, &T, &T, &mut CTX) + 'static + Send + Sync,
+> Ternop<T, CTX> for F
 {
     #[inline(always)]
     fn apply(&self, into: &mut T, a: &T, b: &T, c: &T, ctx: &mut CTX) {
@@ -1707,10 +1702,10 @@ pub trait Quadop<T: 'static + Send + Sync, CTX: 'static + Send + Sync>:
 }
 
 impl<
-        T: 'static + Send + Sync,
-        CTX: 'static + Send + Sync,
-        F: Fn(&mut T, &T, &T, &T, &T, &mut CTX) + 'static + Send + Sync,
-    > Quadop<T, CTX> for F
+    T: 'static + Send + Sync,
+    CTX: 'static + Send + Sync,
+    F: Fn(&mut T, &T, &T, &T, &T, &mut CTX) + 'static + Send + Sync,
+> Quadop<T, CTX> for F
 {
     #[inline(always)]
     fn apply(&self, into: &mut T, a: &T, b: &T, c: &T, d: &T, ctx: &mut CTX) {
@@ -1724,12 +1719,11 @@ mod test {
 
     use rand::thread_rng;
 
+    use super::*;
     use crate::field::{
         goldilocks::{GoldilocksExt2, GoldilocksField},
         rand_from_rng, Field,
     };
-
-    use super::*;
 
     type F = GoldilocksField;
     type Ext = GoldilocksExt2;
@@ -1773,8 +1767,9 @@ mod test {
 
     #[test]
     fn test_batch_inverse_in_extension() {
-        use crate::field::traits::field::Field;
         use std::alloc::Global;
+
+        use crate::field::traits::field::Field;
 
         let input_c0 = vec![
             F::ONE,

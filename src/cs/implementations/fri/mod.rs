@@ -1,35 +1,42 @@
-use super::polynomial_storage::{SecondStageProductsStorage, WitnessStorage};
-use super::*;
 use std::mem::MaybeUninit;
 
+use super::{
+    polynomial_storage::{SecondStageProductsStorage, WitnessStorage},
+    *,
+};
 // Note: in this codebase we assume "small" modulus (64 bits), so we have a "problem" with FRI:
-// - to achieve soundness from interactive part, we need to perform FRI twice or 3 times to get proper soundness
+// - to achieve soundness from interactive part, we need to perform FRI twice or 3 times to get
+//   proper soundness
 // error due to pulling the challenges from the small field
-// - but for efficiency purposes we would want to still instantiate intermediate oracles in the join form, so both parallel
+// - but for efficiency purposes we would want to still instantiate intermediate oracles in the
+//   join form, so both parallel
 // FRIs would use the same tree with 2x or 3x elements placed into the leaf
-// - and naively we would pull single index during query phase and do 2 or 3 "independent" interpolations for verification
+// - and naively we would pull single index during query phase and do 2 or 3 "independent"
+//   interpolations for verification
 
 // Unfortunately we can not do it (unless we prove the opposite later on) due to e.g. https://www.youtube.com/watch?v=0DHoxCAsick - parallel repetition
 
-// So when we get presumably RS codes from quotening operation (f(x) - f(z))/(x - z) and linear combination of such terms,
-// we immediatelly pull challenges for such linear combination from quadratic extension, so our initial oracle for FRI containes Fp2 elements in the leafs.
-// Then on every step of interpolation we will take another challenge from Fp2 and continue
+// So when we get presumably RS codes from quotening operation (f(x) - f(z))/(x - z) and linear
+// combination of such terms, we immediatelly pull challenges for such linear combination from
+// quadratic extension, so our initial oracle for FRI containes Fp2 elements in the leafs. Then
+// on every step of interpolation we will take another challenge from Fp2 and continue
 
-// Another things is FRI soundness bound. FRI (not DEEP-FRI) is sound up to Johnson bound IF code size is much smaller
-// than field size. So we need n << |F|, that is not that prominent for |F| ~= 2^64
+// Another things is FRI soundness bound. FRI (not DEEP-FRI) is sound up to Johnson bound IF
+// code size is much smaller than field size. So we need n << |F|, that is not that prominent
+// for |F| ~= 2^64
 
-// Because we want to do some vectorization tricks, we manually implement operations in Fp2 over Vec<Fp2> as operations over
-// (Vec<F>, Vec<F>)
-
+// Because we want to do some vectorization tricks, we manually implement operations in Fp2
+// over Vec<Fp2> as operations over (Vec<F>, Vec<F>)
 use crate::cs::implementations::polynomial::lde::ArcGenericLdeStorage;
-use crate::cs::implementations::transcript::Transcript;
-use crate::cs::implementations::utils::precompute_twiddles_for_fft;
-use crate::cs::oracle::merkle_tree::MerkleTreeWithCap;
-use crate::cs::oracle::TreeHasher;
-use crate::cs::traits::GoodAllocator;
-use crate::fft::bitreverse_enumeration_inplace;
-
-use crate::field::{Field, FieldExtension};
+use crate::{
+    cs::{
+        implementations::{transcript::Transcript, utils::precompute_twiddles_for_fft},
+        oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
+        traits::GoodAllocator,
+    },
+    fft::bitreverse_enumeration_inplace,
+    field::{Field, FieldExtension},
+};
 
 pub struct FriOracles<
     F: SmallField,
@@ -109,8 +116,8 @@ pub fn do_fri<
     // f(x * sqrt(-1)) = f0(x^4) + sqrt(-1) * x * f(x^4) - x^2 * f2(x^4) - sqrt(-1) * x^3 * f3(x^4)
     // f(-x * sqrt(-1)) = f0(x^4) - sqrt(-1) * x * f(x^4) - x^2 * f2(x^4) + sqrt(-1) * x^3 * f3(x^4)
 
-    // yes, we kind of abuse "x" notation there, and it may be a little confusing. Now we want to compute
-    // f'(x^4) = f0(x^4) + alpha * f1(x^4) + alpha^2 * f2(x^4) + alpha^3 * f3(x^4)
+    // yes, we kind of abuse "x" notation there, and it may be a little confusing. Now we want to
+    // compute f'(x^4) = f0(x^4) + alpha * f1(x^4) + alpha^2 * f2(x^4) + alpha^3 * f3(x^4)
 
     // note the symmetry below:
 
@@ -121,10 +128,11 @@ pub fn do_fri<
     // f(x) - f(-x) = 2 * x * f1(x^4) + 2 * x^3 * f3(x^4)
 
     // f(x * sqrt(-1)) + f(-x * sqrt(-1)) = 2 * f0(x^4) - 2 * x^2 * f2(x^4)
-    // f(x * sqrt(-1)) - f(-x * sqrt(-1)) = 2 * sqrt(-1) * x * f1(x^4) - 2 * sqrt(-1) * x^3 * f3(x^4)
+    // f(x * sqrt(-1)) - f(-x * sqrt(-1)) = 2 * sqrt(-1) * x * f1(x^4) - 2 * sqrt(-1) * x^3 *
+    // f3(x^4)
 
-    // and each of those pairs [f(x), f(-x)], and [f(x * sqrt(-1)), f(-x * sqrt(-1))] would itself be pairs between
-    // themselves if we would fold by 2
+    // and each of those pairs [f(x), f(-x)], and [f(x * sqrt(-1)), f(-x * sqrt(-1))] would itself
+    // be pairs between themselves if we would fold by 2
 
     // f0(x^4) = (f(x) + f(-x) + f(x * sqrt(-1)) + f(-x * sqrt(-1))) / 4
     // f1(x^4) = (f(x) - f(-x) + (f(x * sqrt(-1)) - f(-x * sqrt(-1))) / sqrt(-1) ) / 4x
@@ -140,13 +148,15 @@ pub fn do_fri<
     // and if we would fold twice by 2 instead:
 
     // 2 * f'(x^2) = f(x) * (1 + alpha/x) + f(-x) * (1 - alpha/x)
-    // 2 * f'(-x^2) = f(x * sqrt(-1)) * (1 + alpha/x/sqrt(-1)) + f(-x * sqrt(-1)) * (1 - alpha/x/sqrt(-1))
+    // 2 * f'(-x^2) = f(x * sqrt(-1)) * (1 + alpha/x/sqrt(-1)) + f(-x * sqrt(-1)) * (1 -
+    // alpha/x/sqrt(-1))
 
     // and NOW we interpolate the interpolants using alpha^2
 
     // 4 * f''(x^4) = f'(x^2) * (1 + alpha^2/x^2) + f'(-x^2) * (1 - alpha^2/x^2) =
     // = (f(x) * (1 + alpha/x) + f(-x) * (1 - alpha/x)) * (1 + alpha^2/x^2) +
-    // + (f(x * sqrt(-1)) * (1 + alpha/x/sqrt(-1)) + f(-x * sqrt(-1)) * (1 - alpha/x/sqrt(-1))) * (1 - alpha^2/x^2) =
+    // + (f(x * sqrt(-1)) * (1 + alpha/x/sqrt(-1)) + f(-x * sqrt(-1)) * (1 - alpha/x/sqrt(-1))) * (1
+    //   - alpha^2/x^2) =
     // = f(x) * ( (1 + alpha/x) * (1 + alpha^2/x^2) ) +
     // + f(-x) * ( (1 - alpha/x) * (1 + alpha^2/x^2) ) +
     // + f(x * sqrt(-1)) * ( (1 + alpha/x/sqrt(-1)) * (1 - alpha^2/x^2) )
@@ -156,15 +166,15 @@ pub fn do_fri<
     // + f(x * sqrt(-1)) * ( 1 + alpha/x/sqrt(-1) - alpha^2/x^2 - alpha^3/x^3/sqrt(-1) )
     // + f(-x * sqrt(-1)) * ( 1 - alpha/x/sqrt(-1) - alpha^2/x^2 + alpha^3/x^3/sqrt(-1) )
 
-    // That is (wow, miracle!) the same expression that we would want to get if we would interpolate through
-    // the coefficients
+    // That is (wow, miracle!) the same expression that we would want to get if we would interpolate
+    // through the coefficients
 
-    // this formula works all the way, so we just recursively apply folding by 2, and raise the challenge powers
-    // (square it) every time when necessary
+    // this formula works all the way, so we just recursively apply folding by 2, and raise the
+    // challenge powers (square it) every time when necessary
 
-    // one should also note that after LDE when we have cosets like [1, gamma, gamma^2, ...] * {1, omega, ...},
-    // values of x, -x, x * sqrt(-1) and -x * sqrt(-1) are always in the same coset as long as it's size larger than 4.
-    // same would apply if we would use higher roots of -1
+    // one should also note that after LDE when we have cosets like [1, gamma, gamma^2, ...] * {1,
+    // omega, ...}, values of x, -x, x * sqrt(-1) and -x * sqrt(-1) are always in the same coset
+    // as long as it's size larger than 4. same would apply if we would use higher roots of -1
 
     // create first oracle. It's special because
     // what we have have is two polynomials that represent c0 and c1 coefficients of the extension,
@@ -210,10 +220,8 @@ pub fn do_fri<
         let mut challenge_powers = Vec::with_capacity(reduction_degree_log_2);
         challenge_powers.push((c0, c1));
         use crate::field::ExtensionField;
-        let as_extension = ExtensionField::<F, 2, EXT> {
-            coeffs: [c0, c1],
-            _marker: std::marker::PhantomData,
-        };
+        let as_extension =
+            ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
         let mut current = as_extension;
 
@@ -274,10 +282,8 @@ pub fn do_fri<
         let mut challenge_powers = Vec::with_capacity(reduction_degree_log_2);
         challenge_powers.push((c0, c1));
         use crate::field::ExtensionField;
-        let as_extension = ExtensionField::<F, 2, EXT> {
-            coeffs: [c0, c1],
-            _marker: std::marker::PhantomData,
-        };
+        let as_extension =
+            ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
         let mut current = as_extension;
 
@@ -342,11 +348,7 @@ pub fn do_fri<
     let monomial_form_0 = c0_source[..(fft_size / lde_degree)].to_vec_in(A::default());
     let monomial_form_1 = c1_source[..(fft_size / lde_degree)].to_vec_in(A::default());
 
-    log!(
-        "FRI for base size 2^{} is done over {:?}",
-        full_size.trailing_zeros(),
-        now.elapsed()
-    );
+    log!("FRI for base size 2^{} is done over {:?}", full_size.trailing_zeros(), now.elapsed());
 
     FriOracles {
         base_oracle: fri_base_oracle,
@@ -368,8 +370,7 @@ fn fold_multiple<F: SmallField, EXT: FieldExtension<2, BaseField = F>>(
     coset_inverse: &F,
     (c0, c1): (F, F),
 ) {
-    use crate::field::traits::field::Field;
-    use crate::field::ExtensionField;
+    use crate::field::{traits::field::Field, ExtensionField};
 
     // we compute f(x) + f(-x) + alpha * ((f(x) - f(-x))) / x,
     // where f(x), f(-x) and alpha are extension field elements,
@@ -385,10 +386,8 @@ fn fold_multiple<F: SmallField, EXT: FieldExtension<2, BaseField = F>>(
 
     let mut roots_chunks = roots.array_chunks::<16>();
 
-    let challenge_as_extension = ExtensionField::<F, 2, EXT> {
-        coeffs: [c0, c1],
-        _marker: std::marker::PhantomData,
-    };
+    let challenge_as_extension =
+        ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
     for ((((c0_pairs, c1_pairs), dst_c0), dst_c1), roots) in (&mut src_c0_chunks)
         .zip(&mut src_c1_chunks)
@@ -499,8 +498,9 @@ fn interpolate_independent_cosets<
     let mut result_c0 = Vec::with_capacity_in(result_size, A::default());
     let mut result_c1 = Vec::with_capacity_in(result_size, A::default());
 
-    // we fold as many times as we need, but after first folding we should understand that our memory layout is not
-    // beneficial for FRI, so in practice we work over independent field elements
+    // we fold as many times as we need, but after first folding we should understand that our
+    // memory layout is not beneficial for FRI, so in practice we work over independent field
+    // elements
 
     let (c0, c1) = challenges[0];
 
@@ -705,13 +705,14 @@ pub fn split_inner(idx: usize, size_factor: usize) -> (usize, usize) {
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > QuerySource<F> for SetupStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> QuerySource<F> for SetupStorage<F, P, A, B>
 {
-    // setup storage is merklized as copy-permutation columns, then constants, then lookup tables setup
+    // setup storage is merklized as copy-permutation columns, then constants, then lookup tables
+    // setup
     fn get_elements(
         &self,
         lde_factor: usize,
@@ -722,10 +723,7 @@ impl<
         dst: &mut Vec<F>,
     ) {
         assert!(lde_factor > coset_idx);
-        assert_eq!(
-            num_elements, 1,
-            "we query setup/witness oracles only by 1 element per leaf"
-        );
+        assert_eq!(num_elements, 1, "we query setup/witness oracles only by 1 element per leaf");
         let (outer, inner) = split_inner(inner_idx, P::SIZE_FACTOR);
         let source = self.flattened_source();
         for subsource in source {
@@ -737,11 +735,11 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > QuerySource<F> for WitnessStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> QuerySource<F> for WitnessStorage<F, P, A, B>
 {
     // witness is variables, then witness, then lookup multiplicities columns
     fn get_elements(
@@ -754,10 +752,7 @@ impl<
         dst: &mut Vec<F>,
     ) {
         assert!(lde_factor > coset_idx);
-        assert_eq!(
-            num_elements, 1,
-            "we query setup/witness oracles only by 1 element per leaf"
-        );
+        assert_eq!(num_elements, 1, "we query setup/witness oracles only by 1 element per leaf");
         let (outer, inner) = split_inner(inner_idx, P::SIZE_FACTOR);
         let source = self.flattened_source();
         for subsource in source {
@@ -769,11 +764,11 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > QuerySource<F> for SecondStageProductsStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> QuerySource<F> for SecondStageProductsStorage<F, P, A, B>
 {
     // witness is copy_permutation z_polys, then intermediate products, then lookup's A and B polys
     fn get_elements(
@@ -786,10 +781,7 @@ impl<
         dst: &mut Vec<F>,
     ) {
         assert!(lde_factor > coset_idx);
-        assert_eq!(
-            num_elements, 1,
-            "we query setup/witness oracles only by 1 element per leaf"
-        );
+        assert_eq!(num_elements, 1, "we query setup/witness oracles only by 1 element per leaf");
         let (outer, inner) = split_inner(inner_idx, P::SIZE_FACTOR);
         let source = self.flattened_source();
         for subsource in source {
@@ -804,15 +796,11 @@ impl<
 // that we can form from fixed set of polys arc polys, or flattened vectors
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > QuerySource<F>
-    for (
-        ArcGenericLdeStorage<F, P, A, B>,
-        ArcGenericLdeStorage<F, P, A, B>,
-    )
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> QuerySource<F> for (ArcGenericLdeStorage<F, P, A, B>, ArcGenericLdeStorage<F, P, A, B>)
 {
     fn get_elements(
         &self,
@@ -896,12 +884,12 @@ impl<'a, F: SmallField, const N: usize, A: GoodAllocator> QuerySource<F> for &'a
 
 // mainly for quotient
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-        C: GoodAllocator,
-    > QuerySource<F> for Vec<ArcGenericLdeStorage<F, P, A, B>, C>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+    C: GoodAllocator,
+> QuerySource<F> for Vec<ArcGenericLdeStorage<F, P, A, B>, C>
 {
     fn get_elements(
         &self,
@@ -913,10 +901,7 @@ impl<
         dst: &mut Vec<F>,
     ) {
         assert!(lde_factor > coset_idx);
-        assert_eq!(
-            num_elements, 1,
-            "we query setup/witness oracles only by 1 element per leaf"
-        );
+        assert_eq!(num_elements, 1, "we query setup/witness oracles only by 1 element per leaf");
         let (outer, inner) = split_inner(inner_idx, P::SIZE_FACTOR);
         for subsource in self.iter() {
             assert_eq!(subsource.storage[coset_idx].domain_size(), domain_size);
@@ -928,11 +913,12 @@ impl<
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::field::goldilocks::GoldilocksField;
-    use crate::field::{rand_from_rng, PrimeField, U64Representable};
-    use rand::thread_rng;
     use std::alloc::Global;
+
+    use rand::thread_rng;
+
+    use super::*;
+    use crate::field::{goldilocks::GoldilocksField, rand_from_rng, PrimeField, U64Representable};
 
     // poly c0, c1, c2, c3
     // folded (c0 + alpha * c1) + (c2 + alpha * c3) * y
@@ -945,8 +931,9 @@ mod test {
 
     // folded by values
 
-    // tt0 = (t0 + t2) + alpha * (t0 - t2) / (g * omega^0) = 2c0 + 2 g^2 * c2 + alpha * 2 * (c1 + g^2 * c3)
-    // tt1 = (t1 + t3) + alpha * (t1 - t3) / (g * omega^1) = 2c0 - 2 g^2 * c2 + alpha * 2 * (c1 - g^2 * c3)
+    // tt0 = (t0 + t2) + alpha * (t0 - t2) / (g * omega^0) = 2c0 + 2 g^2 * c2 + alpha * 2 * (c1 +
+    // g^2 * c3) tt1 = (t1 + t3) + alpha * (t1 - t3) / (g * omega^1) = 2c0 - 2 g^2 * c2 + alpha
+    // * 2 * (c1 - g^2 * c3)
 
     // evaluate folded at g^2 and - g^2
 
@@ -955,7 +942,8 @@ mod test {
 
     // that only differs from tt0 and tt1 by the factor of 2
 
-    // so simplified procedure to fold by value pushes us from coset of form g * {1, omega, ..} into coset of g^2 * {1, omega^2, ...}
+    // so simplified procedure to fold by value pushes us from coset of form g * {1, omega, ..} into
+    // coset of g^2 * {1, omega^2, ...}
 
     #[test]
     fn test_fri_over_coset() {

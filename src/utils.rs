@@ -1,4 +1,3 @@
-use crate::log;
 use std::{
     arch::asm,
     intrinsics::const_eval_select,
@@ -7,7 +6,7 @@ use std::{
 
 use derivative::Derivative;
 
-use crate::cs::traits::GoodAllocator;
+use crate::{cs::traits::GoodAllocator, log};
 
 #[inline(always)]
 pub const fn branch_hint() {
@@ -215,9 +214,7 @@ pub struct DilatoryPrinter {
 
 impl DilatoryPrinter {
     pub fn new() -> Self {
-        Self {
-            last_print_time: Instant::now(),
-        }
+        Self { last_print_time: Instant::now() }
     }
 
     pub fn print(&mut self, s: String) {
@@ -366,9 +363,7 @@ pub fn deserialize_vec_with_allocator<'de, D, T: serde::Deserialize<'de>, A: Goo
 where
     D: serde::Deserializer<'de>,
 {
-    let visitor = VecVisitor::<T, A> {
-        element: std::marker::PhantomData,
-    };
+    let visitor = VecVisitor::<T, A> { element: std::marker::PhantomData };
     deserializer.deserialize_seq(visitor)
 }
 
@@ -426,9 +421,7 @@ pub(crate) fn deserialize_vec_arc<'de, D, T: serde::Deserialize<'de>, A: GoodAll
 where
     D: serde::Deserializer<'de>,
 {
-    let visitor = VecArcVisitor::<T, A> {
-        element: std::marker::PhantomData,
-    };
+    let visitor = VecArcVisitor::<T, A> { element: std::marker::PhantomData };
     deserializer.deserialize_seq(visitor)
 }
 
@@ -510,8 +503,6 @@ pub fn deserialize_vec_vec_with_allocators<
 where
     D: serde::Deserializer<'de>,
 {
-    let visitor = VecVecVisitor::<T, A, B> {
-        element: std::marker::PhantomData,
-    };
+    let visitor = VecVecVisitor::<T, A, B> { element: std::marker::PhantomData };
     deserializer.deserialize_seq(visitor)
 }

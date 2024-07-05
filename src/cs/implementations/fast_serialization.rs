@@ -45,7 +45,8 @@ pub fn write_vec_into_buffer<T: MemcopySerializable, W: Write, A: Allocator>(
     Ok(())
 }
 
-// we provide only non-field related base implementations, that can be used with vector functions above
+// we provide only non-field related base implementations, that can be used with vector functions
+// above
 impl MemcopySerializable for u32 {
     fn read_from_buffer<R: Read>(mut src: R) -> Result<Self, Box<dyn Error>> {
         let mut le_bytes = [0u8; 4];
@@ -138,10 +139,10 @@ impl<T: MemcopySerializable> MemcopySerializable for std::sync::Arc<T> {
 // Prime field like vectors are the special case, and it's only implemented for vector!
 
 impl<
-        F: SmallField,
-        A: GoodAllocator,
-        P: crate::field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-    > MemcopySerializable for Vec<P, A>
+    F: SmallField,
+    A: GoodAllocator,
+    P: crate::field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+> MemcopySerializable for Vec<P, A>
 where
     Self: 'static,
 {

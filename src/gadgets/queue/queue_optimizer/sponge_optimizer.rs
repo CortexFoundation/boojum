@@ -21,13 +21,13 @@ pub struct SpongeOptimizer<
 }
 
 impl<
-        F: SmallField,
-        R: CircuitRoundFunction<F, AW, SW, CW> + AlgebraicRoundFunction<F, AW, SW, CW>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        const N: usize,
-    > SpongeOptimizer<F, R, AW, SW, CW, N>
+    F: SmallField,
+    R: CircuitRoundFunction<F, AW, SW, CW> + AlgebraicRoundFunction<F, AW, SW, CW>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    const N: usize,
+> SpongeOptimizer<F, R, AW, SW, CW, N>
 {
     pub fn new(capacity: usize) -> Self {
         Self {
@@ -142,10 +142,7 @@ pub fn conditionaly_check_request<
     request: SpongeRoundRequest<F, SW>,
     applies: Boolean<F>,
 ) {
-    let SpongeRoundRequest {
-        initial_state,
-        claimed_final_state,
-    } = request;
+    let SpongeRoundRequest { initial_state, claimed_final_state } = request;
 
     let application_result = R::compute_round_function_over_nums(cs, initial_state);
 

@@ -1,18 +1,24 @@
 use crypto_bigint::CheckedMul;
 
-use crate::cs::gates::{
-    ConstantAllocatableCS, DotProductGate, FmaGateInBaseFieldWithoutConstant, UIntXAddGate,
+use super::{utils::*, *};
+use crate::{
+    cs::{
+        gates::{
+            ConstantAllocatableCS, DotProductGate, FmaGateInBaseFieldWithoutConstant, UIntXAddGate,
+        },
+        traits::cs::DstBuffer,
+    },
+    gadgets::{
+        boolean::Boolean,
+        num::Num,
+        traits::{
+            allocatable::CSAllocatable,
+            castable::WitnessCastable,
+            selectable::Selectable,
+            witnessable::{CSWitnessable, WitnessHookable},
+        },
+    },
 };
-use crate::cs::traits::cs::DstBuffer;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::traits::selectable::Selectable;
-use crate::gadgets::traits::witnessable::{CSWitnessable, WitnessHookable};
-
-use super::utils::*;
-use super::*;
 
 impl<F: SmallField, T: pairing::ff::PrimeField, const N: usize> NonNativeFieldOverU16<F, T, N>
 where
@@ -30,9 +36,7 @@ where
         Self {
             limbs,
             non_zero_limbs: params.modulus_limbs,
-            tracker: OverflowTracker {
-                max_moduluses: params.max_mods_in_allocation,
-            },
+            tracker: OverflowTracker { max_moduluses: params.max_mods_in_allocation },
             form: RepresentationForm::Normalized,
             params: params.clone(),
             _marker: std::marker::PhantomData,
@@ -58,9 +62,7 @@ where
         let mut new = Self {
             limbs,
             non_zero_limbs: params.modulus_limbs,
-            tracker: OverflowTracker {
-                max_moduluses: params.max_mods_in_allocation,
-            },
+            tracker: OverflowTracker { max_moduluses: params.max_mods_in_allocation },
             form: RepresentationForm::Normalized,
             params: params.clone(),
             _marker: std::marker::PhantomData,
@@ -381,8 +383,8 @@ where
 
         let lhs_max = a_max.checked_mul(&b_max).unwrap();
 
-        // and if a or b are in "lazy" form, then multiplication of those + additions do not overflow
-        // modulus. We only check worst case
+        // and if a or b are in "lazy" form, then multiplication of those + additions do not
+        // overflow modulus. We only check worst case
         let mut max_intermediate_limb_value = (1u64 << 48) - 1;
         max_intermediate_limb_value -= u32::MAX as u64; // from potential carry
         let max_lhs_limb = match self.form {
@@ -549,8 +551,8 @@ where
             range_check_u16(cs, *src);
         }
 
-        // we follow an aproach that we try to form a linear combination for a word of intermediate product of lhs - rhs, shift it right
-        // and range-check to get carry
+        // we follow an aproach that we try to form a linear combination for a word of intermediate
+        // product of lhs - rhs, shift it right and range-check to get carry
 
         let mut lhs_products_buffer = Vec::with_capacity(N * N + 2);
         let mut rhs_products_buffer = Vec::with_capacity(N * N + N + 2);
@@ -663,11 +665,7 @@ where
             assert_eq!(num_terms_to_consume, 0);
             assert!(lhs_iter.next().is_none());
 
-            let lhs_accumulated = if let Some(previous) = previous {
-                previous
-            } else {
-                zero
-            };
+            let lhs_accumulated = if let Some(previous) = previous { previous } else { zero };
             // RHS is linear combination
             let rhs_accumulated = if rhs_products_buffer.len() > 0 {
                 Num::linear_combination(cs, &rhs_products_buffer).variable
@@ -702,9 +700,7 @@ where
         let mut new = Self {
             limbs: r,
             non_zero_limbs: self.params.modulus_limbs,
-            tracker: OverflowTracker {
-                max_moduluses: self.params.max_mods_in_allocation,
-            },
+            tracker: OverflowTracker { max_moduluses: self.params.max_mods_in_allocation },
             form: RepresentationForm::Normalized,
             params: self.params.clone(),
             _marker: std::marker::PhantomData,
@@ -764,7 +760,8 @@ where
             let new = Self {
                 limbs,
                 non_zero_limbs: used_words,
-                tracker: OverflowTracker { max_moduluses: 2 }, // NOTE: if self == 0, then limbs will be == modulus, so use 2
+                tracker: OverflowTracker { max_moduluses: 2 }, /* NOTE: if self == 0, then limbs
+                                                                * will be == modulus, so use 2 */
                 form: RepresentationForm::Normalized,
                 params: self.params.clone(),
                 _marker: std::marker::PhantomData,
@@ -1005,11 +1002,7 @@ where
         b.normalize(cs);
 
         let equalities: [_; N] = std::array::from_fn(|i| {
-            Num::equals(
-                cs,
-                &Num::from_variable(a.limbs[i]),
-                &Num::from_variable(b.limbs[i]),
-            )
+            Num::equals(cs, &Num::from_variable(a.limbs[i]), &Num::from_variable(b.limbs[i]))
         });
 
         Boolean::multi_and(cs, &equalities)
@@ -1151,18 +1144,18 @@ impl<F: SmallField, T: pairing::ff::PrimeField, const N: usize> Selectable<F>
 mod test {
     use std::alloc::Global;
 
-    use super::*;
-    use crate::cs::*;
-
-    use crate::cs::gates::*;
-    use crate::cs::traits::gate::GatePlacementStrategy;
-    use crate::dag::CircuitResolverOpts;
-    use crate::field::goldilocks::GoldilocksField;
-    use crate::gadgets::tables::range_check_16_bits::{
-        create_range_check_16_bits_table, RangeCheck16BitsTable,
-    };
-    use crate::worker::Worker;
     use pairing::ff::{Field, PrimeField};
+
+    use super::*;
+    use crate::{
+        cs::{gates::*, traits::gate::GatePlacementStrategy, *},
+        dag::CircuitResolverOpts,
+        field::goldilocks::GoldilocksField,
+        gadgets::tables::range_check_16_bits::{
+            create_range_check_16_bits_table, RangeCheck16BitsTable,
+        },
+        worker::Worker,
+    };
 
     type F = GoldilocksField;
     type Ext = pairing::bn256::Fq;

@@ -41,10 +41,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: N,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: N, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -175,9 +172,7 @@ impl<F: SmallField, const N: usize> Gate<F> for ReductionByPowersGate<F, N> {
 impl<F: SmallField, const N: usize> ReductionByPowersGate<F, N> {
     pub const fn empty() -> Self {
         Self {
-            params: ReductionByPowersGateParams {
-                reduction_constant: F::ZERO,
-            },
+            params: ReductionByPowersGateParams { reduction_constant: F::ZERO },
             terms: [Variable::placeholder(); N],
             reduction_result: Variable::placeholder(),
         }
@@ -259,9 +254,7 @@ impl<F: SmallField, const N: usize> ReductionByPowersGate<F, N> {
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
             let gate = Self {
-                params: ReductionByPowersGateParams {
-                    reduction_constant: limb_size,
-                },
+                params: ReductionByPowersGateParams { reduction_constant: limb_size },
                 terms: output_variables,
                 reduction_result: input,
             };
@@ -312,9 +305,7 @@ impl<F: SmallField, const N: usize> ReductionByPowersGate<F, N> {
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
             let gate = Self {
-                params: ReductionByPowersGateParams {
-                    reduction_constant: limb_size,
-                },
+                params: ReductionByPowersGateParams { reduction_constant: limb_size },
                 terms: output_variables,
                 reduction_result: input,
             };

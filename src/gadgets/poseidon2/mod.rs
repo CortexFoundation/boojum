@@ -1,19 +1,20 @@
-use crate::cs::gates::{
-    assert_no_placeholder_variables, ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
-    MatrixMultiplicationGate, ReductionGate, SimpleNonlinearityGate,
+use crate::{
+    algebraic_props::poseidon2_parameters::{
+        Poseidon2GoldilocksExternalMatrix, Poseidon2GoldilocksInnerMatrix, Poseidon2Parameters,
+    },
+    cs::{
+        gates::{
+            assert_no_placeholder_variables, ConstantAllocatableCS,
+            FmaGateInBaseFieldWithoutConstant, MatrixMultiplicationGate, Poseidon2FlattenedGate,
+            ReductionGate, SimpleNonlinearityGate,
+        },
+        traits::cs::ConstraintSystem,
+        Variable,
+    },
+    field::{goldilocks::GoldilocksField, Field},
+    gadgets::{num::Num, traits::round_function::CircuitRoundFunction},
+    implementations::poseidon2::Poseidon2Goldilocks,
 };
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::Field;
-use crate::gadgets::num::Num;
-
-use crate::algebraic_props::poseidon2_parameters::{
-    Poseidon2GoldilocksExternalMatrix, Poseidon2GoldilocksInnerMatrix, Poseidon2Parameters,
-};
-use crate::cs::gates::Poseidon2FlattenedGate;
-use crate::gadgets::traits::round_function::CircuitRoundFunction;
-use crate::implementations::poseidon2::Poseidon2Goldilocks;
 
 impl CircuitRoundFunction<GoldilocksField, 8, 12, 4> for Poseidon2Goldilocks {
     fn compute_round_function<CS: ConstraintSystem<GoldilocksField>>(
@@ -55,12 +56,13 @@ impl CircuitRoundFunction<GoldilocksField, 8, 12, 4> for Poseidon2Goldilocks {
     }
 }
 
-use crate::cs::cs_builder::*;
-use crate::cs::*;
-use crate::gadgets::poseidon2::gates::NextGateCounterWithoutParams;
-use crate::gadgets::poseidon2::traits::gate::GatePlacementStrategy;
-use crate::gadgets::traits::configuration::*;
-use crate::gadgets::traits::round_function::BuildableCircuitRoundFunction;
+use crate::{
+    cs::{cs_builder::*, *},
+    gadgets::{
+        poseidon2::{gates::NextGateCounterWithoutParams, traits::gate::GatePlacementStrategy},
+        traits::{configuration::*, round_function::BuildableCircuitRoundFunction},
+    },
+};
 
 impl BuildableCircuitRoundFunction<GoldilocksField, 8, 12, 4> for Poseidon2Goldilocks {
     type GateConfiguration<GC: GateConfigurationHolder<GoldilocksField>> = (
@@ -129,7 +131,8 @@ fn poseidon2_goldilocks_not_unrolled<CS: ConstraintSystem<GoldilocksField>>(
     cs: &mut CS,
     input: [Variable; 12],
 ) -> [Variable; 12] {
-    // assert!(cs.gate_is_allowed::<MatrixMultiplicationGate<GoldilocksField, 12, PoseidonGoldilocks>>());
+    // assert!(cs.gate_is_allowed::<MatrixMultiplicationGate<GoldilocksField, 12,
+    // PoseidonGoldilocks>>());
     assert_no_placeholder_variables(&input);
 
     // here we can do normal structure of poseidon as it doesn't matter too much
@@ -454,12 +457,7 @@ mod test {
     use std::alloc::Global;
 
     use super::*;
-
-    use crate::config::CSConfig;
-    use crate::cs::gates::*;
-    use crate::dag::CircuitResolverOpts;
-    use crate::log;
-    use crate::worker::Worker;
+    use crate::{config::CSConfig, cs::gates::*, dag::CircuitResolverOpts, log, worker::Worker};
 
     type F = GoldilocksField;
 

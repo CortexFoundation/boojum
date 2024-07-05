@@ -1,11 +1,15 @@
 use super::*;
-use crate::cs::gates::{
-    assert_no_placeholder_variables, ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
+use crate::{
+    cs::{
+        gates::{
+            assert_no_placeholder_variables, ConstantAllocatableCS,
+            FmaGateInBaseFieldWithoutConstant,
+        },
+        traits::cs::ConstraintSystem,
+        Variable,
+    },
+    gadgets::{u32::UInt32, u8::UInt8},
 };
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
-use crate::gadgets::u32::UInt32;
-use crate::gadgets::u8::UInt8;
 
 pub mod round_function;
 
@@ -108,6 +112,8 @@ pub fn sha256<F: SmallField, CS: ConstraintSystem<F>>(
 mod test {
     use std::alloc::Global;
 
+    use blake2::Digest;
+
     use super::*;
     use crate::{
         config::CSConfig,
@@ -130,10 +136,10 @@ mod test {
         },
         log,
     };
-    use blake2::Digest;
     type F = GoldilocksField;
-    use crate::cs::traits::gate::GatePlacementStrategy;
-    use crate::gadgets::traits::witnessable::WitnessHookable;
+    use crate::{
+        cs::traits::gate::GatePlacementStrategy, gadgets::traits::witnessable::WitnessHookable,
+    };
 
     #[test]
     fn test_single_round() {
@@ -255,8 +261,10 @@ mod test {
     type P = crate::field::goldilocks::MixedGL;
 
     // Notes on benches:
-    // - we ignore equality asserts because we are lazy, but those are negligible contribution compared to sha256 itself
-    // - we use random input (not zeroes), because constant propagation would not help much anyway, and it's more realistic case
+    // - we ignore equality asserts because we are lazy, but those are negligible contribution
+    //   compared to sha256 itself
+    // - we use random input (not zeroes), because constant propagation would not help much anyway,
+    //   and it's more realistic case
     // - allocation (8-bit constraints on bytes) are included in the proof, but why not?
     // - PoW is turned off, because 2^20 bits for blake2s PoW is 30 ms anyway, negligible
 
@@ -272,9 +280,12 @@ mod test {
     #[test]
     #[ignore]
     fn run_sha256_prover_recursive_mode() {
-        use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-        use crate::algebraic_props::sponge::GoldilocksPoseidonSponge;
-        use crate::cs::implementations::transcript::GoldilocksPoisedonTranscript;
+        use crate::{
+            algebraic_props::{
+                round_function::AbsorptionModeOverwrite, sponge::GoldilocksPoseidonSponge,
+            },
+            cs::implementations::transcript::GoldilocksPoisedonTranscript,
+        };
 
         type TreeHash = GoldilocksPoseidonSponge<AbsorptionModeOverwrite>;
         type Transcript = GoldilocksPoisedonTranscript;
@@ -284,9 +295,12 @@ mod test {
     #[test]
     #[ignore]
     fn run_sha256_prover_recursive_mode_poseidon2() {
-        use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-        use crate::algebraic_props::sponge::GoldilocksPoseidon2Sponge;
-        use crate::cs::implementations::transcript::GoldilocksPoisedonTranscript;
+        use crate::{
+            algebraic_props::{
+                round_function::AbsorptionModeOverwrite, sponge::GoldilocksPoseidon2Sponge,
+            },
+            cs::implementations::transcript::GoldilocksPoisedonTranscript,
+        };
 
         type TreeHash = GoldilocksPoseidon2Sponge<AbsorptionModeOverwrite>;
         type Transcript = GoldilocksPoisedonTranscript;
@@ -299,10 +313,10 @@ mod test {
     >(
         len: usize,
     ) {
-        use crate::config::SetupCSConfig;
-        use crate::cs::implementations::prover::ProofConfig;
-        use crate::field::goldilocks::GoldilocksExt2;
-        use crate::worker::Worker;
+        use crate::{
+            config::SetupCSConfig, cs::implementations::prover::ProofConfig,
+            field::goldilocks::GoldilocksExt2, worker::Worker,
+        };
 
         let worker = Worker::new_with_num_threads(8);
 
@@ -334,9 +348,7 @@ mod test {
         let max_variables = 1 << 25;
         let max_trace_len = 1 << 19;
 
-        use crate::cs::cs_builder::*;
-        use crate::cs::GateConfigurationHolder;
-        use crate::cs::StaticToolboxHolder;
+        use crate::cs::{cs_builder::*, GateConfigurationHolder, StaticToolboxHolder};
 
         fn configure<
             T: CsBuilderImpl<F, T>,
@@ -417,8 +429,7 @@ mod test {
             assert!(owned_cs.check_if_satisfied(&worker));
         }
 
-        use crate::cs::cs_builder_reference::*;
-        use crate::cs::cs_builder_verifier::*;
+        use crate::cs::{cs_builder_reference::*, cs_builder_verifier::*};
 
         type RCfgS = <SetupCSConfig as CSConfig>::ResolverConfig;
 

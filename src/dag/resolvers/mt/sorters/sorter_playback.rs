@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::{ResolutionRecord, ResolutionRecordItem, ResolutionRecordSource, ResolverSortingMode};
 use crate::{
     config::CSResolverConfig,
     cs::Place,
@@ -17,8 +18,6 @@ use crate::{
     field::SmallField,
     utils::{PipeOp, UnsafeCellEx},
 };
-
-use super::{ResolutionRecord, ResolutionRecordItem, ResolutionRecordSource, ResolverSortingMode};
 
 struct OrderBufferItem {
     resolver_ix: ResolverIx,
@@ -42,10 +41,8 @@ impl<F: SmallField, Rrs: ResolutionRecordSource, Cfg: CSResolverConfig>
         let mut exec_order = self.common.exec_order.lock().unwrap();
 
         for i in &self.exec_order_buffer {
-            exec_order.items[usize::from(i.record_item.order_ix)] = OrderInfo::new(
-                i.resolver_ix,
-                GuideMetadata::new(i.record_item.parallelism, 0, 0),
-            )
+            exec_order.items[usize::from(i.record_item.order_ix)] =
+                OrderInfo::new(i.resolver_ix, GuideMetadata::new(i.record_item.parallelism, 0, 0))
         }
 
         exec_order.size = match size_override {
@@ -179,10 +176,8 @@ impl<F: SmallField, Rrs: ResolutionRecordSource, Cfg: CSResolverConfig> Resolver
         };
 
         // TODO: Change OrderInfo such that unrelated data is not stored along.
-        self.exec_order_buffer.push(OrderBufferItem {
-            resolver_ix,
-            record_item: record.clone(),
-        });
+        self.exec_order_buffer
+            .push(OrderBufferItem { resolver_ix, record_item: record.clone() });
 
         // Without the additions, awaiters for 0th resolver would resolve immediately.
         values.track_values(outputs, record.order_ix + 1);

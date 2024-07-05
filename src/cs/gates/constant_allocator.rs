@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::*;
-
 use super::*;
+use crate::cs::cs_builder::*;
 
 // Allocate constants by a batch of constraints like (a - constant) == 0
 
@@ -35,19 +34,12 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for ConstantAllocatorConstraintEv
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 1,
-            num_witnesses: 0,
-            num_constants: 1,
-        }
+        GatePrincipalInstanceWidth { num_variables: 1, num_witnesses: 0, num_constants: 1 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 1,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 1, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -66,10 +58,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for ConstantAllocatorConstraintEv
         debug_assert!(geometry.num_columns_under_copy_permutation >= 1);
         debug_assert!(geometry.num_constant_columns >= 1);
 
-        std::cmp::min(
-            geometry.num_constant_columns,
-            geometry.num_columns_under_copy_permutation,
-        )
+        std::cmp::min(geometry.num_constant_columns, geometry.num_columns_under_copy_permutation)
     }
     #[inline]
     fn num_required_constants_in_geometry(&self, geometry: &CSGeometry) -> usize {
@@ -147,17 +136,11 @@ impl<F: SmallField> Gate<F> for ConstantsAllocatorGate<F> {
 
 impl<F: SmallField> ConstantsAllocatorGate<F> {
     pub const fn empty() -> Self {
-        Self {
-            variable_with_constant_value: Variable::placeholder(),
-            constant_to_add: F::ZERO,
-        }
+        Self { variable_with_constant_value: Variable::placeholder(), constant_to_add: F::ZERO }
     }
 
     pub const fn new_to_enforce(var: Variable, constant: F) -> Self {
-        Self {
-            variable_with_constant_value: var,
-            constant_to_add: constant,
-        }
+        Self { variable_with_constant_value: var, constant_to_add: constant }
     }
 
     pub fn configure_builder<
@@ -171,16 +154,14 @@ impl<F: SmallField> ConstantsAllocatorGate<F> {
         //     TImpl,
         //     F,
         //     GC::DescendantHolder<Self, NextGateCounterWithoutParams>,
-        //     TB::DescendantHolder<ConstantToVariableMappingToolMarker, ConstantToVariableMappingTool<F>>,
+        //     TB::DescendantHolder<ConstantToVariableMappingToolMarker,
+        // ConstantToVariableMappingTool<F>>,
         // > {
     ) -> CsBuilder<
         TImpl,
         F,
         (GateTypeEntry<F, Self, NextGateCounterWithoutParams>, GC),
-        (
-            Tool<ConstantToVariableMappingToolMarker, ConstantToVariableMappingTool<F>>,
-            TB,
-        ),
+        (Tool<ConstantToVariableMappingToolMarker, ConstantToVariableMappingTool<F>>, TB),
     > {
         // we want to have a CS-global toolbox under some marker
         builder
@@ -296,8 +277,7 @@ impl<F: SmallField> ConstantsAllocatorGate<F> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
 
     type F = GoldilocksField;
 

@@ -29,9 +29,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for BoundedConstantAllocatorConst
 
     #[inline(always)]
     fn new_from_parameters(params: Self::UniqueParameterizationParams) -> Self {
-        Self {
-            max_constants_to_add_per_row: params.max_constants_to_add_per_row,
-        }
+        Self { max_constants_to_add_per_row: params.max_constants_to_add_per_row }
     }
 
     #[inline(always)]
@@ -48,19 +46,12 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for BoundedConstantAllocatorConst
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 1,
-            num_witnesses: 0,
-            num_constants: 1,
-        }
+        GatePrincipalInstanceWidth { num_variables: 1, num_witnesses: 0, num_constants: 1 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 1,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 1, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -195,8 +186,9 @@ impl<F: SmallField> BoundedConstantsAllocatorGate<F> {
         // let num_variables_per_row = cs.get_params().num_columns_under_copy_permutation;
         // let variables_capacity_per_row = num_variables_per_row / PRINCIPAL_WIDTH;
 
-        // let capacity_per_row = std::cmp::min(constant_capacity_per_row, variables_capacity_per_row);
-        // let capacity_per_row = std::cmp::min(self.max_constants_to_add_per_row, capacity_per_row);
+        // let capacity_per_row = std::cmp::min(constant_capacity_per_row,
+        // variables_capacity_per_row); let capacity_per_row =
+        // std::cmp::min(self.max_constants_to_add_per_row, capacity_per_row);
 
         // let tooling: &mut GateTooling = cs.get_or_create_dynamic_tool_mut(UNIQUE_IDENTIFIER);
 

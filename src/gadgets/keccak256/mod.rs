@@ -1,9 +1,11 @@
-use super::*;
-use crate::config::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
-use crate::gadgets::u8::UInt8;
 use std::mem::MaybeUninit;
+
+use super::*;
+use crate::{
+    config::*,
+    cs::{traits::cs::ConstraintSystem, Variable},
+    gadgets::u8::UInt8,
+};
 
 type RCfg = <DevCSConfig as CSConfig>::ResolverConfig;
 
@@ -113,6 +115,8 @@ pub fn keccak256<F: SmallField, CS: ConstraintSystem<F>>(
 mod test {
     use std::alloc::Global;
 
+    use sha3::Digest;
+
     use super::*;
     use crate::{
         cs::{
@@ -127,10 +131,10 @@ mod test {
             xor8::{create_xor8_table, Xor8Table},
         },
     };
-    use sha3::Digest;
     type F = GoldilocksField;
-    use crate::cs::traits::gate::GatePlacementStrategy;
-    use crate::gadgets::traits::witnessable::WitnessHookable;
+    use crate::{
+        cs::traits::gate::GatePlacementStrategy, gadgets::traits::witnessable::WitnessHookable,
+    };
 
     #[test]
     fn test_single_round() {

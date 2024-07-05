@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use pairing::GenericCurveAffine;
 
+use super::*;
 use crate::{
     cs::traits::cs::ConstraintSystem,
     gadgets::{boolean::Boolean, non_native_field::traits::NonNativeField},
 };
-
-use super::*;
 
 pub struct ZeroableAffinePoint<F: SmallField, C: GenericCurveAffine, NN: NonNativeField<F, C::Base>>
 where
@@ -19,8 +18,9 @@ where
     pub _marker: std::marker::PhantomData<C>,
 }
 
-// we only need add/sub/double/negate Mul is implemented by naive double-and-add, and we can have special
-// mul that will multiply by an element of scalar field, where zeroness-exception can only happen once.
+// we only need add/sub/double/negate Mul is implemented by naive double-and-add, and we can have
+// special mul that will multiply by an element of scalar field, where zeroness-exception can only
+// happen once.
 
 // We also create decompress function for convenience
 

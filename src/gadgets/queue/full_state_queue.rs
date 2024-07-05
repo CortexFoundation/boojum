@@ -1,21 +1,20 @@
-use std::collections::VecDeque;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, RwLock},
+};
 
-use super::boolean::Boolean;
-use super::num::Num;
-use super::u32::UInt32;
-use super::{traits::encodable::CircuitEncodable, *};
-use crate::config::CSConfig;
-
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
-use crate::field::SmallField;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::traits::encodable::CircuitEncodableExt;
-use crate::gadgets::traits::selectable::Selectable;
-
-use super::queue_optimizer::*;
+use super::{
+    boolean::Boolean, num::Num, queue_optimizer::*, traits::encodable::CircuitEncodable,
+    u32::UInt32, *,
+};
+use crate::{
+    config::CSConfig,
+    cs::{traits::cs::ConstraintSystem, Variable},
+    field::SmallField,
+    gadgets::traits::{
+        castable::WitnessCastable, encodable::CircuitEncodableExt, selectable::Selectable,
+    },
+};
 
 pub struct FullStateCircuitQueue<
     F: SmallField,
@@ -65,9 +64,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const SW: usize, const N: usize>
     FullStateCircuitQueueWitness<F, EL, SW, N>
 {
     pub fn from_inner_witness(inner: FullStateCircuitQueueRawWitness<F, EL, SW, N>) -> Self {
-        Self {
-            elements: RwLock::new(inner.elements),
-        }
+        Self { elements: RwLock::new(inner.elements) }
     }
 }
 
@@ -78,9 +75,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const SW: usize, const N: usize>
         if let Ok(elements) = self.elements.read() {
             let elements = (*elements).clone();
 
-            Self {
-                elements: RwLock::new(elements),
-            }
+            Self { elements: RwLock::new(elements) }
         } else {
             unreachable!()
         }
@@ -91,9 +86,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const SW: usize, const N: usize>
     FullStateCircuitQueueWitness<F, EL, SW, N>
 {
     pub fn empty() -> Self {
-        Self {
-            elements: RwLock::new(VecDeque::new()),
-        }
+        Self { elements: RwLock::new(VecDeque::new()) }
     }
 
     pub fn pop_front(&self) -> (EL::Witness, [F; SW]) {
@@ -116,14 +109,14 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const SW: usize, const N: usize>
 }
 
 impl<
-        F: SmallField,
-        EL: CircuitEncodable<F, N>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        const N: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > FullStateCircuitQueue<F, EL, AW, SW, CW, N, R>
+    F: SmallField,
+    EL: CircuitEncodable<F, N>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    const N: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> FullStateCircuitQueue<F, EL, AW, SW, CW, N, R>
 {
     pub fn empty<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
         let zero_el = Num::allocated_constant(cs, F::ZERO);
@@ -148,7 +141,8 @@ impl<
         [(); <EL as CSAllocatableExt<F>>::INTERNAL_STRUCT_LEN]:,
     {
         // first we need an encoding
-        // now the trick - we add values in another thread, by using "execute" and self-state values as a barrier
+        // now the trick - we add values in another thread, by using "execute" and self-state values
+        // as a barrier
 
         use crate::config::*;
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
@@ -209,7 +203,8 @@ impl<
         // first we need an encoding
         let encoding = element.encode(cs);
         let flattened_vars = element.flatten_as_variables();
-        // now the trick - we add values in another thread, by using "execute" and self-state values as a barrier
+        // now the trick - we add values in another thread, by using "execute" and self-state values
+        // as a barrier
 
         self.push_evaluate_witness(cs, encoding, flattened_vars, execute);
 
@@ -266,7 +261,8 @@ impl<
         // first we need an encoding
         let encoding = element.encode(cs);
         let flattened_vars = element.flatten_as_variables();
-        // now the trick - we add values in another thread, by using "execute" and self-state values as a barrier
+        // now the trick - we add values in another thread, by using "execute" and self-state values
+        // as a barrier
 
         self.push_evaluate_witness(cs, encoding, flattened_vars, execute);
 
@@ -468,10 +464,7 @@ impl<
     pub fn into_state(&self) -> QueueState<F, SW> {
         QueueState {
             head: self.head,
-            tail: QueueTailState {
-                tail: self.tail,
-                length: self.length,
-            },
+            tail: QueueTailState { tail: self.tail, length: self.length },
         }
     }
 

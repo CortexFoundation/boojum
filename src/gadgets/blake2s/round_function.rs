@@ -1,22 +1,14 @@
 use std::mem::MaybeUninit;
 
-use super::mixing_function::Word;
-use super::*;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::gadgets::blake2s::mixing_function::mixing_function_g;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::u32::UInt32;
+use super::{mixing_function::Word, *};
+use crate::{
+    cs::{gates::ConstantAllocatableCS, traits::cs::ConstraintSystem},
+    gadgets::{blake2s::mixing_function::mixing_function_g, boolean::Boolean, u32::UInt32},
+};
 
 pub enum Blake2sControl<F: SmallField> {
-    FixedLength {
-        offset: u32,
-        is_last_block: bool,
-    },
-    VariableLength {
-        offset: UInt32<F>,
-        is_last_block: Boolean<F>,
-    },
+    FixedLength { offset: u32, is_last_block: bool },
+    VariableLength { offset: UInt32<F>, is_last_block: Boolean<F> },
 }
 
 pub fn blake2s_round_function<F: SmallField, CS: ConstraintSystem<F>>(
@@ -40,11 +32,8 @@ pub fn blake2s_round_function<F: SmallField, CS: ConstraintSystem<F>>(
         let iv_word_bytes =
             iv_word_bytes.map(|el| cs.allocate_constant(F::from_u64_unchecked(el as u64)));
 
-        let iv_word = unsafe {
-            Word {
-                inner: iv_word_bytes.map(|el| UInt8::from_variable_unchecked(el)),
-            }
-        };
+        let iv_word =
+            unsafe { Word { inner: iv_word_bytes.map(|el| UInt8::from_variable_unchecked(el)) } };
 
         dst.write(iv_word);
     }
@@ -64,23 +53,14 @@ pub fn blake2s_round_function<F: SmallField, CS: ConstraintSystem<F>>(
     use crate::gadgets::blake2s::mixing_function::xor_many;
 
     match control {
-        Blake2sControl::FixedLength {
-            offset,
-            is_last_block,
-        } => {
+        Blake2sControl::FixedLength { offset, is_last_block } => {
             let offset = offset.to_le_bytes();
             let offset = offset.map(|el| cs.allocate_constant(F::from_u64_unchecked(el as u64)));
 
-            let new_v12 = xor_many(
-                cs,
-                &local_work_vector[12].inner.map(|el| el.variable),
-                &offset,
-            );
+            let new_v12 = xor_many(cs, &local_work_vector[12].inner.map(|el| el.variable), &offset);
 
             let new_v12 = unsafe {
-                Word {
-                    inner: new_v12.map(|el| UInt8::<F>::from_variable_unchecked(el)),
-                }
+                Word { inner: new_v12.map(|el| UInt8::<F>::from_variable_unchecked(el)) }
             };
 
             local_work_vector[12] = new_v12;
@@ -89,16 +69,11 @@ pub fn blake2s_round_function<F: SmallField, CS: ConstraintSystem<F>>(
                 let max_byte = cs.allocate_constant(F::from_u64_unchecked(0xffu8 as u64));
                 let mask = [max_byte; 4];
 
-                let new_v14 = xor_many(
-                    cs,
-                    &local_work_vector[14].inner.map(|el| el.variable),
-                    &mask,
-                );
+                let new_v14 =
+                    xor_many(cs, &local_work_vector[14].inner.map(|el| el.variable), &mask);
 
                 let new_v14 = unsafe {
-                    Word {
-                        inner: new_v14.map(|el| UInt8::<F>::from_variable_unchecked(el)),
-                    }
+                    Word { inner: new_v14.map(|el| UInt8::<F>::from_variable_unchecked(el)) }
                 };
 
                 local_work_vector[14] = new_v14;
@@ -176,19 +151,13 @@ pub fn blake2s_round_function<F: SmallField, CS: ConstraintSystem<F>>(
         .zip(local_work_vector[8..].iter())
         .zip(state.iter_mut())
     {
-        let tmp = xor_many(
-            cs,
-            &src0.inner.map(|el| el.variable),
-            &src1.inner.map(|el| el.variable),
-        );
+        let tmp =
+            xor_many(cs, &src0.inner.map(|el| el.variable), &src1.inner.map(|el| el.variable));
 
         let result = xor_many(cs, &tmp, &dst.inner.map(|el| el.variable));
 
-        let result = unsafe {
-            Word {
-                inner: result.map(|el| UInt8::<F>::from_variable_unchecked(el)),
-            }
-        };
+        let result =
+            unsafe { Word { inner: result.map(|el| UInt8::<F>::from_variable_unchecked(el)) } };
         *dst = result;
     }
 }

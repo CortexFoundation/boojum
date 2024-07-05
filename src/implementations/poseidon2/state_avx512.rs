@@ -1,13 +1,17 @@
 //! A vectorized implementation of the poseidon2 state.
-use crate::field::goldilocks::avx512_impl;
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::traits::representation::U64Representable;
-use crate::field::Field;
-use std::arch::x86_64::{self, __m512i};
-use std::usize;
+use std::{
+    arch::x86_64::{self, __m512i},
+    usize,
+};
+
 use unroll::unroll_for_loops;
 
 use super::poseidon_goldilocks_params;
+use crate::field::{
+    goldilocks::{avx512_impl, GoldilocksField},
+    traits::representation::U64Representable,
+    Field,
+};
 
 #[derive(Default, PartialEq, Eq, Hash, Clone, Copy)]
 #[repr(C, align(64))]
@@ -80,16 +84,7 @@ impl State {
     };
 
     pub const M_I_DIAGONAL_ELEMENTS_MINUS_ONE: [Aligned; 2] = [
-        Aligned([
-            1 << 4,
-            1 << 14,
-            1 << 11,
-            1 << 8,
-            1 << 0,
-            1 << 5,
-            1 << 2,
-            1 << 9,
-        ]),
+        Aligned([1 << 4, 1 << 14, 1 << 11, 1 << 8, 1 << 0, 1 << 5, 1 << 2, 1 << 9]),
         Aligned([1 << 13, 1 << 6, 1 << 3, 1 << 12, 0, 0, 0, 0]),
     ];
 
@@ -464,13 +459,15 @@ mod test {
 
     use itertools::Itertools;
 
-    use crate::field::rand_from_rng;
-    use crate::field::{goldilocks::GoldilocksField, Field};
-    use crate::implementations::poseidon2::{state_generic_impl, State};
-    use crate::implementations::poseidon_goldilocks_naive;
-    use crate::implementations::suggested_mds;
+    use crate::{
+        field::{goldilocks::GoldilocksField, rand_from_rng, Field},
+        implementations::{
+            poseidon2::{state_generic_impl, State},
+            poseidon_goldilocks_naive, suggested_mds,
+        },
+    };
 
-    //test for apply_round_constants
+    // test for apply_round_constants
     #[test]
     fn test_apply_round_constants() {
         let mut rng = rand::thread_rng();
@@ -505,7 +502,7 @@ mod test {
         assert_eq!(state_ref, state_vec.as_field_array());
     }
 
-    //test for apply_non_linearity
+    // test for apply_non_linearity
     #[test]
     fn test_apply_non_linearity() {
         let mut rng = rand::thread_rng();
@@ -579,7 +576,7 @@ mod test {
         assert_eq!(state_ref.as_field_array(), state_vec.as_field_array());
     }
 
-    //test for suggested_mds_mul
+    // test for suggested_mds_mul
     #[test]
     fn test_suggested_mds_mul() {
         let mut rng = rand::thread_rng();
@@ -651,7 +648,7 @@ mod test {
         assert_eq!(state_ref.as_field_array(), state_vec.as_field_array());
     }
 
-    //test for poseidon2_permutation
+    // test for poseidon2_permutation
     #[test]
     fn test_poseidon2_permutation() {
         let mut rng = rand::thread_rng();

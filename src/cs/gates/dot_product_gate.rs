@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::*;
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -43,10 +42,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -166,10 +162,7 @@ where
     [(); N * 2]:,
 {
     pub const fn empty() -> Self {
-        Self {
-            terms: [Variable::placeholder(); N * 2],
-            result: Variable::placeholder(),
-        }
+        Self { terms: [Variable::placeholder(); N * 2], result: Variable::placeholder() }
     }
 
     pub fn configure_builder<
@@ -219,10 +212,7 @@ where
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                terms: terms_flattened,
-                result: output_variable,
-            };
+            let gate = Self { terms: terms_flattened, result: output_variable };
             gate.add_to_cs(cs);
         }
 
@@ -294,8 +284,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

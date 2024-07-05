@@ -1,7 +1,7 @@
-use super::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::gadgets::u8::UInt8;
 use std::mem::MaybeUninit;
+
+use super::*;
+use crate::{cs::traits::cs::ConstraintSystem, gadgets::u8::UInt8};
 
 pub const BLAKE2S_ROUNDS: usize = 10;
 pub const BLAKE2S_BLOCK_SIZE: usize = 64;
@@ -37,8 +37,7 @@ pub fn blake2s<F: SmallField, CS: ConstraintSystem<F>>(
     input: &[UInt8<F>],
 ) -> [UInt8<F>; BLAKE2S_DIGEST_SIZE] {
     // create an initial state
-    use crate::cs::gates::ConstantAllocatableCS;
-    use crate::gadgets::blake2s::mixing_function::Word;
+    use crate::{cs::gates::ConstantAllocatableCS, gadgets::blake2s::mixing_function::Word};
 
     assert!(input.len() <= u32::MAX as usize);
 
@@ -50,11 +49,8 @@ pub fn blake2s<F: SmallField, CS: ConstraintSystem<F>>(
         let le_bytes = word.to_le_bytes();
         let le_bytes = le_bytes.map(|el| cs.allocate_constant(F::from_u64_unchecked(el as u64)));
 
-        let state_word = unsafe {
-            Word {
-                inner: le_bytes.map(|el| UInt8::from_variable_unchecked(el)),
-            }
-        };
+        let state_word =
+            unsafe { Word { inner: le_bytes.map(|el| UInt8::from_variable_unchecked(el)) } };
 
         state_word
     });
@@ -81,10 +77,7 @@ pub fn blake2s<F: SmallField, CS: ConstraintSystem<F>>(
 
             let block = unsafe { block.map(|el| el.assume_init()) };
 
-            let control = Blake2sControl::FixedLength {
-                offset,
-                is_last_block: false,
-            };
+            let control = Blake2sControl::FixedLength { offset, is_last_block: false };
 
             blake2s_round_function(cs, &mut state, &block, control);
         }
@@ -115,10 +108,7 @@ pub fn blake2s<F: SmallField, CS: ConstraintSystem<F>>(
 
     let block = unsafe { block.map(|el| el.assume_init()) };
 
-    let control = Blake2sControl::FixedLength {
-        offset: input_len as u32,
-        is_last_block: true,
-    };
+    let control = Blake2sControl::FixedLength { offset: input_len as u32, is_last_block: true };
 
     blake2s_round_function(cs, &mut state, &block, control);
 
@@ -138,6 +128,8 @@ pub fn blake2s<F: SmallField, CS: ConstraintSystem<F>>(
 mod test {
     use std::alloc::Global;
 
+    use blake2::Digest;
+
     use super::*;
     use crate::{
         config::CSConfig,
@@ -149,11 +141,14 @@ mod test {
             xor8::{create_xor8_table, Xor8Table},
         },
     };
-    use blake2::Digest;
     type F = GoldilocksField;
-    use crate::cs::gates::u32_tri_add_carry_as_chunk::U32TriAddCarryAsChunkGate;
-    use crate::cs::traits::gate::GatePlacementStrategy;
-    use crate::gadgets::traits::witnessable::WitnessHookable;
+    use crate::{
+        cs::{
+            gates::u32_tri_add_carry_as_chunk::U32TriAddCarryAsChunkGate,
+            traits::gate::GatePlacementStrategy,
+        },
+        gadgets::traits::witnessable::WitnessHookable,
+    };
 
     #[test]
     fn test_single_round() {

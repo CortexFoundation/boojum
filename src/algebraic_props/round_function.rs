@@ -1,8 +1,7 @@
-use crate::field::SmallField;
+use derivative::*;
 
 use super::*;
-
-use derivative::*;
+use crate::field::SmallField;
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -99,12 +98,12 @@ pub trait GenericAlgebraicRoundFunction<
 // default impl
 
 impl<
-        F: SmallField,
-        T: AlgebraicRoundFunction<F, AW, SW, CW>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-    > GenericAlgebraicRoundFunction<F, F, AW, SW, CW> for T
+    F: SmallField,
+    T: AlgebraicRoundFunction<F, AW, SW, CW>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+> GenericAlgebraicRoundFunction<F, F, AW, SW, CW> for T
 {
     #[inline]
     fn round_function(state: &mut [F; SW]) {

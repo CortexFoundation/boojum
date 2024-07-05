@@ -64,11 +64,8 @@ pub trait Field:
         let mut word_idx = 0;
         while word_idx < exp.len() {
             let power = exp[word_idx];
-            let num_bits = if word_idx == exp.len() - 1 {
-                crate::utils::num_bits_u64(power)
-            } else {
-                64
-            };
+            let num_bits =
+                if word_idx == exp.len() - 1 { crate::utils::num_bits_u64(power) } else { 64 };
 
             let mut j = 0;
             while j < num_bits {
@@ -369,22 +366,13 @@ impl<F: Field, E: FieldExtension<2, BaseField = F>> std::fmt::Display for Extens
 }
 
 impl<F: Field, E: FieldExtension<2, BaseField = F>> Field for ExtensionField<F, 2, E> {
-    const ZERO: Self = ExtensionField {
-        coeffs: [F::ZERO; 2],
-        _marker: std::marker::PhantomData,
-    };
-    const ONE: Self = ExtensionField {
-        coeffs: [F::ONE, F::ZERO],
-        _marker: std::marker::PhantomData,
-    };
-    const TWO: Self = ExtensionField {
-        coeffs: [F::TWO, F::ZERO],
-        _marker: std::marker::PhantomData,
-    };
-    const MINUS_ONE: Self = ExtensionField {
-        coeffs: [F::MINUS_ONE, F::ZERO],
-        _marker: std::marker::PhantomData,
-    };
+    const ZERO: Self = ExtensionField { coeffs: [F::ZERO; 2], _marker: std::marker::PhantomData };
+    const ONE: Self =
+        ExtensionField { coeffs: [F::ONE, F::ZERO], _marker: std::marker::PhantomData };
+    const TWO: Self =
+        ExtensionField { coeffs: [F::TWO, F::ZERO], _marker: std::marker::PhantomData };
+    const MINUS_ONE: Self =
+        ExtensionField { coeffs: [F::MINUS_ONE, F::ZERO], _marker: std::marker::PhantomData };
     #[inline]
     fn is_zero(&self) -> bool {
         self.coeffs[0].is_zero() && self.coeffs[1].is_zero()
@@ -498,10 +486,7 @@ impl<F: PrimeField, E: FieldExtension<2, BaseField = F>> PrimeField for Extensio
                 c1.mul_assign(&inversed);
                 c1.negate();
 
-                let new = Self {
-                    coeffs: [c0, c1],
-                    _marker: std::marker::PhantomData,
-                };
+                let new = Self { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
                 Some(new)
             }
@@ -536,18 +521,14 @@ impl<F: Field, E: FieldExtension<2, BaseField = F>> ExtensionField<F, 2, E> {
     }
     #[inline(always)]
     pub const fn from_coeff_in_base(coeffs: [F; 2]) -> Self {
-        Self {
-            coeffs,
-            _marker: std::marker::PhantomData,
-        }
+        Self { coeffs, _marker: std::marker::PhantomData }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::field::goldilocks::{GoldilocksExt2, GoldilocksField};
-
     use super::*;
+    use crate::field::goldilocks::{GoldilocksExt2, GoldilocksField};
 
     type Base = GoldilocksField;
     type Ext = GoldilocksExt2;

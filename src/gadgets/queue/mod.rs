@@ -1,26 +1,31 @@
-use std::collections::VecDeque;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, RwLock},
+};
 
-use super::boolean::Boolean;
-use super::num::Num;
-use super::traits::allocatable::*;
-use super::u32::UInt32;
-use super::{traits::encodable::CircuitEncodable, *};
-use crate::algebraic_props::round_function::AbsorptionModeOverwrite;
-use crate::algebraic_props::round_function::AlgebraicRoundFunction;
-use crate::config::CSConfig;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::cs::Variable;
-use crate::field::SmallField;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::traits::encodable::CircuitEncodableExt;
-use crate::gadgets::traits::round_function::CircuitRoundFunction;
-use crate::gadgets::traits::selectable::Selectable;
-use crate::gadgets::traits::witnessable::WitnessHookable;
 use cs_derive::*;
+
+use super::{
+    boolean::Boolean,
+    num::Num,
+    traits::{allocatable::*, encodable::CircuitEncodable},
+    u32::UInt32,
+    *,
+};
+use crate::{
+    algebraic_props::round_function::{AbsorptionModeOverwrite, AlgebraicRoundFunction},
+    config::CSConfig,
+    cs::{
+        gates::ConstantAllocatableCS,
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::traits::{
+        castable::WitnessCastable, encodable::CircuitEncodableExt,
+        round_function::CircuitRoundFunction, selectable::Selectable, witnessable::WitnessHookable,
+    },
+};
 
 pub mod full_state_queue;
 pub mod queue_optimizer;
@@ -75,9 +80,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const T: usize, const N: usize>
     CircuitQueueWitness<F, EL, T, N>
 {
     pub fn from_inner_witness(inner: CircuitQueueRawWitness<F, EL, T, N>) -> Self {
-        Self {
-            elements: RwLock::new(inner.elements),
-        }
+        Self { elements: RwLock::new(inner.elements) }
     }
 }
 
@@ -88,9 +91,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const T: usize, const N: usize> 
         if let Ok(elements) = self.elements.read() {
             let elements = (*elements).clone();
 
-            Self {
-                elements: RwLock::new(elements),
-            }
+            Self { elements: RwLock::new(elements) }
         } else {
             unreachable!()
         }
@@ -98,15 +99,15 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const T: usize, const N: usize> 
 }
 
 impl<
-        F: SmallField,
-        EL: CircuitEncodable<F, N>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        const T: usize,
-        const N: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > Clone for CircuitQueue<F, EL, AW, SW, CW, T, N, R>
+    F: SmallField,
+    EL: CircuitEncodable<F, N>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    const T: usize,
+    const N: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> Clone for CircuitQueue<F, EL, AW, SW, CW, T, N, R>
 {
     fn clone(&self) -> Self {
         Self {
@@ -123,9 +124,7 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const T: usize, const N: usize>
     CircuitQueueWitness<F, EL, T, N>
 {
     pub fn empty() -> Self {
-        Self {
-            elements: RwLock::new(VecDeque::new()),
-        }
+        Self { elements: RwLock::new(VecDeque::new()) }
     }
 
     pub fn pop_front(&self) -> (EL::Witness, [F; T]) {
@@ -148,15 +147,15 @@ impl<F: SmallField, EL: CircuitEncodable<F, N>, const T: usize, const N: usize>
 }
 
 impl<
-        F: SmallField,
-        EL: CircuitEncodable<F, N>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        const T: usize,
-        const N: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > CircuitQueue<F, EL, AW, SW, CW, T, N, R>
+    F: SmallField,
+    EL: CircuitEncodable<F, N>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    const T: usize,
+    const N: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> CircuitQueue<F, EL, AW, SW, CW, T, N, R>
 {
     pub fn empty<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
         let zero_el = Num::allocated_constant(cs, F::ZERO);
@@ -179,7 +178,8 @@ impl<
     ) where
         EL: CircuitEncodableExt<F, N>,
     {
-        // now the trick - we add values in another thread, by using "execute" and self-state values as a barrier
+        // now the trick - we add values in another thread, by using "execute" and self-state values
+        // as a barrier
         use crate::config::*;
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
             let mut dependencies = Vec::with_capacity(
@@ -496,10 +496,7 @@ impl<
     pub fn into_state(&self) -> QueueState<F, T> {
         QueueState {
             head: self.head,
-            tail: QueueTailState {
-                tail: self.tail,
-                length: self.length,
-            },
+            tail: QueueTailState { tail: self.tail, length: self.length },
         }
     }
 
@@ -579,8 +576,7 @@ pub fn simulate_new_tail<
     result
 }
 
-use crate::gadgets::traits::encodable::CircuitVarLengthEncodable;
-use crate::serde_utils::BigArraySerde;
+use crate::{gadgets::traits::encodable::CircuitVarLengthEncodable, serde_utils::BigArraySerde};
 
 #[derive(Derivative, CSAllocatable, CSSelectable, CSVarLengthEncodable, WitnessHookable)]
 #[derivative(Clone, Copy, Debug)]
@@ -606,10 +602,7 @@ impl<F: SmallField, const N: usize> QueueTailState<F, N> {
     pub fn empty<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
         let zero_u32 = UInt32::zero(cs);
         let zero_num = Num::zero(cs);
-        Self {
-            tail: [zero_num; N],
-            length: zero_u32,
-        }
+        Self { tail: [zero_num; N], length: zero_u32 }
     }
 }
 
@@ -623,10 +616,7 @@ impl<F: SmallField, const N: usize> QueueState<F, N> {
     pub fn empty<CS: ConstraintSystem<F>>(cs: &mut CS) -> Self {
         let zero_num = Num::zero(cs);
         let empty_tail = QueueTailState::empty(cs);
-        Self {
-            head: [zero_num; N],
-            tail: empty_tail,
-        }
+        Self { head: [zero_num; N], tail: empty_tail }
     }
 
     pub fn enforce_trivial_head<CS: ConstraintSystem<F>>(&self, cs: &mut CS) {
@@ -645,15 +635,15 @@ impl<F: SmallField, const N: usize> QueueState<F, N> {
 }
 
 impl<
-        F: SmallField,
-        EL: CircuitEncodable<F, N>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        const T: usize,
-        const N: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > PartialEq for CircuitQueue<F, EL, AW, SW, CW, T, N, R>
+    F: SmallField,
+    EL: CircuitEncodable<F, N>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    const T: usize,
+    const N: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> PartialEq for CircuitQueue<F, EL, AW, SW, CW, T, N, R>
 {
     fn eq(&self, other: &Self) -> bool {
         self.length.eq(&other.length) && self.head.eq(&other.head) && self.tail.eq(&other.tail)

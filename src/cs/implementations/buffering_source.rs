@@ -1,9 +1,10 @@
-use super::*;
-use crate::cs::traits::evaluator::PerChunkOffset;
-use crate::cs::traits::trace_source::*;
-use crate::cs::traits::GoodAllocator;
-use crate::field::PrimeField;
 use std::alloc::Global;
+
+use super::*;
+use crate::{
+    cs::traits::{evaluator::PerChunkOffset, trace_source::*, GoodAllocator},
+    field::PrimeField,
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug)]
@@ -57,7 +58,8 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLike<Base = F>, A: G
     #[inline(always)]
     fn get_variable_value(&self, variable_idx: usize) -> P {
         debug_assert!(
-            self.variables_offset_in_buffer + self.chunk_offset.variables_offset + variable_idx < self.witness_offset_in_buffer,
+            self.variables_offset_in_buffer + self.chunk_offset.variables_offset + variable_idx
+                < self.witness_offset_in_buffer,
             "trying to access a variables column number {} (zero enumerated) at chunk offset {}, but there are only {} columns in the system",
             variable_idx,
             self.chunk_offset.variables_offset,
@@ -70,7 +72,8 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLike<Base = F>, A: G
     #[inline(always)]
     fn get_witness_value(&self, witness_idx: usize) -> P {
         debug_assert!(
-            self.witness_offset_in_buffer + self.chunk_offset.witnesses_offset + witness_idx < self.constants_offset_in_buffer,
+            self.witness_offset_in_buffer + self.chunk_offset.witnesses_offset + witness_idx
+                < self.constants_offset_in_buffer,
             "trying to access a witness column number {} (zero enumerated) at chunk offset {}, but there are only {} columns in the system",
             witness_idx,
             self.chunk_offset.witnesses_offset,
@@ -83,7 +86,11 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLike<Base = F>, A: G
     #[inline(always)]
     fn get_constant_value(&self, constant_idx: usize) -> P {
         debug_assert!(
-            self.constants_offset_in_buffer + self.constants_offset + self.chunk_offset.constants_offset + constant_idx < self.buffer.len(),
+            self.constants_offset_in_buffer
+                + self.constants_offset
+                + self.chunk_offset.constants_offset
+                + constant_idx
+                < self.buffer.len(),
             "trying to access a constant column number {} (zero enumerated) at chunk offset {} and placement offset {}, but there are only {} columns in the system",
             constant_idx,
             self.chunk_offset.constants_offset,
@@ -125,8 +132,10 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLike<Base = F>, A: G
     }
 }
 
-use crate::cs::implementations::polynomial::lde::*;
-use crate::cs::traits::destination_view::GateEvaluationReducingDestination;
+use crate::cs::{
+    implementations::polynomial::lde::*,
+    traits::destination_view::GateEvaluationReducingDestination,
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug)]
@@ -165,10 +174,7 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
             self.selectors[self.current_selector_idx].storage[outer].storage[inner]
         };
 
-        debug_assert_eq!(
-            self.destination.quotient_buffers.len(),
-            self.work_buffer.len()
-        );
+        debug_assert_eq!(self.destination.quotient_buffers.len(), self.work_buffer.len());
 
         // we actually want to do the reduction and swap the result
         if crate::config::DEBUG_SATISFIABLE == true && outer == 0 {
@@ -181,17 +187,20 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                 let inner = inner * P::SIZE_FACTOR + idx;
                 if selector.is_zero() == false {
                     debug_assert!(
-                            value.is_zero() == true,
-                            "aggregated term value is non-zero and has value {} for selector value {} at trace row {}", 
-                            value,
-                            selector,
-                            {
-                                let mut normal_enumeration = inner.reverse_bits();
-                                normal_enumeration >>= usize::BITS - self.destination.quotient_buffers[0][0].len().trailing_zeros();
+                        value.is_zero() == true,
+                        "aggregated term value is non-zero and has value {} for selector value {} at trace row {}",
+                        value,
+                        selector,
+                        {
+                            let mut normal_enumeration = inner.reverse_bits();
+                            normal_enumeration >>= usize::BITS
+                                - self.destination.quotient_buffers[0][0]
+                                    .len()
+                                    .trailing_zeros();
 
-                                normal_enumeration
-                            }
-                        );
+                            normal_enumeration
+                        }
+                    );
                 }
             }
         }
@@ -229,14 +238,8 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
         num_workers: usize,
         ordered_selectors: Vec<ArcGenericLdeStorage<F, P>>,
     ) -> Vec<BufferedGateEvaluationReducingDestinationChunk<F, P>> {
-        debug_assert_eq!(
-            self.quotient_buffers[0].len(),
-            ordered_selectors[0].outer_len()
-        );
-        debug_assert_eq!(
-            self.quotient_buffers[0][0].len(),
-            ordered_selectors[0].inner_len()
-        );
+        debug_assert_eq!(self.quotient_buffers[0].len(), ordered_selectors[0].outer_len());
+        debug_assert_eq!(self.quotient_buffers[0][0].len(), ordered_selectors[0].inner_len());
         let lde_iterators = ordered_selectors[0].compute_chunks_for_num_workers(num_workers);
         let mut ctx = self.ctx;
 
@@ -323,12 +326,15 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                     if selector.is_zero() == false {
                         debug_assert!(
                             value.is_zero() == true,
-                            "aggregated term value is non-zero and has value {} for selector value {} at trace row {}", 
+                            "aggregated term value is non-zero and has value {} for selector value {} at trace row {}",
                             value,
                             selector,
                             {
                                 let mut normal_enumeration = inner.reverse_bits();
-                                normal_enumeration >>= usize::BITS - self.destination.quotient_buffers[0][0].len().trailing_zeros();
+                                normal_enumeration >>= usize::BITS
+                                    - self.destination.quotient_buffers[0][0]
+                                        .len()
+                                        .trailing_zeros();
 
                                 normal_enumeration
                             }
@@ -339,10 +345,11 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
         }
 
         // simultaneously reduce and accumulate.
-        // We take a term from the current gate (that only depends on witness, and so is deterministic),
-        // then multiply by independent challenges and place into corresponding independent accumulators to
-        // make something like alpha * term0 + alpha^2 * term1 + ...
-        // Later of if necessary those terms will be multiplied by the corresponding selector
+        // We take a term from the current gate (that only depends on witness, and so is
+        // deterministic), then multiply by independent challenges and place into
+        // corresponding independent accumulators to make something like alpha * term0 +
+        // alpha^2 * term1 + ... Later of if necessary those terms will be multiplied by the
+        // corresponding selector
         let ctx = &mut self.destination.ctx;
         let mut c0 = value;
         c0.mul_all_by_base(

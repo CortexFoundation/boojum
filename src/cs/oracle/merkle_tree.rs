@@ -1,16 +1,16 @@
 use std::alloc::Global;
 
-use crate::cs::{
-    implementations::{
-        fast_serialization::MemcopySerializable,
-        polynomial::{lde::ArcGenericLdeStorage, GenericPolynomial},
-    },
-    traits::GoodAllocator,
-};
-
 use super::*;
-
-use crate::field::traits::field_like::Flattener;
+use crate::{
+    cs::{
+        implementations::{
+            fast_serialization::MemcopySerializable,
+            polynomial::{lde::ArcGenericLdeStorage, GenericPolynomial},
+        },
+        traits::GoodAllocator,
+    },
+    field::traits::field_like::Flattener,
+};
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Debug, PartialEq(bound = ""), Eq)]
@@ -62,11 +62,7 @@ where
         use crate::cs::implementations::fast_serialization::*;
         let node_hashes_enumerated_from_leafs = read_vec_from_buffer(&mut src)?;
 
-        let new = Self {
-            cap_size,
-            leaf_hashes,
-            node_hashes_enumerated_from_leafs,
-        };
+        let new = Self { cap_size, leaf_hashes, node_hashes_enumerated_from_leafs };
 
         Ok(new)
     }
@@ -212,7 +208,8 @@ impl<F: PrimeField, H: TreeHasher<F>, A: GoodAllocator, B: GoodAllocator>
         // From every ArcGeneric... we will take elements_to_take_per_leaf elements
         // we will work over cosets independently for parallelism
 
-        // each of the cosets from LDEs that we have as inputs will give this number of elements in the result
+        // each of the cosets from LDEs that we have as inputs will give this number of elements in
+        // the result
         let dst_chunk_size_per_coset = inner_len * P::SIZE_FACTOR / elements_to_take_per_leaf;
 
         assert!(tree_size % dst_chunk_size_per_coset == 0);
@@ -231,10 +228,7 @@ impl<F: PrimeField, H: TreeHasher<F>, A: GoodAllocator, B: GoodAllocator>
                 |scope, dst_subchunk_size, num_subchunks| {
                     // we have to make chunks for every source
 
-                    assert_eq!(
-                        dst_subchunk_size * elements_to_take_per_leaf % P::SIZE_FACTOR,
-                        0
-                    );
+                    assert_eq!(dst_subchunk_size * elements_to_take_per_leaf % P::SIZE_FACTOR, 0);
                     assert!(dst_subchunk_size * elements_to_take_per_leaf / P::SIZE_FACTOR > 0);
 
                     // this is in units of base field
@@ -441,11 +435,7 @@ impl<F: PrimeField, H: TreeHasher<F>, A: GoodAllocator, B: GoodAllocator>
             now.elapsed()
         );
 
-        Self {
-            cap_size,
-            leaf_hashes,
-            node_hashes_enumerated_from_leafs,
-        }
+        Self { cap_size, leaf_hashes, node_hashes_enumerated_from_leafs }
     }
 
     pub fn get_cap(&self) -> Vec<H::Output, A> {

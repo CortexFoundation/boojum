@@ -1,13 +1,12 @@
 use self::traits::GoodAllocator;
-
-use super::reference_cs::CSReferenceAssembly;
-use super::*;
-
-use crate::config::DevCSConfig;
-
-use crate::cs::implementations::polynomial_storage::SatisfiabilityCheckRowView;
-use crate::cs::traits::evaluator::GatePlacementType;
-use crate::cs::traits::gate::GatePlacementStrategy;
+use super::{reference_cs::CSReferenceAssembly, *};
+use crate::{
+    config::DevCSConfig,
+    cs::{
+        implementations::polynomial_storage::SatisfiabilityCheckRowView,
+        traits::{evaluator::GatePlacementType, gate::GatePlacementStrategy},
+    },
+};
 
 type RCFG = <DevCSConfig as CSConfig>::ResolverConfig;
 
@@ -196,10 +195,7 @@ impl<F: SmallField, A: GoodAllocator> CSReferenceAssembly<F, F, DevCSConfig, A> 
                     "evaluator {} has not contribution to quotient",
                     &evaluator.debug_name,
                 );
-                log!(
-                    "Will be evaluating {} over specialized columns",
-                    &evaluator.debug_name
-                );
+                log!("Will be evaluating {} over specialized columns", &evaluator.debug_name);
 
                 let num_terms = evaluator.num_quotient_terms;
                 let placement_strategy = self
@@ -294,15 +290,16 @@ impl<F: SmallField, A: GoodAllocator> CSReferenceAssembly<F, F, DevCSConfig, A> 
                         for (idx, term) in terms.iter().enumerate() {
                             if term.is_zero() == false {
                                 panic!(
-                                "Unsatisfied at row {} with value {} for term number {} for subinstance number {} of gate {}",
-                                row, term, idx, chunk_idx, evaluator_name
-                            );
+                                    "Unsatisfied at row {} with value {} for term number {} for subinstance number {} of gate {}",
+                                    row, term, idx, chunk_idx, evaluator_name
+                                );
 
                                 // let mut vars = vec![];
                                 // let mut wits = vec![];
                                 // let mut constants = vec![];
-                                // let start_variables = per_chunk_offset.variables_offset * chunk_idx;
-                                // let start_witnesses = per_chunk_offset.witnesses_offset * chunk_idx;
+                                // let start_variables = per_chunk_offset.variables_offset *
+                                // chunk_idx; let start_witnesses =
+                                // per_chunk_offset.witnesses_offset * chunk_idx;
 
                                 // for i in 0..per_chunk_offset.variables_offset {
                                 //     vars.push(t_view.get_variable_value(start_variables + i));
@@ -322,22 +319,24 @@ impl<F: SmallField, A: GoodAllocator> CSReferenceAssembly<F, F, DevCSConfig, A> 
 
                                 // let mut vars = vec![];
                                 // let mut wits = vec![];
-                                // let start_variables = per_chunk_offset.variables_offset * chunk_idx;
-                                // let start_witnesses = per_chunk_offset.witnesses_offset * chunk_idx;
+                                // let start_variables = per_chunk_offset.variables_offset *
+                                // chunk_idx; let start_witnesses =
+                                // per_chunk_offset.witnesses_offset * chunk_idx;
 
                                 // for i in 0..per_chunk_offset.variables_offset {
-                                //     vars.push(self.copy_permutation_data[start_variables + i][row]);
-                                // }
+                                //     vars.push(self.copy_permutation_data[start_variables +
+                                // i][row]); }
 
                                 // for i in 0..per_chunk_offset.witnesses_offset {
-                                //     wits.push(self.witness_placement_data[start_variables + i][row]);
-                                // }
+                                //     wits.push(self.witness_placement_data[start_variables +
+                                // i][row]); }
 
                                 // dbg!(vars);
                                 // dbg!(wits);
 
                                 // panic!(
-                                //     "Unsatisfied at row {} with value {} for term number {} for subinstance number {} of gate {}",
+                                //     "Unsatisfied at row {} with value {} for term number {} for
+                                // subinstance number {} of gate {}",
                                 //     row, term, idx, chunk_idx, gate_debug_name
                                 // );
                             }

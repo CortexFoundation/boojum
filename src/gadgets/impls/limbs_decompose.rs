@@ -1,6 +1,11 @@
-use crate::cs::gates::{ReductionByPowersGate, ReductionGate};
-use crate::cs::Variable;
-use crate::{cs::traits::cs::ConstraintSystem, field::SmallField};
+use crate::{
+    cs::{
+        gates::{ReductionByPowersGate, ReductionGate},
+        traits::cs::ConstraintSystem,
+        Variable,
+    },
+    field::SmallField,
+};
 
 pub fn decompose_into_limbs<F: SmallField, CS: ConstraintSystem<F>, const N: usize>(
     cs: &mut CS,

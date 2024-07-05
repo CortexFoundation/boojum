@@ -1,7 +1,5 @@
-use crate::cs::implementations::reference_cs::*;
-use crate::cs::traits::gate::FinalizationHintSerialized;
-
 use super::*;
+use crate::cs::{implementations::reference_cs::*, traits::gate::FinalizationHintSerialized};
 
 // we use a lookup scheme introduced by [Hab22] with extensions from https://eprint.iacr.org/2022/1763.pdf
 
@@ -23,14 +21,19 @@ use super::*;
 // all the tables
 // - so the only thing that prover sends is A(0) (that is part of sumcheck later on)
 // - in the quotient poly we include an extra terms
-// 1) QA(X) = (A(X)(T(X) + beta) − m(X)) / Z_small(X) where Z_small(X) is a vanishing poly of "small" degree (fits table entries)
-// 2) QB(X) = (B(X)(f(x) + beta) − 1) / Z_large(X) where Z_large(X) is a vanishing poly of full degree (trace degree)
-// 3) plainly add A(X) * X^{trace_degree - degree(A(X)) - 1} to the set of polynomials that will be participate in FRI
+// 1) QA(X) = (A(X)(T(X) + beta) − m(X)) / Z_small(X) where Z_small(X) is a vanishing poly of
+//    "small" degree (fits table entries)
+// 2) QB(X) = (B(X)(f(x) + beta) − 1) / Z_large(X) where Z_large(X) is a vanishing poly of full
+//    degree (trace degree)
+// 3) plainly add A(X) * X^{trace_degree - degree(A(X)) - 1} to the set of polynomials that will be
+//    participate in FRI
 // to ensure that A(X) is small degree
 // - when we do the verification at the random point `z` we automanically check the same relations,
-// - and we also need to check that \sum A(x) at "small" domain is equal to \sum B(x) at "large" domain,
+// - and we also need to check that \sum A(x) at "small" domain is equal to \sum B(x) at "large"
+//   domain,
 // via A(0) * |small domain| == B(0) * |large domain|. To do so we "open"
-// B(X) and A(X) (both as simualted oracles) to A(0) and B(0) (that can be computed from A(0)) at 0 quotening and FRI
+// B(X) and A(X) (both as simualted oracles) to A(0) and B(0) (that can be computed from A(0)) at 0
+// quotening and FRI
 
 // This is a marker-only
 
@@ -56,11 +59,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for LookupGateMarkerFormalEvaluat
 
     #[inline(always)]
     fn unique_params(&self) -> Self::UniqueParameterizationParams {
-        (
-            self.num_variables_to_use,
-            self.num_constants_to_use,
-            self.share_table_id,
-        )
+        (self.num_variables_to_use, self.num_constants_to_use, self.share_table_id)
     }
 
     #[inline]
@@ -204,9 +203,10 @@ impl<F: SmallField> Gate<F> for LookupFormalGate {
     //     let closure = move |cs: &mut CS, min_bound: usize| {
     //         // we need to fill our witnesses with non-trivial values
 
-    //         let placement_strategy = cs.get_gates_config().placement_strategy::<Self>().expect("gate must be allowed");
-    //         let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants } = placement_strategy else {
-    //             unreachable!()
+    //         let placement_strategy =
+    // cs.get_gates_config().placement_strategy::<Self>().expect("gate must be allowed");
+    //         let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants }
+    // = placement_strategy else {             unreachable!()
     //         };
 
     //         let lookup_parameters = cs.get_lookup_params();
@@ -214,15 +214,18 @@ impl<F: SmallField> Gate<F> for LookupFormalGate {
 
     //         // now we need to compute how many lookups of different types we add
     //         match lookup_parameters {
-    //             LookupParameters::TableIdAsConstant { .. } | LookupParameters::UseSpecializedColumnsWithTableIdAsConstant { .. } => {
-    //                 // we walk over the number of different not fully filled rows first and cleanup them,
+    //             LookupParameters::TableIdAsConstant { .. } |
+    // LookupParameters::UseSpecializedColumnsWithTableIdAsConstant { .. } => {                 
+    // // we walk over the number of different not fully filled rows first and cleanup them,
     //                 // and then cleanup column in full
     //             },
-    //             LookupParameters::TableIdAsVariable { .. } | LookupParameters::UseSpecializedColumnsWithTableIdAsVariable { .. } => {
-    //                 // we just compute the number of extra entries we want to add
-    //                 let table = cs.get_table(INITIAL_LOOKUP_TABLE_ID_VALUE);
+    //             LookupParameters::TableIdAsVariable { .. } |
+    // LookupParameters::UseSpecializedColumnsWithTableIdAsVariable { .. } => {                 
+    // // we just compute the number of extra entries we want to add                 let table =
+    // cs.get_table(INITIAL_LOOKUP_TABLE_ID_VALUE);
 
-    //                 let capacity_per_row = lookup_parameters.num_sublookup_arguments_for_geometry(&geometry);
+    //                 let capacity_per_row =
+    // lookup_parameters.num_sublookup_arguments_for_geometry(&geometry);
 
     //                 let tooling: &mut LookupTooling = cs
     //                     .get_gates_config_mut()
@@ -230,11 +233,11 @@ impl<F: SmallField> Gate<F> for LookupFormalGate {
     //                     .expect("tooling must exist");
 
     //                 let tooling_subid = 0;
-    //                 let (mut row, num_instances_already_placed) = tooling.0[tooling_subid].take().expect("at least one entry must be placed");
-    //                 let mut num_to_add = 0;
-    //                 if num_instances_already_placed < capacity_per_row {
-    //                     num_to_add += capacity_per_row - num_instances_already_placed;
-    //                 }
+    //                 let (mut row, num_instances_already_placed) =
+    // tooling.0[tooling_subid].take().expect("at least one entry must be placed");             
+    // let mut num_to_add = 0;                 if num_instances_already_placed <
+    // capacity_per_row {                     num_to_add += capacity_per_row -
+    // num_instances_already_placed;                 }
     //                 // last row is filled
     //                 // now two options
     //                 let bound_zero_enumerated = min_bound - 1;
@@ -256,8 +259,8 @@ impl<F: SmallField> Gate<F> for LookupFormalGate {
 
     //     Some(Box::new(closure) as Box<dyn FnOnce(&mut CS, usize) + Send + Sync + 'static>)
 
-    fn columns_finalization_function<CS: ConstraintSystem<F>>(
-    ) -> Option<traits::gate::GateColumnsCleanupFunction<CS>> {
+    fn columns_finalization_function<CS: ConstraintSystem<F>>()
+    -> Option<traits::gate::GateColumnsCleanupFunction<CS>> {
         let closure = move |cs: &mut CS,
                             min_bound: usize,
                             hint: &Option<FinalizationHintSerialized>| {
@@ -293,8 +296,9 @@ impl<F: SmallField> Gate<F> for LookupFormalGate {
                     let (per_table_tooling, next_row_to_use) = (tooling.0.clone(), tooling.1);
                     drop(tooling);
 
-                    // now we have to branch unfortunately, because if we do not have setup information
-                    // available in the CS then we can not get valid data from placement tooling
+                    // now we have to branch unfortunately, because if we do not have setup
+                    // information available in the CS then we can not get valid
+                    // data from placement tooling
 
                     let mut final_bound_to_compare = 0;
 

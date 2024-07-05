@@ -1,7 +1,7 @@
-use crate::cs::traits::GoodAllocator;
+use std::sync::Arc;
 
 use super::*;
-use std::sync::Arc;
+use crate::cs::traits::GoodAllocator;
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug, PartialEq, Eq)]
@@ -115,18 +115,16 @@ pub struct GenericLdeStorage<
 pub type LdeStorage<F, A = Global, B = Global> = GenericLdeStorage<F, F, A, B>;
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > GenericLdeStorage<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> GenericLdeStorage<F, P, A, B>
 {
     #[inline]
     pub fn empty_with_capacity_in(capacity: usize, allocator: B) -> Self {
         debug_assert!(capacity.is_power_of_two());
-        Self {
-            storage: Vec::with_capacity_in(capacity, allocator),
-        }
+        Self { storage: Vec::with_capacity_in(capacity, allocator) }
     }
     #[inline]
     pub fn inner_len(&self) -> usize {
@@ -172,11 +170,11 @@ pub struct ArcGenericLdeStorage<
 pub type ArcLdeStorage<F, A = Global, B = Global> = ArcGenericLdeStorage<F, F, A, B>;
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > MemcopySerializable for ArcGenericLdeStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> MemcopySerializable for ArcGenericLdeStorage<F, P, A, B>
 where
     Self: 'static,
 {
@@ -217,18 +215,16 @@ where
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > ArcGenericLdeStorage<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> ArcGenericLdeStorage<F, P, A, B>
 {
     #[inline]
     pub fn empty_with_capacity_in(capacity: usize, allocator: B) -> Self {
         debug_assert!(capacity.is_power_of_two());
-        Self {
-            storage: Vec::with_capacity_in(capacity, allocator),
-        }
+        Self { storage: Vec::with_capacity_in(capacity, allocator) }
     }
 
     #[inline]
@@ -356,11 +352,11 @@ pub struct GenericPolynomialLde<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > GenericPolynomialLde<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> GenericPolynomialLde<F, P, A, B>
 {
     pub fn subset_for_degree(&self, degree: usize) -> Self {
         assert!(degree <= self.storage.outer_len());
@@ -375,14 +371,9 @@ impl<
             new_storage.push(Arc::clone(&self.storage.storage[i]));
         }
 
-        let storage = ArcGenericLdeStorage {
-            storage: new_storage,
-        };
+        let storage = ArcGenericLdeStorage { storage: new_storage };
 
-        Self {
-            storage,
-            lde_params: new_params,
-        }
+        Self { storage, lde_params: new_params }
     }
 
     #[inline]
@@ -410,11 +401,11 @@ pub struct GenericLdeRowView<
 pub type LdeRowView<F, A, B> = GenericLdeRowView<F, F, A, B>;
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > GenericLdeRowView<F, P, A, B>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> GenericLdeRowView<F, P, A, B>
 {
     #[inline]
     pub fn num_iterations(&self) -> usize {
@@ -425,10 +416,7 @@ impl<
         let typical_len = storage.inner_len();
         debug_assert!(storage.outer_len() > 0);
         let iterator = LdeIterator::full_iterator(storage.outer_len(), typical_len);
-        Self {
-            over: storage,
-            iterator,
-        }
+        Self { over: storage, iterator }
     }
     #[inline(always)]
     pub fn advance(&mut self) {

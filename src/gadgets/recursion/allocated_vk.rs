@@ -1,14 +1,17 @@
 use super::*;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::allocatable::allocate_num_elements;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::witnessable::WitnessHookable;
 use crate::{
     cs::{
         implementations::verifier::{VerificationKey, VerificationKeyCircuitGeometry},
         traits::cs::ConstraintSystem,
     },
-    gadgets::recursion::recursive_tree_hasher::RecursiveTreeHasher,
+    gadgets::{
+        num::Num,
+        recursion::recursive_tree_hasher::RecursiveTreeHasher,
+        traits::{
+            allocatable::{allocate_num_elements, CSAllocatable},
+            witnessable::WitnessHookable,
+        },
+    },
 };
 
 pub struct AllocatedVerificationKey<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> {
@@ -21,10 +24,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> CSAllocatable<F>
     type Witness = VerificationKey<F, H::NonCircuitSimulator>;
 
     fn allocate<CS: ConstraintSystem<F>>(cs: &mut CS, witness: Self::Witness) -> Self {
-        let VerificationKey {
-            setup_merkle_tree_cap,
-            fixed_parameters,
-        } = witness;
+        let VerificationKey { setup_merkle_tree_cap, fixed_parameters } = witness;
 
         // allocate fixed length
         assert!(fixed_parameters.cap_size > 0);
@@ -34,9 +34,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> CSAllocatable<F>
             Some(setup_merkle_tree_cap.into_iter()),
         );
 
-        Self {
-            setup_merkle_tree_cap: cap,
-        }
+        Self { setup_merkle_tree_cap: cap }
     }
 
     fn allocate_without_value<CS: ConstraintSystem<F>>(_cs: &mut CS) -> Self {
@@ -48,10 +46,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> CSAllocatable<F>
     }
 
     fn allocate_constant<CS: ConstraintSystem<F>>(cs: &mut CS, witness: Self::Witness) -> Self {
-        let VerificationKey {
-            setup_merkle_tree_cap,
-            fixed_parameters,
-        } = witness;
+        let VerificationKey { setup_merkle_tree_cap, fixed_parameters } = witness;
 
         let cap: Vec<_> = setup_merkle_tree_cap
             .into_iter()
@@ -61,9 +56,7 @@ impl<F: SmallField, H: RecursiveTreeHasher<F, Num<F>>> CSAllocatable<F>
         assert!(cap.len() > 0);
         assert_eq!(cap.len(), fixed_parameters.cap_size);
 
-        Self {
-            setup_merkle_tree_cap: cap,
-        }
+        Self { setup_merkle_tree_cap: cap }
     }
 }
 

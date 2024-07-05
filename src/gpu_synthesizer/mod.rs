@@ -1,20 +1,21 @@
-use crate::field::traits::field_like::BaseField;
-use crate::{cs::traits::evaluator::PerChunkOffset, field::SmallField};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
+};
 
 use convert_case::{Case, Casing};
 use derivative::Derivative;
 use itertools::Itertools;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Mutex,
-};
-
-use crate::cs::traits::evaluator::*;
 
 use super::*;
+use crate::{
+    cs::traits::evaluator::{PerChunkOffset, *},
+    field::{traits::field_like::BaseField, SmallField},
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug, PartialEq, Eq, Hash)]
@@ -25,10 +26,7 @@ pub struct GPUPolyStorage<F: SmallField> {
 
 impl<F: SmallField> GPUPolyStorage<F> {
     pub const fn new() -> Self {
-        Self {
-            chunk_offset: PerChunkOffset::zero(),
-            _marker: std::marker::PhantomData,
-        }
+        Self { chunk_offset: PerChunkOffset::zero(), _marker: std::marker::PhantomData }
     }
 }
 
@@ -41,16 +39,11 @@ pub struct GPUPolyDestination<F: SmallField> {
 
 impl<F: SmallField> GPUPolyDestination<F> {
     pub const fn new(num_evaluations: usize) -> Self {
-        Self {
-            num_evaluations,
-            writes: vec![],
-        }
+        Self { num_evaluations, writes: vec![] }
     }
 }
 
-use crate::cs::traits::destination_view::*;
-use crate::cs::traits::trace_source::*;
-use crate::cs::traits::GoodAllocator;
+use crate::cs::traits::{destination_view::*, trace_source::*, GoodAllocator};
 
 impl<F: SmallField> TraceSource<F, GpuSynthesizerFieldLike<F>> for GPUPolyStorage<F> {
     fn get_constant_value(&self, constant_idx: usize) -> GpuSynthesizerFieldLike<F> {
@@ -141,10 +134,7 @@ pub struct GPUVariablesGlobalContext<F: SmallField> {
 
 impl<F: SmallField> GPUVariablesGlobalContext<F> {
     pub fn new() -> Self {
-        Self {
-            counter: Arc::new(AtomicUsize::new(0)),
-            relations: Arc::new(Mutex::new(vec![])),
-        }
+        Self { counter: Arc::new(AtomicUsize::new(0)), relations: Arc::new(Mutex::new(vec![])) }
     }
 
     pub fn reset(&self) {
@@ -215,27 +205,19 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     type Context = GPUVariablesContext<F>;
 
     fn zero(_ctx: &mut Self::Context) -> Self {
-        Self {
-            idx: Index::ConstantValue(F::ZERO),
-        }
+        Self { idx: Index::ConstantValue(F::ZERO) }
     }
 
     fn one(_ctx: &mut Self::Context) -> Self {
-        Self {
-            idx: Index::ConstantValue(F::ONE),
-        }
+        Self { idx: Index::ConstantValue(F::ONE) }
     }
     fn minus_one(_ctx: &mut Self::Context) -> Self {
-        Self {
-            idx: Index::ConstantValue(F::MINUS_ONE),
-        }
+        Self { idx: Index::ConstantValue(F::MINUS_ONE) }
     }
     // Arithmetics. Expressed in mutable way. It would not matter in after inlining
     fn add_assign(&'_ mut self, other: &Self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Add(self.idx, other.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -245,9 +227,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     fn sub_assign(&'_ mut self, other: &Self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Sub(self.idx, other.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -257,9 +237,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     fn mul_assign(&'_ mut self, other: &Self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Mul(self.idx, other.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -269,9 +247,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     fn square(&'_ mut self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Square(self.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -281,9 +257,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     fn negate(&'_ mut self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Negate(self.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -293,9 +267,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     fn double(&'_ mut self, ctx: &mut Self::Context) -> &'_ mut Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Double(self.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -306,9 +278,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     // infallible inverse
     fn inverse(&self, ctx: &mut Self::Context) -> Self {
         let next_idx = ctx.inner.advance();
-        let clean_var = Self {
-            idx: Index::TemporaryValue(next_idx),
-        };
+        let clean_var = Self { idx: Index::TemporaryValue(next_idx) };
         let rel = Relation::Inverse(self.idx);
         ctx.push_relation(clean_var, rel);
 
@@ -316,9 +286,7 @@ impl<F: SmallField> crate::field::traits::field_like::PrimeFieldLike
     }
     // constant creation
     fn constant(value: F, _ctx: &mut Self::Context) -> Self {
-        let clean_var = Self {
-            idx: Index::ConstantValue(value),
-        };
+        let clean_var = Self { idx: Index::ConstantValue(value) };
 
         clean_var
     }
@@ -359,10 +327,7 @@ pub struct GPUDataCapture {
     pub placement_type: GatePlacementType,
     pub row_shared_constants_set: Vec<GpuSynthesizerFieldLike<GoldilocksField>>,
     pub writes_per_repetition: Vec<Index<GoldilocksField>>,
-    pub relations: Vec<(
-        GpuSynthesizerFieldLike<GoldilocksField>,
-        Relation<GoldilocksField>,
-    )>,
+    pub relations: Vec<(GpuSynthesizerFieldLike<GoldilocksField>, Relation<GoldilocksField>)>,
     #[derivative(Debug = "ignore")]
     pub(crate) equality_fn: Box<dyn Fn(&dyn std::any::Any) -> bool + 'static + Send + Sync>,
 }
@@ -395,9 +360,7 @@ impl GPUDataCapture {
         let num_quotient_terms = E::num_quotient_terms();
         let placement_type = evaluator.placement_type();
 
-        let mut ctx = GPUVariablesContext {
-            inner: get_context(),
-        };
+        let mut ctx = GPUVariablesContext { inner: get_context() };
 
         let source = GPUPolyStorage::<GoldilocksField>::new();
         let mut destination = GPUPolyDestination::<GoldilocksField>::new(num_quotient_terms);
@@ -451,9 +414,7 @@ use crate::cs::traits::gate::*;
 
 impl GatesSetForGPU {
     pub fn new() -> Self {
-        Self {
-            descriptions: vec![],
-        }
+        Self { descriptions: vec![] }
     }
 
     pub fn add_gate<G: Gate<GoldilocksField>>(
@@ -557,14 +518,14 @@ impl<F: SmallField> TestSource<F> {
         num_constants: usize,
         size: usize,
     ) -> Self {
-        use rayon::iter::IntoParallelIterator;
-        use rayon::iter::ParallelIterator;
+        use rayon::iter::{IntoParallelIterator, ParallelIterator};
         let mut start = 0;
         let vars: Vec<_> = (start..(start + num_vars))
             .into_par_iter()
             .map(|el| {
-                use crate::field::rand_from_rng;
                 use rand::SeedableRng;
+
+                use crate::field::rand_from_rng;
                 let mut rng = rand::rngs::StdRng::seed_from_u64(el as u64);
 
                 let mut result = Vec::with_capacity(size);
@@ -581,8 +542,9 @@ impl<F: SmallField> TestSource<F> {
         let wits: Vec<_> = (start..(start + num_wits))
             .into_par_iter()
             .map(|el| {
-                use crate::field::rand_from_rng;
                 use rand::SeedableRng;
+
+                use crate::field::rand_from_rng;
                 let mut rng = rand::rngs::StdRng::seed_from_u64(el as u64);
 
                 let mut result = Vec::with_capacity(size);
@@ -599,8 +561,9 @@ impl<F: SmallField> TestSource<F> {
         let consts: Vec<_> = (start..(start + num_constants))
             .into_par_iter()
             .map(|el| {
-                use crate::field::rand_from_rng;
                 use rand::SeedableRng;
+
+                use crate::field::rand_from_rng;
                 let mut rng = rand::rngs::StdRng::seed_from_u64(el as u64);
 
                 let mut result = Vec::with_capacity(size);
@@ -682,11 +645,7 @@ pub struct TestDestination<F: SmallField> {
 
 impl<F: SmallField> TestDestination<F> {
     pub fn new(size: usize, num_terms: usize) -> Self {
-        Self {
-            terms: vec![vec![F::ZERO; size]; num_terms],
-            term_index: 0,
-            index: 0,
-        }
+        Self { terms: vec![vec![F::ZERO; size]; num_terms], term_index: 0, index: 0 }
     }
 }
 
@@ -710,14 +669,13 @@ impl<F: SmallField> EvaluationDestinationDrivable<F, F> for TestDestination<F> {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    use crate::cs::CSGeometry;
     use crate::{
-        cs::traits::evaluator::GateConstraintEvaluator, field::goldilocks::GoldilocksField,
+        cs::{
+            gates::Poseidon2FlattenedGate, traits::evaluator::GateConstraintEvaluator, CSGeometry,
+        },
+        field::goldilocks::GoldilocksField,
+        implementations::poseidon2::Poseidon2Goldilocks,
     };
-
-    use crate::cs::gates::Poseidon2FlattenedGate;
-    use crate::implementations::poseidon2::Poseidon2Goldilocks;
     type F = GoldilocksField;
     use crate::cs::gates::*;
 
@@ -802,7 +760,8 @@ mod test {
     //     let (batch_evaluator, _) =
     //         GenericGateEvaluationFunction::from_evaluator(evaluator, &geometry, None);
 
-    //     (batch_evaluator.evaluation_fn)(&mut source, &mut destination, constants_offset, &mut ctx);
+    //     (batch_evaluator.evaluation_fn)(&mut source, &mut destination, constants_offset, &mut
+    // ctx);
 
     //     dbg!(&destination.writes);
     //     dbg!(&ctx.get_relations());

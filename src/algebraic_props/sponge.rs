@@ -1,9 +1,7 @@
-use crate::field::traits::field_like::TrivialContext;
-
-use super::round_function::*;
-use super::*;
-
 use derivative::*;
+
+use super::{round_function::*, *};
+use crate::field::traits::field_like::TrivialContext;
 
 /// A generic wrapper over an algebraic sponge hash function.
 /// Can use either absorption mode and is capable of performing any
@@ -25,12 +23,12 @@ pub struct AlgebraicSponge<
 }
 
 impl<
-        F: PrimeField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: AlgebraicRoundFunctionWithParams<F, AW, SW, CW>,
-    > Default for AlgebraicSponge<F, AW, SW, CW, R>
+    F: PrimeField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: AlgebraicRoundFunctionWithParams<F, AW, SW, CW>,
+> Default for AlgebraicSponge<F, AW, SW, CW, R>
 where
     R: Default,
 {
@@ -40,12 +38,12 @@ where
 }
 
 impl<
-        F: PrimeField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: AlgebraicRoundFunctionWithParams<F, AW, SW, CW>,
-    > AlgebraicSponge<F, AW, SW, CW, R>
+    F: PrimeField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: AlgebraicRoundFunctionWithParams<F, AW, SW, CW>,
+> AlgebraicSponge<F, AW, SW, CW, R>
 {
     #[inline]
     pub fn new(round_function: R, mode: AbsorptionMode) -> Self {
@@ -106,13 +104,7 @@ impl<
     }
 
     pub fn finalize<const N: usize>(self) -> [F; N] {
-        let Self {
-            buffer,
-            filled,
-            state,
-            round_function,
-            mode,
-        } = self;
+        let Self { buffer, filled, state, round_function, mode } = self;
 
         let mut state = state;
 
@@ -159,11 +151,7 @@ impl<T, const AW: usize, const SW: usize, const CW: usize>
     where
         T: Copy,
     {
-        Self {
-            buffer: [filler; AW],
-            filled: 0,
-            state: [filler; SW],
-        }
+        Self { buffer: [filler; AW], filled: 0, state: [filler; SW] }
     }
 }
 
@@ -185,14 +173,14 @@ pub struct GenericAlgebraicSponge<
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLike<Base = F>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: GenericAlgebraicRoundFunction<F, P, AW, SW, CW>,
-        M: AbsorptionModeTrait<P>,
-    > Default for GenericAlgebraicSponge<F, P, AW, SW, CW, R, M>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLike<Base = F>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: GenericAlgebraicRoundFunction<F, P, AW, SW, CW>,
+    M: AbsorptionModeTrait<P>,
+> Default for GenericAlgebraicSponge<F, P, AW, SW, CW, R, M>
 where
     P::Context: TrivialContext,
 {
@@ -202,14 +190,14 @@ where
 }
 
 impl<
-        F: PrimeField,
-        P: field::traits::field_like::PrimeFieldLike<Base = F>,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: GenericAlgebraicRoundFunction<F, P, AW, SW, CW>,
-        M: AbsorptionModeTrait<P>,
-    > GenericAlgebraicSponge<F, P, AW, SW, CW, R, M>
+    F: PrimeField,
+    P: field::traits::field_like::PrimeFieldLike<Base = F>,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: GenericAlgebraicRoundFunction<F, P, AW, SW, CW>,
+    M: AbsorptionModeTrait<P>,
+> GenericAlgebraicSponge<F, P, AW, SW, CW, R, M>
 {
     #[inline]
     pub fn new(ctx: &mut P::Context) -> Self {
@@ -290,20 +278,11 @@ impl<
     }
 
     pub fn try_get_commitment<const N: usize>(&self) -> Option<[P; N]> {
-        if self.filled == 0 {
-            Some(R::state_into_commitment::<N>(&self.state))
-        } else {
-            None
-        }
+        if self.filled == 0 { Some(R::state_into_commitment::<N>(&self.state)) } else { None }
     }
 
     pub fn finalize<const N: usize>(self) -> [P; N] {
-        let Self {
-            buffer,
-            filled,
-            state,
-            ..
-        } = self;
+        let Self { buffer, filled, state, .. } = self;
 
         let mut state = state;
 

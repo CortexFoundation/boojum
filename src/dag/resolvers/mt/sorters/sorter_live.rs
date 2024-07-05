@@ -9,6 +9,7 @@ use std::{
 
 use itertools::Itertools;
 
+use super::{ResolutionRecord, ResolutionRecordWriter, ResolverSortingMode};
 use crate::{
     config::CSResolverConfig,
     cs::{traits::cs::DstBuffer, Place, Variable, VariableType},
@@ -27,8 +28,6 @@ use crate::{
     log,
     utils::{PipeOp, UnsafeCellEx},
 };
-
-use super::{ResolutionRecord, ResolutionRecordWriter, ResolverSortingMode};
 
 #[derive(Debug)]
 struct Stats {
@@ -206,7 +205,10 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter>
                         {
                             let r_d = resolvers.u_deref().get(tgt[derivative].value);
 
-                            assert!(r.outputs().iter().all(|x| r_d.inputs().contains(x) == false),
+                            assert!(
+                                r.outputs()
+                                    .iter()
+                                    .all(|x| r_d.inputs().contains(x) == false),
                                 "Parallelism violation at ix {}, val {:#?}, derivative ix {} , val {:#?}: {:#?}",
                                 r_ix,
                                 tgt[r_ix],
@@ -214,7 +216,12 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter>
                                 tgt[derivative],
                                 (std::cmp::max(0, len as i32 - 1050) as usize..tgt.len())
                                     .map(|x| (x, resolvers.u_deref().get(tgt[x].value)))
-                                    .map(|(i, r)| (i, tgt[i], r.inputs().to_vec(), r.outputs().to_vec()))
+                                    .map(|(i, r)| (
+                                        i,
+                                        tgt[i],
+                                        r.inputs().to_vec(),
+                                        r.outputs().to_vec()
+                                    ))
                                     .collect_vec()
                             );
                         }
@@ -264,10 +271,7 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter> ResolverS
             max_tracked: -1,
         };
 
-        let exec_order = ExecOrder {
-            size: 0,
-            items: Vec::with_capacity(opts.max_variables),
-        };
+        let exec_order = ExecOrder { size: 0, items: Vec::with_capacity(opts.max_variables) };
 
         let common = ResolverCommonData {
             resolvers: UnsafeCell::new(ResolverBox::new()),
@@ -335,14 +339,7 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter> ResolverS
 
             delayed_resolvers
                 .into_iter()
-                .map(|x| {
-                    (
-                        x,
-                        rb.get(x).inputs(),
-                        rb.get(x).outputs(),
-                        rb.get(x).added_at(),
-                    )
-                })
+                .map(|x| (x, rb.get(x).inputs(), rb.get(x).outputs(), rb.get(x).added_at()))
                 // Safety: No &mut references to `self.common.resolvers`.
                 .for_each(|(r, i, o, a)| self.internalize(r, i, o, a));
         }
@@ -352,9 +349,11 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter> ResolverS
     where
         Fn: FnOnce(&[F], &mut DstBuffer<'_, '_, F>) + Send + Sync,
     {
-        debug_assert!(inputs
-            .iter()
-            .all(|x| x.0 < self.options.max_variables as u64));
+        debug_assert!(
+            inputs
+                .iter()
+                .all(|x| x.0 < self.options.max_variables as u64)
+        );
 
         // Safety: This thread is the only one to use `push` on the resolvers
         // and is the only thread to do so. `push` is the only mutable function
@@ -480,12 +479,7 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter> ResolverS
             new_resolvers
                 .into_iter()
                 .map(|x| unsafe {
-                    (
-                        x,
-                        rb.get(x).inputs(),
-                        rb.get(x).outputs(),
-                        rb.get(x).added_at(),
-                    )
+                    (x, rb.get(x).inputs(), rb.get(x).outputs(), rb.get(x).added_at())
                 })
                 .to(|x| resolvers.extend(x));
         }
@@ -598,10 +592,9 @@ impl<F: SmallField, Cfg: CSResolverConfig, RW: ResolutionRecordWriter> ResolverS
 
         self.flush();
 
-        self.record.items.resize_with(
-            self.stats.registrations_added as usize,
-            ResolutionRecordItem::default,
-        );
+        self.record
+            .items
+            .resize_with(self.stats.registrations_added as usize, ResolutionRecordItem::default);
 
         for (i, item) in self.record.items[..].iter_mut().enumerate() {
             debug_assert_eq!(i, item.added_at as usize);

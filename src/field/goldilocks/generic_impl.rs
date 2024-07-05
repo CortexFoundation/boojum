@@ -1,10 +1,11 @@
-use crate::cs::implementations::utils::precompute_twiddles_for_fft;
-use crate::cs::traits::GoodAllocator;
-use crate::field::{Field, PrimeField};
-use crate::worker::Worker;
 use std::usize;
 
 use super::GoldilocksField;
+use crate::{
+    cs::{implementations::utils::precompute_twiddles_for_fft, traits::GoodAllocator},
+    field::{Field, PrimeField},
+    worker::Worker,
+};
 
 // we need max of an alignment of u64x4 and u64x8 in this implementation, so 64
 
@@ -351,7 +352,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::Twiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::fft_natural_to_bitreversed_cache_friendly(input, coset, twiddles);
 
         crate::fft::fft_natural_to_bitreversed_mixedgl(input, coset, twiddles);
@@ -364,7 +366,8 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
         twiddles: &Self::InverseTwiddles<A>,
         _ctx: &mut Self::Context,
     ) {
-        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self, GoldilocksField>(input);
+        // let input = crate::utils::cast_check_alignment_ref_mut_unpack::<Self,
+        // GoldilocksField>(input);
         // crate::fft::ifft_natural_to_natural_cache_friendly(input, coset, twiddles);
 
         crate::fft::ifft_natural_to_natural_mixedgl(input, coset, twiddles);
@@ -396,13 +399,16 @@ impl crate::field::traits::field_like::PrimeFieldLikeVectorized for MixedGL {
 #[cfg(test)]
 mod test {
 
-    use crate::field::goldilocks::MixedGL;
-    use crate::field::rand_from_rng;
-    use crate::field::traits::field_like::PrimeFieldLike;
-    use crate::field::traits::field_like::PrimeFieldLikeVectorized;
-    use crate::field::{goldilocks::GoldilocksField, Field};
-    use crate::log;
-    use crate::utils::clone_respecting_allignment;
+    use crate::{
+        field::{
+            goldilocks::{GoldilocksField, MixedGL},
+            rand_from_rng,
+            traits::field_like::{PrimeFieldLike, PrimeFieldLikeVectorized},
+            Field,
+        },
+        log,
+        utils::clone_respecting_allignment,
+    };
 
     #[test]
     fn test_mixedgl_negate() {
@@ -445,16 +451,18 @@ mod test {
         // Generate random Vec<GoldilocksField>
         // let a: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| rand_from_rng(&mut rng)).collect();
         // let b: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| rand_from_rng(&mut rng)).collect();
-        // let a: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| GoldilocksField(0x0000000000000001)).collect();
-        // let b: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| GoldilocksField(0x0000000001000000)).collect();
+        // let a: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_|
+        // GoldilocksField(0x0000000000000001)).collect(); let b: Vec<GoldilocksField> =
+        // (0..POLY_SIZE).map(|_| GoldilocksField(0x0000000001000000)).collect();
         let b: Vec<GoldilocksField> = (0..POLY_SIZE)
             .map(|_| GoldilocksField(rng.gen_range(GoldilocksField::ORDER..u64::MAX)))
             .collect();
         let a: Vec<GoldilocksField> = (0..POLY_SIZE)
             .map(|_| GoldilocksField(rng.gen_range(GoldilocksField::ORDER..u64::MAX)))
             .collect();
-        // let a: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| GoldilocksField(0xfffffffff67f1442)).collect();
-        // let b: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_| GoldilocksField(0xffffffff9c1d065d)).collect();
+        // let a: Vec<GoldilocksField> = (0..POLY_SIZE).map(|_|
+        // GoldilocksField(0xfffffffff67f1442)).collect(); let b: Vec<GoldilocksField> =
+        // (0..POLY_SIZE).map(|_| GoldilocksField(0xffffffff9c1d065d)).collect();
 
         // dbg!(&a);
         // dbg!(&b);
@@ -576,8 +584,15 @@ mod test {
     fn test_mixedgl_butterfly16x16() {
         // let mut ctx = ();
 
-        // let am: [u64;32] = [0x0001000000000000, 0x0000000000000001, 0x0001000000000000, 0x0000000000000001, 0x0000000000000000, 0xffffffff00000000, 0x0000000000000001, 0x0000ffffffffffff, 0x0000000000000000, 0x0001000000000000, 0xffffffff00000000, 0xffffffff00000000, 0xffffffff00000000, 0xfffeffff00000001, 0xfffeffff00000002, 0xfffeffff00000002,
-        //     0x0000000000000000, 0x0000000000000001, 0x0000000000000000, 0x0001000000000001, 0xfffeffff00000001, 0xffffffff00000000, 0x0001000000000000, 0xfffeffff00000002, 0x0000000000000000, 0xfffeffff00000001, 0xffffffff00000000, 0x0000000000000001, 0x0000ffffffffffff, 0x0000000000000000, 0x0000000000000001, 0x0001000000000000];
+        // let am: [u64;32] = [0x0001000000000000, 0x0000000000000001, 0x0001000000000000,
+        // 0x0000000000000001, 0x0000000000000000, 0xffffffff00000000, 0x0000000000000001,
+        // 0x0000ffffffffffff, 0x0000000000000000, 0x0001000000000000, 0xffffffff00000000,
+        // 0xffffffff00000000, 0xffffffff00000000, 0xfffeffff00000001, 0xfffeffff00000002,
+        // 0xfffeffff00000002,     0x0000000000000000, 0x0000000000000001,
+        // 0x0000000000000000, 0x0001000000000001, 0xfffeffff00000001, 0xffffffff00000000,
+        // 0x0001000000000000, 0xfffeffff00000002, 0x0000000000000000, 0xfffeffff00000001,
+        // 0xffffffff00000000, 0x0000000000000001, 0x0000ffffffffffff, 0x0000000000000000,
+        // 0x0000000000000001, 0x0001000000000000];
 
         let am: [u64; 32] = [
             0x0001000000000000,
@@ -639,8 +654,9 @@ mod test {
             MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
                 &a,
             ));
-        // let mut bv: Vec<MixedGL> = MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&b));
-        // let mut av = av[0];
+        // let mut bv: Vec<MixedGL> =
+        // MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL,
+        // _>(&b)); let mut av = av[0];
         // let mut bv = bv[0];
 
         // Test over MixedGL
@@ -661,7 +677,8 @@ mod test {
             MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(
                 &ag,
             ));
-        // let bg = MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField, MixedGL, _>(&bg));
+        // let bg = MixedGL::vec_from_base_vec(clone_respecting_allignment::<GoldilocksField,
+        // MixedGL, _>(&bg));
 
         dbg!(&ag);
         dbg!(&av);

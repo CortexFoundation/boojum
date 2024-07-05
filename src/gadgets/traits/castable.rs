@@ -1,5 +1,4 @@
 use super::*;
-
 use crate::field::SmallField;
 
 // instead of defining may closures and implementing Fn traits for them we can abstract away
@@ -12,35 +11,24 @@ pub struct Convertor<
     _marker: std::marker::PhantomData<(F, S, U)>,
 }
 
-impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        U: WitnessCastable<F, S>,
-    > Default for Convertor<F, S, U>
+impl<F: SmallField, S: 'static + Clone + std::fmt::Debug + Send + Sync, U: WitnessCastable<F, S>>
+    Default for Convertor<F, S, U>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        U: WitnessCastable<F, S>,
-    > Convertor<F, S, U>
+impl<F: SmallField, S: 'static + Clone + std::fmt::Debug + Send + Sync, U: WitnessCastable<F, S>>
+    Convertor<F, S, U>
 {
     pub const fn new() -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 }
 
-impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        U: WitnessCastable<F, S>,
-    > FnOnce<(S,)> for Convertor<F, S, U>
+impl<F: SmallField, S: 'static + Clone + std::fmt::Debug + Send + Sync, U: WitnessCastable<F, S>>
+    FnOnce<(S,)> for Convertor<F, S, U>
 {
     type Output = U;
 
@@ -49,22 +37,16 @@ impl<
     }
 }
 
-impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        U: WitnessCastable<F, S>,
-    > FnMut<(S,)> for Convertor<F, S, U>
+impl<F: SmallField, S: 'static + Clone + std::fmt::Debug + Send + Sync, U: WitnessCastable<F, S>>
+    FnMut<(S,)> for Convertor<F, S, U>
 {
     extern "rust-call" fn call_mut(&mut self, args: (S,)) -> Self::Output {
         <U as WitnessCastable<F, S>>::cast_from_source(args.0)
     }
 }
 
-impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        U: WitnessCastable<F, S>,
-    > Fn<(S,)> for Convertor<F, S, U>
+impl<F: SmallField, S: 'static + Clone + std::fmt::Debug + Send + Sync, U: WitnessCastable<F, S>>
+    Fn<(S,)> for Convertor<F, S, U>
 {
     extern "rust-call" fn call(&self, args: (S,)) -> Self::Output {
         <U as WitnessCastable<F, S>>::cast_from_source(args.0)
@@ -269,11 +251,11 @@ impl<F: SmallField> WitnessCastable<F, [F; 2]> for u32 {
 
 // arrays
 impl<
-        F: SmallField,
-        S: 'static + Clone + std::fmt::Debug + Send + Sync,
-        T: WitnessCastable<F, S>,
-        const N: usize,
-    > WitnessCastable<F, [S; N]> for [T; N]
+    F: SmallField,
+    S: 'static + Clone + std::fmt::Debug + Send + Sync,
+    T: WitnessCastable<F, S>,
+    const N: usize,
+> WitnessCastable<F, [S; N]> for [T; N]
 {
     #[inline]
     fn cast_from_source(witness: [S; N]) -> Self {

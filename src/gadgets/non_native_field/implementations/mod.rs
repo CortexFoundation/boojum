@@ -1,28 +1,32 @@
 use std::sync::Arc;
 
-use self::utils::u16_words_to_u1024;
-
-use super::*;
-use crate::config::*;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::gadgets::u16::UInt16;
-use crate::{cs::Variable, gadgets::u8::get_8_by_8_range_check_table};
 use crypto_bigint::{CheckedMul, NonZero, Zero, U1024};
+
+use self::utils::u16_words_to_u1024;
+use super::*;
+use crate::{
+    config::*,
+    cs::{gates::ConstantAllocatableCS, traits::cs::ConstraintSystem, Variable},
+    gadgets::{u16::UInt16, u8::get_8_by_8_range_check_table},
+};
 
 pub mod impl_traits;
 pub mod implementation_u16;
 pub mod utils;
 
-// Small note on the strategy - because we are quite flexible in what range check tables we use we have a few options:
-// - if we only need field ops we can create many lookup arguments that are basically 16 bit range checks
+// Small note on the strategy - because we are quite flexible in what range check tables we use we
+// have a few options:
+// - if we only need field ops we can create many lookup arguments that are basically 16 bit range
+//   checks
 // - if we need something else (like hash functions too), we can use almost always use 8x8 tables
-// Previously we used RNS with quite diverse strategy on lazy reduction, but in practice we can ignore additions almost always,
-// and insert manual reduction where necessary by N/2N/3N/4N depending on the capacity, and only focus on efficiency of multiplication.
-// For multiplications there is not too much we can do: so far looks like enforcing the constraint
+// Previously we used RNS with quite diverse strategy on lazy reduction, but in practice we can
+// ignore additions almost always, and insert manual reduction where necessary by N/2N/3N/4N
+// depending on the capacity, and only focus on efficiency of multiplication. For multiplications
+// there is not too much we can do: so far looks like enforcing the constraint
 // that for range-checked and properly decomposed `a` and `b` we can just enforce the relation
-// a * b = q * P + r, and depending on what we need afterwards to ensure range of `q` and `r` in certain bounds.
-// Note that we rarely need `r` to be strictly `< P` and usually are fine to have it `< 2^log2(P)` or even `< 2^next_range_check_multiple(log2(P))`
+// a * b = q * P + r, and depending on what we need afterwards to ensure range of `q` and `r` in
+// certain bounds. Note that we rarely need `r` to be strictly `< P` and usually are fine to have it
+// `< 2^log2(P)` or even `< 2^next_range_check_multiple(log2(P))`
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug)]
@@ -32,19 +36,13 @@ pub struct OverflowTracker {
 
 impl OverflowTracker {
     pub fn add(&self, other: &Self) -> Self {
-        Self {
-            max_moduluses: self.max_moduluses + other.max_moduluses,
-        }
+        Self { max_moduluses: self.max_moduluses + other.max_moduluses }
     }
 
     pub fn overflow_over_representation(&self, modulus: &U1024, repr_bits: u32) -> u32 {
         let total = modulus.saturating_mul(&U1024::from_word(self.max_moduluses as u64));
         let total_bits = total.bits() as u32;
-        if total_bits <= repr_bits {
-            0
-        } else {
-            total_bits - repr_bits
-        }
+        if total_bits <= repr_bits { 0 } else { total_bits - repr_bits }
     }
 
     pub fn into_max_value(&self, modulus: &U1024) -> U1024 {
@@ -71,8 +69,9 @@ impl OverflowTracker {
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug)]
 pub struct NonNativeFieldOverU16Params<T: pairing::ff::PrimeField, const N: usize> {
-    pub modulus: [u16; N], // modulus padded with zeroes to number of representation words if necessary
-    pub modulus_bits: u32, // number of bits in modulus
+    pub modulus: [u16; N], /* modulus padded with zeroes to number of representation words if
+                            * necessary */
+    pub modulus_bits: u32,    // number of bits in modulus
     pub modulus_limbs: usize, // number of u16 limbs required to represent a modulus
     pub modulus_u1024: crypto_bigint::NonZero<U1024>,
     pub max_product_before_reduction: U1024,

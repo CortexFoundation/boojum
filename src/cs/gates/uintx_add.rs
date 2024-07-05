@@ -1,13 +1,13 @@
+use super::*;
 use crate::{
     cs::cs_builder::{CsBuilder, CsBuilderImpl},
     gadgets::traits::castable::WitnessCastable,
 };
 
-use super::*;
-
 // a + b + carry_in = c + 2^N * carry_out,
 // `carry_out` is boolean constrainted
-// but `c` is NOT. We will use reduction gate to perform decomposition of `c`, and separate range checks
+// but `c` is NOT. We will use reduction gate to perform decomposition of `c`, and separate range
+// checks
 
 const UNIQUE_IDENTIFIER: &str = "a + b + carry_in = c + 2^N * carry_out";
 const PRINCIPAL_WIDTH: usize = 5;
@@ -43,10 +43,7 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for UIntXAddConstraintEvaluator {
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 2 }
     }
 
     #[inline]
@@ -288,13 +285,8 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                carry_in,
-                c: output_variables[0],
-                carry_out: output_variables[1],
-            };
+            let gate =
+                Self { a, b, carry_in, c: output_variables[0], carry_out: output_variables[1] };
 
             gate.add_to_cs(cs);
         }
@@ -347,13 +339,7 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                carry_in,
-                c: output_variable,
-                carry_out: zero_var,
-            };
+            let gate = Self { a, b, carry_in, c: output_variable, carry_out: zero_var };
 
             gate.add_to_cs(cs);
         }
@@ -474,13 +460,8 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a: output_variable,
-                b,
-                carry_in: borrow_in,
-                c: a,
-                carry_out: zero_var,
-            };
+            let gate =
+                Self { a: output_variable, b, carry_in: borrow_in, c: a, carry_out: zero_var };
 
             gate.add_to_cs(cs);
         }
@@ -532,13 +513,7 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a,
-                b,
-                carry_in,
-                c,
-                carry_out: output_variable,
-            };
+            let gate = Self { a, b, carry_in, c, carry_out: output_variable };
 
             gate.add_to_cs(cs);
         }
@@ -596,13 +571,8 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                a: output_variable,
-                b,
-                carry_in: borrow_in,
-                c: a,
-                carry_out: borrow_out,
-            };
+            let gate =
+                Self { a: output_variable, b, carry_in: borrow_in, c: a, carry_out: borrow_out };
 
             gate.add_to_cs(cs);
         }
@@ -614,8 +584,7 @@ impl<const WIDTH: usize> UIntXAddGate<WIDTH> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

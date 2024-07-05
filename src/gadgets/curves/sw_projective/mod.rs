@@ -1,11 +1,12 @@
-use super::*;
+use pairing::GenericCurveAffine;
 
-use crate::gadgets::traits::selectable::Selectable;
+use super::*;
 use crate::{
     cs::traits::cs::ConstraintSystem,
-    gadgets::{boolean::Boolean, non_native_field::traits::NonNativeField},
+    gadgets::{
+        boolean::Boolean, non_native_field::traits::NonNativeField, traits::selectable::Selectable,
+    },
 };
-use pairing::GenericCurveAffine;
 
 // https://eprint.iacr.org/2015/1060.pdf
 
@@ -32,12 +33,7 @@ where
         let params = x.get_params();
         let z = NN::allocated_constant(cs, C::Base::one(), params);
 
-        Self {
-            x,
-            y,
-            z,
-            _marker: std::marker::PhantomData,
-        }
+        Self { x, y, z, _marker: std::marker::PhantomData }
     }
 
     pub fn zero<CS: ConstraintSystem<F>>(cs: &mut CS, params: &std::sync::Arc<NN::Params>) -> Self {
@@ -47,12 +43,7 @@ where
         let y = NN::allocated_constant(cs, C::Base::one(), params);
         let z = NN::allocated_constant(cs, C::Base::zero(), params);
 
-        Self {
-            x,
-            y,
-            z,
-            _marker: std::marker::PhantomData,
-        }
+        Self { x, y, z, _marker: std::marker::PhantomData }
     }
 
     pub fn double<CS: ConstraintSystem<F>>(&mut self, cs: &mut CS) -> Self {
@@ -111,12 +102,7 @@ where
         let mut t4_mul_2 = t4.double(cs);
         let x3 = t4_mul_2.mul(cs, &mut t1);
 
-        let new = Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            _marker: std::marker::PhantomData,
-        };
+        let new = Self { x: x3, y: y3, z: z3, _marker: std::marker::PhantomData };
 
         new
     }
@@ -210,12 +196,7 @@ where
         // z3 = z3 + z3
         let z3 = z3.double(cs);
 
-        let new = Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            _marker: std::marker::PhantomData,
-        };
+        let new = Self { x: x3, y: y3, z: z3, _marker: std::marker::PhantomData };
 
         new
     }
@@ -326,12 +307,7 @@ where
         let mut z3 = z3.mul(cs, &mut t4);
         let z3 = z3.add(cs, &mut t0);
 
-        let new = Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            _marker: std::marker::PhantomData,
-        };
+        let new = Self { x: x3, y: y3, z: z3, _marker: std::marker::PhantomData };
 
         new
     }
@@ -441,12 +417,7 @@ where
         // z3 = z3 + t0
         let z3 = z3.add(cs, &mut t0);
 
-        let new = Self {
-            x: x3,
-            y: y3,
-            z: z3,
-            _marker: std::marker::PhantomData,
-        };
+        let new = Self { x: x3, y: y3, z: z3, _marker: std::marker::PhantomData };
 
         new
     }
@@ -509,11 +480,6 @@ where
         let y = NN::conditionally_select(cs, flag, &a.y, &b.y);
         let z = NN::conditionally_select(cs, flag, &a.z, &b.z);
 
-        Self {
-            x,
-            y,
-            z,
-            _marker: std::marker::PhantomData,
-        }
+        Self { x, y, z, _marker: std::marker::PhantomData }
     }
 }

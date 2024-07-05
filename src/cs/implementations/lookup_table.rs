@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::cs::traits::cs::ConstraintSystem;
+use arrayvec::ArrayVec;
 
 use super::*;
-use arrayvec::ArrayVec;
+use crate::cs::traits::cs::ConstraintSystem;
 
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq, Eq)]
@@ -299,7 +299,12 @@ impl<F: SmallField, const N: usize> LookupTable<F, N> {
             }
             let key = LookupKey(key);
             let existing = result.insert(key, idx);
-            assert!(existing.is_none(), "can not compute lookup cache if using only {} first columns out of {} as logical key", num_key_columns, N);
+            assert!(
+                existing.is_none(),
+                "can not compute lookup cache if using only {} first columns out of {} as logical key",
+                num_key_columns,
+                N
+            );
         }
 
         result
@@ -319,14 +324,7 @@ impl<F: SmallField, const N: usize> LookupTable<F, N> {
             content_cache.insert(ContentLookupKey(*el), idx);
         }
 
-        Self {
-            content,
-            content_cache,
-            name,
-            num_key_columns,
-            num_value_columns,
-            lookup_cache,
-        }
+        Self { content, content_cache, name, num_key_columns, num_value_columns, lookup_cache }
     }
 
     pub fn name(&self) -> &str {
@@ -377,10 +375,7 @@ impl<F: SmallField, const N: usize> LookupTable<F, N> {
         key.copy_from_slice(entry);
         let key = ContentLookupKey(key);
         let Some(row_idx) = self.content_cache.get(&key).copied() else {
-            panic!(
-                "There is no entry for key+value {:?} in table {}",
-                key, &self.name
-            );
+            panic!("There is no entry for key+value {:?} in table {}", key, &self.name);
         };
 
         row_idx as u32

@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::*;
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 // A simple gate of c0 * A * B + c1 * C -> D
 
@@ -26,19 +25,12 @@ impl<F: PrimeField> GateConstraintEvaluator<F> for FmaGateInBaseWithoutConstantC
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 4,
-            num_witnesses: 0,
-            num_constants: 2,
-        }
+        GatePrincipalInstanceWidth { num_variables: 4, num_witnesses: 0, num_constants: 2 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 3,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 3, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -146,10 +138,7 @@ const UNIQUE_IDENTIFIER: &str = "c0 * A * B + c1 * C -> D";
 const PRINCIPAL_WIDTH: usize = 4;
 
 // HashMap coefficients into row index to know vacant places
-type FmaGateTooling<F> = (
-    usize,
-    HashMap<FmaGateInBaseWithoutConstantParams<F>, (usize, usize)>,
-);
+type FmaGateTooling<F> = (usize, HashMap<FmaGateInBaseWithoutConstantParams<F>, (usize, usize)>);
 
 impl<F: SmallField> Gate<F> for FmaGateInBaseFieldWithoutConstant<F> {
     #[inline(always)]
@@ -200,12 +189,8 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
             return;
         }
 
-        let all_variables = [
-            self.quadratic_part.0,
-            self.quadratic_part.1,
-            self.linear_part,
-            self.rhs_part,
-        ];
+        let all_variables =
+            [self.quadratic_part.0, self.quadratic_part.1, self.linear_part, self.rhs_part];
 
         match cs.get_gate_placement_strategy::<Self>() {
             GatePlacementStrategy::UseGeneralPurposeColumns => {
@@ -227,10 +212,7 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
                     cs.place_gate(&self, row);
                 }
                 cs.place_constants(
-                    &[
-                        self.params.coeff_for_quadtaric_part,
-                        self.params.linear_term_coeff,
-                    ],
+                    &[self.params.coeff_for_quadtaric_part, self.params.linear_term_coeff],
                     row,
                     0,
                 ); // this gate used same constants per row only
@@ -257,10 +239,7 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
                 );
                 cs.place_gate_specialized(&self, num_instances_already_placed, row);
                 cs.place_constants_specialized::<Self, 2>(
-                    &[
-                        self.params.coeff_for_quadtaric_part,
-                        self.params.linear_term_coeff,
-                    ],
+                    &[self.params.coeff_for_quadtaric_part, self.params.linear_term_coeff],
                     num_instances_already_placed,
                     row,
                     0,
@@ -287,10 +266,8 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
 
         let output_variable = cs.alloc_variable_without_value();
 
-        let params = FmaGateInBaseWithoutConstantParams {
-            coeff_for_quadtaric_part,
-            linear_term_coeff,
-        };
+        let params =
+            FmaGateInBaseWithoutConstantParams { coeff_for_quadtaric_part, linear_term_coeff };
 
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
             let value_fn = move |inputs: [F; 3]| {
@@ -316,12 +293,8 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                params,
-                quadratic_part: ab,
-                linear_part: c,
-                rhs_part: output_variable,
-            };
+            let gate =
+                Self { params, quadratic_part: ab, linear_part: c, rhs_part: output_variable };
 
             gate.add_to_cs(cs);
         }
@@ -344,8 +317,8 @@ impl<F: SmallField> FmaGateInBaseFieldWithoutConstant<F> {
         use crate::config::*;
 
         // the only thing that we needed was to create a variable with some index.
-        // When we are interested in proving only we are not interested in placement of such variable,
-        // and instead only need index and value
+        // When we are interested in proving only we are not interested in placement of such
+        // variable, and instead only need index and value
         let output_variable = cs.alloc_variable_without_value();
 
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {

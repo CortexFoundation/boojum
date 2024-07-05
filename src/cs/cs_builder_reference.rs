@@ -1,29 +1,25 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::config::*;
-
-use crate::cs::gates::lookup_marker::LookupFormalGate;
-use crate::cs::gates::LookupTooling;
-use crate::cs::implementations::reference_cs::INITIAL_LOOKUP_TABLE_ID_VALUE;
-use crate::dag::DefaultCircuitResolver;
+use super::{
+    cs_builder::{CsBuilder, CsBuilderImpl},
+    implementations::reference_cs::CSReferenceImplementation,
+    traits::{evaluator::GateConstraintEvaluator, gate::Gate},
+    CSGeometry, GateConfigurationHolder, GateTypeEntry, LookupParameters, StaticToolboxHolder,
+    Tool, Variable, Witness,
+};
 use crate::{
-    config::CSConfig,
-    dag::CircuitResolver,
+    config::{CSConfig, *},
+    cs::{
+        gates::{lookup_marker::LookupFormalGate, LookupTooling},
+        implementations::{evaluator_data::*, reference_cs::INITIAL_LOOKUP_TABLE_ID_VALUE},
+        traits::gate::GatePlacementStrategy,
+    },
+    dag::{CircuitResolver, DefaultCircuitResolver},
     field::{
         traits::field_like::{PrimeFieldLikeVectorized, TrivialContext},
         SmallField,
     },
 };
-
-use super::{
-    cs_builder::{CsBuilder, CsBuilderImpl},
-    implementations::reference_cs::CSReferenceImplementation,
-    traits::{evaluator::GateConstraintEvaluator, gate::Gate},
-    GateConfigurationHolder, StaticToolboxHolder,
-};
-use super::{CSGeometry, GateTypeEntry, LookupParameters, Tool, Variable, Witness};
-use crate::cs::implementations::evaluator_data::*;
-use crate::cs::traits::gate::GatePlacementStrategy;
 
 pub struct CsReferenceImplementationBuilder<
     F: SmallField,
@@ -46,11 +42,11 @@ pub struct CsReferenceImplementationBuilder<
 }
 
 impl<
-        F: SmallField,
-        P: PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > CsReferenceImplementationBuilder<F, P, CFG, CR>
+    F: SmallField,
+    P: PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> CsReferenceImplementationBuilder<F, P, CFG, CR>
 {
     pub fn new(geometry: CSGeometry, max_trace_len: usize) -> Self {
         Self {
@@ -105,11 +101,11 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        P: PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > CsBuilderImpl<F, CsReferenceImplementationBuilder<F, P, CFG, CR>>
+    F: SmallField,
+    P: PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> CsBuilderImpl<F, CsReferenceImplementationBuilder<F, P, CFG, CR>>
     for CsReferenceImplementationBuilder<F, P, CFG, CR>
 {
     type Final<GC: GateConfigurationHolder<F>, TB: StaticToolboxHolder> =
@@ -171,10 +167,7 @@ impl<
             }
         }
 
-        CsBuilder {
-            gates_config: new_configuration,
-            ..builder
-        }
+        CsBuilder { gates_config: new_configuration, ..builder }
     }
 
     fn add_tool<
@@ -185,13 +178,11 @@ impl<
     >(
         builder: CsBuilder<CsReferenceImplementationBuilder<F, P, CFG, CR>, F, GC, TB>,
         tool: T,
-        // ) -> CsBuilder<CsReferenceImplementationBuilder<F, P, CFG>, F, GC, TB::DescendantHolder<M, T>>
+        // ) -> CsBuilder<CsReferenceImplementationBuilder<F, P, CFG>, F, GC,
+        // TB::DescendantHolder<M, T>>
     ) -> CsBuilder<Self, F, GC, (Tool<M, T>, TB)> {
         let new_toolbox = builder.toolbox.add_tool(tool);
-        CsBuilder {
-            toolbox: new_toolbox,
-            ..builder
-        }
+        CsBuilder { toolbox: new_toolbox, ..builder }
     }
 
     type GcWithLookup<GC: GateConfigurationHolder<F>> =
@@ -214,14 +205,16 @@ impl<
         let this = &mut builder.implementation;
 
         assert!(this.lookup_marker_gate_idx.is_none());
-        assert!(this
-            .evaluation_data_over_general_purpose_columns
-            .evaluators_over_general_purpose_columns
-            .is_empty());
-        assert!(this
-            .evaluation_data_over_specialized_columns
-            .evaluators_over_specialized_columns
-            .is_empty());
+        assert!(
+            this.evaluation_data_over_general_purpose_columns
+                .evaluators_over_general_purpose_columns
+                .is_empty()
+        );
+        assert!(
+            this.evaluation_data_over_specialized_columns
+                .evaluators_over_specialized_columns
+                .is_empty()
+        );
 
         // we are fine by just adding a new gate as the normal one, but modifying the state a little
         // for specific lookup parameters
@@ -234,14 +227,8 @@ impl<
                 LookupParameters::NoLookup => {
                     panic!("trying to allow `no lookup`");
                 }
-                LookupParameters::TableIdAsVariable {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsVariable { width, share_table_id } => {
+                    assert!(share_table_id == false, "other option is not yet implemented");
                     // we need to resize multiplicities
                     assert!(
                         builder
@@ -258,14 +245,8 @@ impl<
                         share_table_id,
                     )
                 }
-                LookupParameters::TableIdAsConstant {
-                    width,
-                    share_table_id,
-                } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                LookupParameters::TableIdAsConstant { width, share_table_id } => {
+                    assert!(share_table_id == true, "other option is not yet implemented");
                     assert!(
                         builder
                             .implementation
@@ -286,10 +267,7 @@ impl<
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == false,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == false, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {
@@ -306,10 +284,7 @@ impl<
                     num_repetitions,
                     share_table_id,
                 } => {
-                    assert!(
-                        share_table_id == true,
-                        "other option is not yet implemented"
-                    );
+                    assert!(share_table_id == true, "other option is not yet implemented");
 
                     (
                         GatePlacementStrategy::UseSpecializedColumns {
@@ -356,11 +331,8 @@ impl<
         );
         assert!(max_trace_len.is_power_of_two());
 
-        let gates_application_sets = if CFG::SetupConfig::KEEP_SETUP {
-            Vec::with_capacity(max_trace_len)
-        } else {
-            vec![]
-        };
+        let gates_application_sets =
+            if CFG::SetupConfig::KEEP_SETUP { Vec::with_capacity(max_trace_len) } else { vec![] };
 
         let mut row_cleanups = Vec::with_capacity(16);
         builder
@@ -434,11 +406,8 @@ impl<
             vec![vec![]]
         };
 
-        let constants_requested_per_row = if CFG::SetupConfig::KEEP_SETUP {
-            Vec::with_capacity(max_trace_len)
-        } else {
-            vec![]
-        };
+        let constants_requested_per_row =
+            if CFG::SetupConfig::KEEP_SETUP { Vec::with_capacity(max_trace_len) } else { vec![] };
 
         let constants_for_gates_in_specialized_mode = if CFG::SetupConfig::KEEP_SETUP {
             vec![Vec::with_capacity(max_trace_len); total_specialized_constants]

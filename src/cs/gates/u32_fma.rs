@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::*;
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 // u8x4 * u8x4 + u8x4 + u8x4 = u8x4 + 2^32 * u8x4, for purposes for long math
 
@@ -38,10 +37,7 @@ impl<F: SmallField> GateConstraintEvaluator<F> for U8x4ConstraintEvaluator {
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 2 }
     }
 
     #[inline]
@@ -150,8 +146,20 @@ impl<F: SmallField> GateConstraintEvaluator<F> for U8x4ConstraintEvaluator {
         global_constants: &Self::GlobalConstants<P>,
         ctx: &mut P::Context,
     ) {
-        let [_one, shift_8, shift_16, shift_24, _shift_32, _shift_40, minus_one, minus_shift_8, minus_shift_16, minus_shift_24, minus_shift_32, minus_shift_40] =
-            global_constants;
+        let [
+            _one,
+            shift_8,
+            shift_16,
+            shift_24,
+            _shift_32,
+            _shift_40,
+            minus_one,
+            minus_shift_8,
+            minus_shift_16,
+            minus_shift_24,
+            minus_shift_32,
+            minus_shift_40,
+        ] = global_constants;
 
         let [a0, a1, a2, a3] = [
             trace_source.get_variable_value(0),
@@ -195,10 +203,8 @@ impl<F: SmallField> GateConstraintEvaluator<F> for U8x4ConstraintEvaluator {
             trace_source.get_variable_value(20 + 3),
         ];
 
-        let [product_carry0, product_carry1] = [
-            trace_source.get_variable_value(24 + 0),
-            trace_source.get_variable_value(24 + 1),
-        ];
+        let [product_carry0, product_carry1] =
+            [trace_source.get_variable_value(24 + 0), trace_source.get_variable_value(24 + 1)];
 
         // we do the usual long math, assuming that long enough combination fits into
         // field element without overflow
@@ -460,8 +466,24 @@ impl U8x4FMAGate {
 
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
             let value_fn = move |inputs: [F; 16]| {
-                let [a0, a1, a2, a3, b0, b1, b2, b3, c0, c1, c2, c3, carry_in0, carry_in1, carry_in2, carry_in3] =
-                    inputs.map(|el| el.as_u64() as u8);
+                let [
+                    a0,
+                    a1,
+                    a2,
+                    a3,
+                    b0,
+                    b1,
+                    b2,
+                    b3,
+                    c0,
+                    c1,
+                    c2,
+                    c3,
+                    carry_in0,
+                    carry_in1,
+                    carry_in2,
+                    carry_in3,
+                ] = inputs.map(|el| el.as_u64() as u8);
 
                 // reassemble
                 let a = [a0, a1, a2, a3];
@@ -508,19 +530,8 @@ impl U8x4FMAGate {
 
                 let [high0, high1, high2, high3] = high.to_le_bytes();
 
-                [
-                    low0,
-                    low1,
-                    low2,
-                    low3,
-                    high0,
-                    high1,
-                    high2,
-                    high3,
-                    product_carry0,
-                    product_carry1,
-                ]
-                .map(|el| F::from_u64_unchecked(el as u64))
+                [low0, low1, low2, low3, high0, high1, high2, high3, product_carry0, product_carry1]
+                    .map(|el| F::from_u64_unchecked(el as u64))
             };
 
             let dependencies = Place::from_variables([
@@ -550,8 +561,18 @@ impl U8x4FMAGate {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let [low0, low1, low2, low3, high0, high1, high2, high3, product_carry0, product_carry_1] =
-                output_variables;
+            let [
+                low0,
+                low1,
+                low2,
+                low3,
+                high0,
+                high1,
+                high2,
+                high3,
+                product_carry0,
+                product_carry_1,
+            ] = output_variables;
 
             let gate = Self {
                 a: a_decomposition,
@@ -567,18 +588,8 @@ impl U8x4FMAGate {
         }
 
         (
-            [
-                output_variables[0],
-                output_variables[1],
-                output_variables[2],
-                output_variables[3],
-            ],
-            [
-                output_variables[4],
-                output_variables[5],
-                output_variables[6],
-                output_variables[7],
-            ],
+            [output_variables[0], output_variables[1], output_variables[2], output_variables[3]],
+            [output_variables[4], output_variables[5], output_variables[6], output_variables[7]],
             [output_variables[8], output_variables[9]],
         )
     }
@@ -587,8 +598,7 @@ impl U8x4FMAGate {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

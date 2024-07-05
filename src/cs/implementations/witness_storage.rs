@@ -1,19 +1,19 @@
-use super::*;
-
-use super::polynomial_storage::{SecondStageProductsStorage, WitnessStorage};
-use crate::cs::implementations::polynomial::*;
-use crate::cs::traits::GoodAllocator;
-
-use super::utils::*;
 use std::sync::Arc;
+
+use super::{
+    polynomial_storage::{SecondStageProductsStorage, WitnessStorage},
+    utils::*,
+    *,
+};
+use crate::cs::{implementations::polynomial::*, traits::GoodAllocator};
 
 // here we want trivial context bound to use equalities
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > WitnessStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> WitnessStorage<F, P, A, B>
 {
     pub fn from_base_trace(
         variables: Vec<Arc<Polynomial<F, LagrangeForm, A>>, B>,
@@ -58,11 +58,7 @@ impl<
             ctx,
         );
 
-        WitnessStorage {
-            variables_columns,
-            witness_columns,
-            lookup_multiplicities_polys,
-        }
+        WitnessStorage { variables_columns, witness_columns, lookup_multiplicities_polys }
     }
 
     pub fn from_base_trace_ext(
@@ -108,21 +104,17 @@ impl<
             ctx,
         );
 
-        WitnessStorage {
-            variables_columns,
-            witness_columns,
-            lookup_multiplicities_polys,
-        }
+        WitnessStorage { variables_columns, witness_columns, lookup_multiplicities_polys }
     }
 }
 
 // here we want trivial context bound to use equalities
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > SecondStageProductsStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> SecondStageProductsStorage<F, P, A, B>
 {
     pub fn from_base_trace_ext(
         z_poly: [Arc<GenericPolynomial<F, LagrangeForm, P, A>>; 2],

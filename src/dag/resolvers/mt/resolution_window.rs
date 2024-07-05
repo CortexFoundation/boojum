@@ -26,6 +26,7 @@ use std::{
 use itertools::Itertools;
 use smallvec::SmallVec;
 
+use super::{ResolverCommonData, ResolverComms};
 use crate::{
     cs::Place,
     dag::{
@@ -38,8 +39,6 @@ use crate::{
     log,
     utils::{DilatoryPrinter, PipeOp, UnsafeCellEx},
 };
-
-use super::{ResolverCommonData, ResolverComms};
 
 #[derive(PartialEq, Eq, Debug)]
 enum ResolverState {
@@ -114,10 +113,12 @@ impl<V: SmallField + 'static, T: TrackId + 'static, Cfg: RWConfig<T> + 'static>
         debug_track: &[Place],
         threads: u32,
     ) -> JoinHandle<()> {
-        assert!(threads <= 128, "Not enough primes for that, add additional primes to the channel. Don't forget to update this assert.");
+        assert!(
+            threads <= 128,
+            "Not enough primes for that, add additional primes to the channel. Don't forget to update this assert."
+        );
 
-        use rand::distributions::Alphanumeric;
-        use rand::{thread_rng, Rng};
+        use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
         let discriminant_affix: String = thread_rng()
             .sample_iter(&Alphanumeric)
@@ -139,10 +140,7 @@ impl<V: SmallField + 'static, T: TrackId + 'static, Cfg: RWConfig<T> + 'static>
                 };
 
                 let handle = std::thread::Builder::new()
-                    .name(format!(
-                        "CircuitResolver-{}-worker-{}",
-                        discriminant_affix, i
-                    ))
+                    .name(format!("CircuitResolver-{}-worker-{}", discriminant_affix, i))
                     .spawn(move || worker.run())
                     .expect("Couldn't spawn resolver worker thread.");
 
@@ -163,12 +161,8 @@ impl<V: SmallField + 'static, T: TrackId + 'static, Cfg: RWConfig<T> + 'static>
             comms,
 
             track_list: Vec::new(),
-            execution_list: if cfg!(feature = "cr_paranoia_mode") {
-                1 << 26
-            } else {
-                0
-            }
-            .to(|x| Vec::with_capacity(x).op(|v| v.resize(x, 0))),
+            execution_list: if cfg!(feature = "cr_paranoia_mode") { 1 << 26 } else { 0 }
+                .to(|x| Vec::with_capacity(x).op(|v| v.resize(x, 0))),
             phantom: PhantomData,
         };
 
@@ -219,12 +213,8 @@ impl<V: SmallField + 'static, T: TrackId + 'static, Cfg: RWConfig<T> + 'static>
                         let mut file = std::fs::File::create(&path).unwrap();
 
                         for (state, inputs, outputs) in self.track_list.iter() {
-                            writeln!(
-                                file,
-                                "{} inputs: {:?} outputs: {:?}",
-                                state, inputs, outputs
-                            )
-                            .unwrap();
+                            writeln!(file, "{} inputs: {:?} outputs: {:?}", state, inputs, outputs)
+                                .unwrap();
                         }
 
                         file.flush().unwrap();
@@ -404,10 +394,7 @@ impl<V: SmallField + 'static, T: TrackId + 'static, Cfg: RWConfig<T> + 'static>
 
                 transient_buffer
                     .drain(..)
-                    .map(|x| OrderBufferItem {
-                        order_info: x,
-                        state: ResolverState::Pending,
-                    })
+                    .map(|x| OrderBufferItem { order_info: x, state: ResolverState::Pending })
                     .to(|x| self.exec_order_buffer.extend(x));
 
                 debug_assert!(transient_buffer.is_empty());
@@ -688,11 +675,7 @@ impl<V: SmallField, T: TrackId + 'static, Cfg: RWConfig<T>, const SIZE: usize>
                 .iter()
                 .find(|x| resolver.inputs().contains(x))
             {
-                log!(
-                    "RW: invoking at ix {:?} with tracked input {:?}",
-                    order_ix,
-                    x
-                );
+                log!("RW: invoking at ix {:?} with tracked input {:?}", order_ix, x);
 
                 track = true;
             }
@@ -702,11 +685,7 @@ impl<V: SmallField, T: TrackId + 'static, Cfg: RWConfig<T>, const SIZE: usize>
                 .iter()
                 .find(|x| resolver.outputs().contains(x))
             {
-                log!(
-                    "RW: invoking at ix {:?} with with tracked output {:?}",
-                    order_ix,
-                    x
-                );
+                log!("RW: invoking at ix {:?} with with tracked output {:?}", order_ix, x);
 
                 track = true;
             }
@@ -819,11 +798,8 @@ impl LockStepChannel {
             die_order: AtomicBool::new(false),
             pool: UnsafeCell::new(Vec::new()),
 
-            stats: LockStepChannelStats {
-                total_iterations: 0,
-                execute_wait_loops: 0,
-            }
-            .to(UnsafeCell::new),
+            stats: LockStepChannelStats { total_iterations: 0, execute_wait_loops: 0 }
+                .to(UnsafeCell::new),
 
             panicked: AtomicBool::new(false),
             panic: Mutex::new(None),

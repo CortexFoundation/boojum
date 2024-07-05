@@ -3,17 +3,23 @@ use std::mem::MaybeUninit;
 use arrayvec::ArrayVec;
 
 use super::*;
-use crate::config::*;
-use crate::cs::gates::{
-    assert_no_placeholder_variables, ConstantAllocatableCS, FmaGateInBaseFieldWithoutConstant,
-    FmaGateInBaseWithoutConstantParams, ReductionGate, ReductionGateParams,
+use crate::{
+    config::*,
+    cs::{
+        gates::{
+            assert_no_placeholder_variables, ConstantAllocatableCS,
+            FmaGateInBaseFieldWithoutConstant, FmaGateInBaseWithoutConstantParams, ReductionGate,
+            ReductionGateParams,
+        },
+        Variable,
+    },
+    gadgets::{
+        tables::{
+            ch4::Ch4Table, chunk4bits::Split4BitChunkTable, maj4::Maj4Table, trixor4::TriXor4Table,
+        },
+        traits::castable::WitnessCastable,
+    },
 };
-use crate::cs::Variable;
-use crate::gadgets::tables::ch4::Ch4Table;
-use crate::gadgets::tables::chunk4bits::Split4BitChunkTable;
-use crate::gadgets::tables::maj4::Maj4Table;
-use crate::gadgets::tables::trixor4::TriXor4Table;
-use crate::gadgets::traits::castable::WitnessCastable;
 
 // in contrast to Blake2s we actually keep words packed as UInt32,
 // because we need quite "wide" additions
@@ -126,12 +132,7 @@ pub fn round_function<F: SmallField, CS: ConstraintSystem<F>>(
         let expanded_word = ReductionGate::reduce_terms(
             cs,
             [F::ONE; 4],
-            [
-                s0.variable,
-                s1.variable,
-                expanded[idx - 7],
-                expanded[idx - 16],
-            ],
+            [s0.variable, s1.variable, expanded[idx - 7], expanded[idx - 16]],
         );
 
         // we only need to fully range check if it's one of the last
@@ -485,12 +486,7 @@ fn split_and_rotate<F: SmallField, CS: ConstraintSystem<F>>(
     let t = ReductionGate::reduce_terms(
         cs,
         coeffs,
-        [
-            decompose_low,
-            aligned_variables[0],
-            aligned_variables[1],
-            aligned_variables[2],
-        ],
+        [decompose_low, aligned_variables[0], aligned_variables[1], aligned_variables[2]],
     );
 
     for (_idx, dst) in coeffs.iter_mut().enumerate().skip(1) {
@@ -502,12 +498,7 @@ fn split_and_rotate<F: SmallField, CS: ConstraintSystem<F>>(
     let t = ReductionGate::reduce_terms(
         cs,
         coeffs,
-        [
-            t,
-            aligned_variables[3],
-            aligned_variables[4],
-            aligned_variables[5],
-        ],
+        [t, aligned_variables[3], aligned_variables[4], aligned_variables[5]],
     );
 
     let zero = cs.allocate_constant(F::ZERO);
@@ -520,9 +511,7 @@ fn split_and_rotate<F: SmallField, CS: ConstraintSystem<F>>(
     coeffs[3] = F::ZERO;
 
     let gate = ReductionGate {
-        params: ReductionGateParams {
-            reduction_constants: coeffs,
-        },
+        params: ReductionGateParams { reduction_constants: coeffs },
         terms: [t, aligned_variables[6], decompose_high, zero],
         reduction_result: input,
     };
@@ -594,10 +583,7 @@ fn merge_4bit_chunk<F: SmallField, CS: ConstraintSystem<F>, const SPLIT_AT: usiz
             let reconstructed = low | (high << SPLIT_AT);
             let swapped = high | (low << (4 - SPLIT_AT));
 
-            [
-                F::from_u64_unchecked(reconstructed as u64),
-                F::from_u64_unchecked(swapped as u64),
-            ]
+            [F::from_u64_unchecked(reconstructed as u64), F::from_u64_unchecked(swapped as u64)]
         };
 
         let outputs = Place::from_variables(merged);
@@ -610,11 +596,7 @@ fn merge_4bit_chunk<F: SmallField, CS: ConstraintSystem<F>, const SPLIT_AT: usiz
         .expect("table must exist");
     cs.enforce_lookup::<4>(table_id, &[merged[0], low, high, merged[1]]);
 
-    if swap_output == false {
-        merged[0]
-    } else {
-        merged[1]
-    }
+    if swap_output == false { merged[0] } else { merged[1] }
 }
 
 fn tri_xor_many<F: SmallField, CS: ConstraintSystem<F>, const N: usize>(
@@ -781,10 +763,7 @@ fn split_36_bits_unchecked<F: SmallField, CS: ConstraintSystem<F>>(
 
             debug_assert!(high < 1u64 << 4);
 
-            [
-                F::from_u64_unchecked(low as u64),
-                F::from_u64_unchecked(high),
-            ]
+            [F::from_u64_unchecked(low as u64), F::from_u64_unchecked(high)]
         };
 
         let outputs = Place::from_variables(chunks);

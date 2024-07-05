@@ -1,7 +1,8 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-use crate::field::{ExtensionField, FieldExtension};
-
 use super::*;
+use crate::{
+    cs::cs_builder::{CsBuilder, CsBuilderImpl},
+    field::{ExtensionField, FieldExtension},
+};
 
 // A simple gate of c0 * A * B + c1 * C -> D in the extension field
 
@@ -21,9 +22,7 @@ impl<F: PrimeField, EXT: FieldExtension<2, BaseField = F>> GateConstraintEvaluat
 
     #[inline(always)]
     fn new_from_parameters(_params: Self::UniqueParameterizationParams) -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
+        Self { _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -36,19 +35,12 @@ impl<F: PrimeField, EXT: FieldExtension<2, BaseField = F>> GateConstraintEvaluat
 
     #[inline]
     fn instance_width(&self) -> GatePrincipalInstanceWidth {
-        GatePrincipalInstanceWidth {
-            num_variables: 8,
-            num_witnesses: 0,
-            num_constants: 4,
-        }
+        GatePrincipalInstanceWidth { num_variables: 8, num_witnesses: 0, num_constants: 4 }
     }
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 3,
-            num_quotient_terms: 2,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 3, num_quotient_terms: 2 }
     }
 
     #[inline]
@@ -135,8 +127,12 @@ impl<F: PrimeField, EXT: FieldExtension<2, BaseField = F>> GateConstraintEvaluat
         let d_c0 = trace_source.get_variable_value(6);
         let d_c1 = trace_source.get_variable_value(7);
 
-        let [quadratic_term_coeff_c0, quadratic_term_coeff_c1, linear_term_coeff_c0, linear_term_coeff_c1] =
-            shared_constants;
+        let [
+            quadratic_term_coeff_c0,
+            quadratic_term_coeff_c1,
+            linear_term_coeff_c0,
+            linear_term_coeff_c1,
+        ] = shared_constants;
 
         let [non_residue] = global_constants;
 
@@ -223,10 +219,8 @@ const UNIQUE_IDENTIFIER: &str = "c0 * A * B + c1 * C -> D in quadratic extension
 const PRINCIPAL_WIDTH: usize = 8;
 
 // HashMap coefficients into row index to know vacant places
-type FmaInExtensionGateTooling<F, EXT> = (
-    usize,
-    HashMap<FmaGateInExtensionWithoutConstantParams<F, EXT>, (usize, usize)>,
-);
+type FmaInExtensionGateTooling<F, EXT> =
+    (usize, HashMap<FmaGateInExtensionWithoutConstantParams<F, EXT>, (usize, usize)>);
 
 impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Gate<F>
     for FmaGateInExtensionWithoutConstant<F, EXT>
@@ -243,9 +237,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Gate<F>
 
     #[inline]
     fn evaluator(&self) -> Self::Evaluator {
-        FmaGateInExtensionWithoutConstantConstraintEvaluator {
-            _marker: std::marker::PhantomData,
-        }
+        FmaGateInExtensionWithoutConstantConstraintEvaluator { _marker: std::marker::PhantomData }
     }
 }
 
@@ -260,15 +252,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
         builder: CsBuilder<TImpl, F, GC, TB>,
         placement_strategy: GatePlacementStrategy,
         // ) -> CsBuilder<TImpl, F, GC::DescendantHolder<Self, FmaGateTooling<F>>, TB> {
-    ) -> CsBuilder<
-        TImpl,
-        F,
-        (
-            GateTypeEntry<F, Self, FmaInExtensionGateTooling<F, EXT>>,
-            GC,
-        ),
-        TB,
-    > {
+    ) -> CsBuilder<TImpl, F, (GateTypeEntry<F, Self, FmaInExtensionGateTooling<F, EXT>>, GC), TB>
+    {
         builder.allow_gate(placement_strategy, (), (0, HashMap::with_capacity(16)))
     }
 
@@ -376,10 +361,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
 
         let output_variables = cs.alloc_multiple_variables_without_values::<2>();
 
-        let params = FmaGateInExtensionWithoutConstantParams {
-            coeff_for_quadtaric_part,
-            linear_term_coeff,
-        };
+        let params =
+            FmaGateInExtensionWithoutConstantParams { coeff_for_quadtaric_part, linear_term_coeff };
 
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
             let value_fn = move |inputs: [F; 6]| {
@@ -411,12 +394,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                params,
-                quadratic_part: ab,
-                linear_part: c,
-                rhs_part: output_variables,
-            };
+            let gate =
+                Self { params, quadratic_part: ab, linear_part: c, rhs_part: output_variables };
 
             gate.add_to_cs(cs);
         }
@@ -441,8 +420,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
         use crate::config::*;
 
         // the only thing that we needed was to create a variable with some index.
-        // When we are interested in proving only we are not interested in placement of such variable,
-        // and instead only need index and value
+        // When we are interested in proving only we are not interested in placement of such
+        // variable, and instead only need index and value
         let output_variables = cs.alloc_multiple_variables_without_values::<2>();
 
         if <CS::Config as CSConfig>::WitnessConfig::EVALUATE_WITNESS {
@@ -480,18 +459,17 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>>
 mod test {
     use std::alloc::Global;
 
-    use crate::dag::CircuitResolverOpts;
-    use crate::dag::DefaultCircuitResolver;
-    use crate::field::Field;
-
     use super::*;
-    use crate::worker::Worker;
+    use crate::{
+        dag::{CircuitResolverOpts, DefaultCircuitResolver},
+        field::Field,
+        worker::Worker,
+    };
     type F = crate::field::goldilocks::GoldilocksField;
     type Ext = crate::field::goldilocks::GoldilocksExt2;
     type RCfg = <DevCSConfig as CSConfig>::ResolverConfig;
     type CR = DefaultCircuitResolver<F, RCfg>;
-    use crate::cs::cs_builder::*;
-    use crate::cs::cs_builder_reference::*;
+    use crate::cs::{cs_builder::*, cs_builder_reference::*};
 
     #[test]
     fn test_simple_poseidon2() {

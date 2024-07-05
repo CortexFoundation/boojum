@@ -1,7 +1,6 @@
 // This is zero-sized structure, that records types
 
-use std::any::TypeId;
-use std::collections::HashSet;
+use std::{any::TypeId, collections::HashSet};
 
 pub trait TypeSet: 'static + Send + Sync {
     type ExtendedSet<T: 'static + Send + Sync>: TypeSet;
@@ -25,10 +24,7 @@ impl TypeSet for EmptySet {
     }
     #[inline(always)]
     fn extend<T: 'static + Send + Sync>(self) -> Self::ExtendedSet<T> {
-        SetEntry {
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        SetEntry { next: self, _marker: std::marker::PhantomData }
     }
 }
 
@@ -50,31 +46,22 @@ impl<TT: 'static + Send + Sync, NEXT: TypeSet> TypeSet for SetEntry<TT, NEXT> {
     }
     #[inline(always)]
     fn is_type_id_included(&self, type_id: TypeId) -> bool {
-        if TypeId::of::<TT>() == type_id {
-            true
-        } else {
-            self.next.is_type_id_included(type_id)
-        }
+        if TypeId::of::<TT>() == type_id { true } else { self.next.is_type_id_included(type_id) }
     }
     #[inline(always)]
     fn extend<T: 'static + Send + Sync>(self) -> Self::ExtendedSet<T> {
-        SetEntry {
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        SetEntry { next: self, _marker: std::marker::PhantomData }
     }
 }
 
 // Unfortunately it's not easy to express something like a set of object that implement some trait,
 // and which can only add objects that implement this trait too, so we make a special one for gates
 
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::evaluator::GateConstraintEvaluator;
-use crate::cs::traits::gate::*;
-use crate::field::SmallField;
-
-use super::kv_set::KVSet;
-use super::markers::*;
+use super::{kv_set::KVSet, markers::*};
+use crate::{
+    cs::traits::{cs::ConstraintSystem, evaluator::GateConstraintEvaluator, gate::*},
+    field::SmallField,
+};
 
 pub trait GateTypeSet<F: SmallField>: 'static + Send + Sync {
     type ExtendedSet<G: Gate<F>>: GateTypeSet<F>;
@@ -153,12 +140,7 @@ impl<F: SmallField> GateTypeSet<F> for EmptySet {
         placement_strategy: GatePlacementStrategy,
         params: <<G as Gate<F>>::Evaluator as GateConstraintEvaluator<F>>::UniqueParameterizationParams,
     ) -> Self::ExtendedSet<G> {
-        GateSetEntry {
-            placement_strategy,
-            params,
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        GateSetEntry { placement_strategy, params, next: self, _marker: std::marker::PhantomData }
     }
     #[inline(always)]
     fn gather_row_finalization_functions<CS: ConstraintSystem<F>>(
@@ -203,11 +185,7 @@ impl<F: SmallField, GG: Gate<F>, NEXT: GateTypeSet<F>> GateTypeSet<F>
     }
     #[inline(always)]
     fn is_type_id_included(&self, type_id: TypeId) -> bool {
-        if TypeId::of::<GG>() == type_id {
-            true
-        } else {
-            self.next.is_type_id_included(type_id)
-        }
+        if TypeId::of::<GG>() == type_id { true } else { self.next.is_type_id_included(type_id) }
     }
     #[inline(always)]
     fn get_params<G: Gate<F>>(
@@ -241,21 +219,13 @@ impl<F: SmallField, GG: Gate<F>, NEXT: GateTypeSet<F>> GateTypeSet<F>
         placement_strategy: GatePlacementStrategy,
         params: <<G as Gate<F>>::Evaluator as GateConstraintEvaluator<F>>::UniqueParameterizationParams,
     ) -> Self::ExtendedSet<G> {
-        GateSetEntry {
-            placement_strategy,
-            params,
-            next: self,
-            _marker: std::marker::PhantomData,
-        }
+        GateSetEntry { placement_strategy, params, next: self, _marker: std::marker::PhantomData }
     }
     fn gather_row_finalization_functions<CS: ConstraintSystem<F>>(
         &self,
         dst: &mut Vec<GateRowCleanupFunction<CS>>,
     ) {
-        if matches!(
-            self.placement_strategy,
-            GatePlacementStrategy::UseGeneralPurposeColumns
-        ) {
+        if matches!(self.placement_strategy, GatePlacementStrategy::UseGeneralPurposeColumns) {
             if let Some(cleanup_fn) = GG::row_finalization_function::<CS>() {
                 dst.push(cleanup_fn);
             }
@@ -266,10 +236,7 @@ impl<F: SmallField, GG: Gate<F>, NEXT: GateTypeSet<F>> GateTypeSet<F>
         &self,
         dst: &mut Vec<GateColumnsCleanupFunction<CS>>,
     ) {
-        if matches!(
-            self.placement_strategy,
-            GatePlacementStrategy::UseSpecializedColumns { .. }
-        ) {
+        if matches!(self.placement_strategy, GatePlacementStrategy::UseSpecializedColumns { .. }) {
             if let Some(cleanup_fn) = GG::columns_finalization_function::<CS>() {
                 dst.push(cleanup_fn);
             }

@@ -3,5 +3,6 @@
 
 pub mod simplified;
 
-pub use self::simplified::simple_toolbox as static_toolbox;
-pub use self::simplified::simple_type_combinator as gate_config;
+pub use self::simplified::{
+    simple_toolbox as static_toolbox, simple_type_combinator as gate_config,
+};

@@ -1,30 +1,20 @@
-use super::proof::Proof;
-use super::transcript::Transcript;
-use super::*;
+use std::{alloc::Global, any::TypeId, ops::Range};
 
-use crate::cs::oracle::merkle_tree::MerkleTreeWithCap;
-use crate::cs::oracle::TreeHasher;
-
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::cs::traits::evaluator::GatePlacementType;
-use crate::cs::traits::evaluator::GatePurpose;
-use crate::cs::traits::evaluator::PerChunkOffset;
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::cs::traits::trace_source::TraceSourceDerivable;
-use crate::field::Field;
-use crate::field::PrimeField;
-use std::any::TypeId;
-
-use crate::cs::gates::lookup_marker::*;
-use crate::cs::implementations::setup::TreeNode;
-use std::alloc::Global;
-use std::ops::Range;
-
-use crate::cs::implementations::pow::PoWRunner;
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
+use super::{proof::Proof, transcript::Transcript, *};
+use crate::{
+    cs::{
+        gates::lookup_marker::*,
+        implementations::{pow::PoWRunner, setup::TreeNode},
+        oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
+        toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+        traits::{
+            evaluator::{GatePlacementType, GatePurpose, PerChunkOffset, *},
+            gate::GatePlacementStrategy,
+            trace_source::TraceSourceDerivable,
+        },
+    },
+    field::{ExtensionField, Field, FieldExtension, PrimeField},
+};
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone, Debug, Hash, PartialEq, Eq)]
@@ -49,10 +39,7 @@ impl<F: SmallField, H: TreeHasher<F>> VerificationKey<F, H> {
     pub fn transmute_to_another_formal_hasher<HH: TreeHasher<F, Output = H::Output>>(
         self,
     ) -> VerificationKey<F, HH> {
-        let Self {
-            fixed_parameters,
-            setup_merkle_tree_cap,
-        } = self;
+        let Self { fixed_parameters, setup_merkle_tree_cap } = self;
 
         VerificationKey::<F, HH> {
             fixed_parameters,
@@ -224,8 +211,10 @@ impl<F: PrimeField, P: field::traits::field_like::PrimeFieldLike<Base = F>>
     }
 }
 
-use crate::cs::traits::destination_view::{EvaluationDestination, EvaluationDestinationDrivable};
-use crate::gpu_synthesizer::get_evaluator_name;
+use crate::{
+    cs::traits::destination_view::{EvaluationDestination, EvaluationDestinationDrivable},
+    gpu_synthesizer::get_evaluator_name,
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug)]
@@ -381,11 +370,11 @@ pub struct VerifierProxy<
 }
 
 impl<
-        F: SmallField,
-        EXT: FieldExtension<2, BaseField = F>,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-    > VerifierProxy<F, EXT, GC, T>
+    F: SmallField,
+    EXT: FieldExtension<2, BaseField = F>,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+> VerifierProxy<F, EXT, GC, T>
 {
     pub fn into_verifier(self) -> Verifier<F, EXT> {
         let Self {
@@ -728,11 +717,7 @@ impl<F: SmallField, const N: usize, EXT: FieldExtension<N, BaseField = F>>
     }
 
     pub fn num_lookup_table_setup_polys(lookup_parameters: &LookupParameters) -> usize {
-        if lookup_parameters.lookup_is_allowed() {
-            lookup_parameters.lookup_width() + 1
-        } else {
-            0
-        }
+        if lookup_parameters.lookup_is_allowed() { lookup_parameters.lookup_width() + 1 } else { 0 }
     }
 
     pub fn witness_leaf_size(
@@ -1012,9 +997,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                     .copied()
                     .expect("gate must be allowed");
                 let num_repetitions = match placement_strategy {
-                    GatePlacementStrategy::UseSpecializedColumns {
-                        num_repetitions, ..
-                    } => num_repetitions,
+                    GatePlacementStrategy::UseSpecializedColumns { num_repetitions, .. } => {
+                        num_repetitions
+                    }
                     _ => unreachable!(),
                 };
                 assert_eq!(evaluator.num_repetitions_on_row, num_repetitions);
@@ -1097,10 +1082,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
             let public_inputs_sorted_locations = vk
                 .fixed_parameters
                 .public_inputs_locations_batched_by_opening();
-            assert_eq!(
-                public_inputs_sorted_locations.len(),
-                public_input_opening_tuples.len()
-            );
+            assert_eq!(public_inputs_sorted_locations.len(), public_input_opening_tuples.len());
 
             for (a, b) in public_input_opening_tuples
                 .iter()
@@ -1143,8 +1125,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
 
         // run verifier at z
         {
-            use crate::cs::implementations::copy_permutation::non_residues_for_copy_permutation;
-            use crate::cs::implementations::verifier::*;
+            use crate::cs::implementations::{
+                copy_permutation::non_residues_for_copy_permutation, verifier::*,
+            };
 
             let non_residues_for_copy_permutation = non_residues_for_copy_permutation::<F, Global>(
                 vk.fixed_parameters.domain_size as usize,
@@ -1264,14 +1247,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
 
                 // lookup argument related parts
                 match self.lookup_parameters {
-                    LookupParameters::TableIdAsVariable {
-                        width: _,
-                        share_table_id: _,
-                    }
-                    | LookupParameters::TableIdAsConstant {
-                        width: _,
-                        share_table_id: _,
-                    } => {
+                    LookupParameters::TableIdAsVariable { width: _, share_table_id: _ }
+                    | LookupParameters::TableIdAsConstant { width: _, share_table_id: _ } => {
                         // exists by our setup
                         let lookup_evaluator_id = 0;
                         let selector_subpath = vk
@@ -1290,7 +1267,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                                 || vk.fixed_parameters.table_ids_column_idxes.len() == 1
                         );
 
-                        // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+                        // this is our lookup width, either counted by number of witness columns
+                        // only, or if one includes setup
                         let num_lookup_columns = column_elements_per_subargument
                             + ((vk.fixed_parameters.table_ids_column_idxes.len() == 1) as usize);
                         assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
@@ -1411,7 +1389,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                                 || vk.fixed_parameters.table_ids_column_idxes.len() == 1
                         );
 
-                        // this is our lookup width, either counted by number of witness columns only, or if one includes setup
+                        // this is our lookup width, either counted by number of witness columns
+                        // only, or if one includes setup
                         let num_lookup_columns = column_elements_per_subargument
                             + ((vk.fixed_parameters.table_ids_column_idxes.len() == 1) as usize);
                         assert_eq!(lookup_tables_columns.len(), num_lookup_columns);
@@ -1553,10 +1532,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                         "evaluator {} has no contribution to quotient",
                         &evaluator.debug_name,
                     );
-                    log!(
-                        "Will be evaluating {} over specialized columns",
-                        &evaluator.debug_name
-                    );
+                    log!("Will be evaluating {} over specialized columns", &evaluator.debug_name);
 
                     let num_terms = evaluator.num_quotient_terms;
                     let placement_strategy = self
@@ -1642,10 +1618,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                     challenges_offset += total_terms;
                 }
 
-                assert_eq!(
-                    challenges_offset,
-                    total_num_gate_terms_for_specialized_columns
-                );
+                assert_eq!(challenges_offset, total_num_gate_terms_for_specialized_columns);
             }
 
             log!("Evaluating general purpose gates");
@@ -1671,8 +1644,9 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                     }
 
                     if evaluator.total_quotient_terms_over_all_repetitions == 0 {
-                        // we MAY formally have NOP gate in the set here, but we should not evaluate it.
-                        // NOP gate will affect selectors placement, but not the rest
+                        // we MAY formally have NOP gate in the set here, but we should not evaluate
+                        // it. NOP gate will affect selectors placement, but
+                        // not the rest
                         continue;
                     }
 
@@ -1715,10 +1689,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                     }
                 }
 
-                assert_eq!(
-                    challenges_offset,
-                    total_num_gate_terms_for_general_purpose_columns
-                );
+                assert_eq!(challenges_offset, total_num_gate_terms_for_general_purpose_columns);
             }
 
             // then copy_permutation algorithm
@@ -1869,10 +1840,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
 
             let mut challenge_powers = Vec::with_capacity(reduction_degree_log_2);
             challenge_powers.push((c0, c1));
-            let as_extension = ExtensionField::<F, 2, EXT> {
-                coeffs: [c0, c1],
-                _marker: std::marker::PhantomData,
-            };
+            let as_extension =
+                ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
             let mut current = as_extension;
 
@@ -1909,10 +1878,8 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
 
             let mut challenge_powers = Vec::with_capacity(reduction_degree_log_2);
             challenge_powers.push((c0, c1));
-            let as_extension = ExtensionField::<F, 2, EXT> {
-                coeffs: [c0, c1],
-                _marker: std::marker::PhantomData,
-            };
+            let as_extension =
+                ExtensionField::<F, 2, EXT> { coeffs: [c0, c1], _marker: std::marker::PhantomData };
 
             let mut current = as_extension;
 
@@ -1989,10 +1956,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
             vk.fixed_parameters.domain_size * proof.proof_config.fri_lde_factor as u64;
 
         let max_needed_bits = lde_domain_size.trailing_zeros() as usize;
-        let mut bools_buffer = BoolsBuffer {
-            available: vec![],
-            max_needed: max_needed_bits,
-        };
+        let mut bools_buffer = BoolsBuffer { available: vec![], max_needed: max_needed_bits };
 
         let num_bits_for_in_coset_index =
             max_needed_bits - proof.proof_config.fri_lde_factor.trailing_zeros() as usize;
@@ -2052,10 +2016,11 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                 bools_buffer.get_bits(&mut transcript, max_needed_bits);
             // we consider it to be some convenient for us encoding of coset + inner index.
 
-            // Small note on indexing: when we commit to elements we use bitreversal enumeration everywhere.
-            // So index `i` in the tree corresponds to the element of `omega^bitreverse(i)`.
-            // This gives us natural separation of LDE cosets, such that subtrees form independent cosets,
-            // and if cosets are in the form of `{1, gamma, ...} x {1, omega, ...} where gamma^lde_factor == omega,
+            // Small note on indexing: when we commit to elements we use bitreversal enumeration
+            // everywhere. So index `i` in the tree corresponds to the element of
+            // `omega^bitreverse(i)`. This gives us natural separation of LDE cosets,
+            // such that subtrees form independent cosets, and if cosets are in the form
+            // of `{1, gamma, ...} x {1, omega, ...} where gamma^lde_factor == omega,
             // then subtrees are enumerated by bitreverse powers of gamma
             use crate::cs::implementations::prover::u64_from_lsb_first_bits;
 
@@ -2156,10 +2121,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
             // now perform the quotiening operation
             let mut simulated_ext_element = ExtensionField::<F, 2, EXT>::ZERO;
 
-            assert_eq!(
-                query_index_lsb_first_bits.len(),
-                precomputed_powers.len() - 1
-            );
+            assert_eq!(query_index_lsb_first_bits.len(), precomputed_powers.len() - 1);
             let mut domain_element = F::ONE;
             for (a, b) in query_index_lsb_first_bits
                 .iter()
@@ -2550,10 +2512,8 @@ fn quotening_operation<F: SmallField, EXT: FieldExtension<2, BaseField = F>>(
         let mut tmp = *poly_value;
         tmp.sub_assign(value_at);
 
-        let mut as_ext = ExtensionField::<F, 2, EXT> {
-            coeffs: [*c0, *c1],
-            _marker: std::marker::PhantomData,
-        };
+        let mut as_ext =
+            ExtensionField::<F, 2, EXT> { coeffs: [*c0, *c1], _marker: std::marker::PhantomData };
 
         as_ext.mul_assign(&tmp);
         acc.add_assign(&as_ext);

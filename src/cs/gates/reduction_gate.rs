@@ -1,6 +1,5 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::*;
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -43,10 +42,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: 2,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: 2, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -164,9 +160,7 @@ impl<F: SmallField, const N: usize> Gate<F> for ReductionGate<F, N> {
 impl<F: SmallField, const N: usize> ReductionGate<F, N> {
     pub const fn empty() -> Self {
         Self {
-            params: ReductionGateParams {
-                reduction_constants: [F::ZERO; N],
-            },
+            params: ReductionGateParams { reduction_constants: [F::ZERO; N] },
             terms: [Variable::placeholder(); N],
             reduction_result: Variable::placeholder(),
         }
@@ -212,9 +206,7 @@ impl<F: SmallField, const N: usize> ReductionGate<F, N> {
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
             let gate = Self {
-                params: ReductionGateParams {
-                    reduction_constants,
-                },
+                params: ReductionGateParams { reduction_constants },
                 terms,
                 reduction_result: output_variable,
             };
@@ -266,9 +258,7 @@ impl<F: SmallField, const N: usize> ReductionGate<F, N> {
             });
 
             let gate = Self {
-                params: ReductionGateParams {
-                    reduction_constants,
-                },
+                params: ReductionGateParams { reduction_constants },
                 terms: output_variables,
                 reduction_result: input,
             };
@@ -331,9 +321,7 @@ impl<F: SmallField, const N: usize> ReductionGate<F, N> {
             });
 
             let gate = Self {
-                params: ReductionGateParams {
-                    reduction_constants,
-                },
+                params: ReductionGateParams { reduction_constants },
                 terms: output_variables,
                 reduction_result: input,
             };
@@ -358,12 +346,8 @@ impl<F: SmallField, const N: usize> ReductionGate<F, N> {
                     .get_gates_config_mut()
                     .get_aux_data_mut::<Self, _>()
                     .expect("gate must be allowed");
-                let (row, num_instances_already_placed) = find_next_gate(
-                    &mut tooling.1,
-                    self.params,
-                    capacity_per_row,
-                    offered_row_idx,
-                );
+                let (row, num_instances_already_placed) =
+                    find_next_gate(&mut tooling.1, self.params, capacity_per_row, offered_row_idx);
                 drop(tooling);
 
                 // now we can use methods of CS to inform it of low level operations
@@ -420,8 +404,7 @@ impl<F: SmallField, const N: usize> ReductionGate<F, N> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cs::gates::testing_tools::test_evaluator;
-    use crate::field::goldilocks::GoldilocksField;
+    use crate::{cs::gates::testing_tools::test_evaluator, field::goldilocks::GoldilocksField};
     type F = GoldilocksField;
 
     #[test]

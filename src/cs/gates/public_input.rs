@@ -1,8 +1,7 @@
 use std::collections::VecDeque;
 
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-
 use super::{nop_gate::NopGateConstraintEvaluator, *};
+use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
 
 // This gate doesn't produce any constraints, but places a marker into CS
 // that on some row and column we declare a public input. We also allign all public inputs
@@ -41,13 +40,12 @@ impl<F: SmallField> Gate<F> for PublicInputGate {
 
 impl PublicInputGate {
     pub const fn new(var: Variable) -> Self {
-        Self {
-            variable_to_set: var,
-        }
+        Self { variable_to_set: var }
     }
 
     // If we allocate public input separately from the moment of knowing it's value
-    // we can use this helper function to copy witness. NOTE: caller must ensure equality constraint by himself!
+    // we can use this helper function to copy witness. NOTE: caller must ensure equality constraint
+    // by himself!
     pub fn assign_witness_value<F: SmallField, CS: ConstraintSystem<F>>(
         cs: &mut CS,
         from_variable: Variable,

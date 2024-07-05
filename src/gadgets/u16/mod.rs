@@ -1,18 +1,23 @@
 use super::*;
-use crate::config::*;
-use crate::cs::gates::ConstantAllocatableCS;
-use crate::cs::gates::UIntXAddGate;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::impls::limbs_decompose::decompose_into_limbs_limited;
-use crate::gadgets::impls::limbs_decompose::reduce_terms;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::castable::WitnessCastable;
-use crate::gadgets::u8::*;
-use crate::{cs::Variable, field::SmallField};
+use crate::{
+    config::*,
+    cs::{
+        gates::{ConstantAllocatableCS, UIntXAddGate},
+        traits::cs::{ConstraintSystem, DstBuffer},
+        Variable,
+    },
+    field::SmallField,
+    gadgets::{
+        boolean::Boolean,
+        impls::limbs_decompose::{decompose_into_limbs_limited, reduce_terms},
+        num::Num,
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            castable::WitnessCastable,
+        },
+        u8::*,
+    },
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, Hash)]
@@ -74,10 +79,8 @@ impl<F: SmallField> CSAllocatableExt<F> for UInt16<F> {
     }
 }
 
+use super::traits::{castable::Convertor, witnessable::WitnessHookable};
 use crate::gadgets::traits::witnessable::CSWitnessable;
-
-use super::traits::castable::Convertor;
-use super::traits::witnessable::WitnessHookable;
 
 pub const UINT16_DECOMPOSITION_LOOKUP_TOOLING: &str = "UInt16 decomposition tooling";
 pub const UINT16_RECOMPOSITION_LOOKUP_TOOLING: &str = "UInt16 recomposition tooling";
@@ -187,10 +190,7 @@ impl<F: SmallField> UInt16<F> {
     #[inline]
     #[must_use]
     pub const fn into_num(self) -> Num<F> {
-        Num {
-            variable: self.variable,
-            _marker: std::marker::PhantomData,
-        }
+        Num { variable: self.variable, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -199,10 +199,7 @@ impl<F: SmallField> UInt16<F> {
 
         let constant_var = cs.allocate_constant(F::from_u64_unchecked(constant as u64));
 
-        Self {
-            variable: constant_var,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: constant_var, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -223,10 +220,7 @@ impl<F: SmallField> UInt16<F> {
     #[inline]
     #[must_use]
     pub fn from_variable_checked<CS: ConstraintSystem<F>>(cs: &mut CS, variable: Variable) -> Self {
-        let result = Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        };
+        let result = Self { variable, _marker: std::marker::PhantomData };
 
         let _chunks = result.decompose_into_bytes(cs);
 
@@ -239,10 +233,7 @@ impl<F: SmallField> UInt16<F> {
     #[inline(always)]
     #[must_use]
     pub const unsafe fn from_variable_unchecked(variable: Variable) -> Self {
-        Self {
-            variable,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable, _marker: std::marker::PhantomData }
     }
 
     #[must_use]
@@ -260,10 +251,7 @@ impl<F: SmallField> UInt16<F> {
                 no_carry_in,
             );
 
-            let carry_out = Boolean {
-                variable: carry_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let carry_out = Boolean { variable: carry_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 
@@ -288,10 +276,7 @@ impl<F: SmallField> UInt16<F> {
                 carry_in.variable,
             );
 
-            let carry_out = Boolean {
-                variable: carry_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let carry_out = Boolean { variable: carry_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 
@@ -316,10 +301,8 @@ impl<F: SmallField> UInt16<F> {
                 no_borrow_in,
             );
 
-            let borrow_out = Boolean {
-                variable: borrow_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let borrow_out =
+                Boolean { variable: borrow_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 
@@ -344,10 +327,8 @@ impl<F: SmallField> UInt16<F> {
                 borrow_in.variable,
             );
 
-            let borrow_out = Boolean {
-                variable: borrow_out_var,
-                _marker: std::marker::PhantomData,
-            };
+            let borrow_out =
+                Boolean { variable: borrow_out_var, _marker: std::marker::PhantomData };
 
             let result = Self::from_variable_checked(cs, result_var);
 
@@ -389,10 +370,7 @@ impl<F: SmallField> UInt16<F> {
         let tooling: &RecompositionTooling =
             cs.get_or_create_dynamic_tool::<UInt16RecompositionTooling, _>();
         if let Some(existing_recomposition) = tooling.get(&bytes).copied() {
-            return Self {
-                variable: existing_recomposition,
-                _marker: std::marker::PhantomData,
-            };
+            return Self { variable: existing_recomposition, _marker: std::marker::PhantomData };
         }
         drop(tooling);
 
@@ -407,10 +385,7 @@ impl<F: SmallField> UInt16<F> {
         let existing = tooling.insert(bytes, result);
         debug_assert!(existing.is_none());
 
-        Self {
-            variable: result,
-            _marker: std::marker::PhantomData,
-        }
+        Self { variable: result, _marker: std::marker::PhantomData }
     }
 
     #[track_caller]
@@ -419,12 +394,7 @@ impl<F: SmallField> UInt16<F> {
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
             if let (Some(a), Some(b)) = (self.witness_hook(&*cs)(), other.witness_hook(&*cs)()) {
                 let (_, of) = a.overflowing_add(b);
-                assert!(
-                    of == false,
-                    "trying to add {} and {} that leads to overflow",
-                    a,
-                    b
-                );
+                assert!(of == false, "trying to add {} and {} that leads to overflow", a, b);
             }
         }
 
@@ -452,12 +422,7 @@ impl<F: SmallField> UInt16<F> {
         if <CS::Config as CSConfig>::DebugConfig::PERFORM_RUNTIME_ASSERTS {
             if let (Some(a), Some(b)) = (self.witness_hook(&*cs)(), other.witness_hook(&*cs)()) {
                 let (_, uf) = a.overflowing_sub(b);
-                assert!(
-                    uf == false,
-                    "trying to sub {} and {} that leads to underflow",
-                    a,
-                    b
-                );
+                assert!(uf == false, "trying to sub {} and {} that leads to underflow", a, b);
             }
         }
 
@@ -506,11 +471,7 @@ impl<F: SmallField> UInt16<F> {
     #[inline]
     #[must_use]
     pub fn equals<CS: ConstraintSystem<F>>(cs: &mut CS, a: &Self, b: &Self) -> Boolean<F> {
-        Num::equals(
-            cs,
-            &Num::from_variable(a.variable),
-            &Num::from_variable(b.variable),
-        )
+        Num::equals(cs, &Num::from_variable(a.variable), &Num::from_variable(b.variable))
     }
 
     /// # Safety

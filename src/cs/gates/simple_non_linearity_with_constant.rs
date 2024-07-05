@@ -1,7 +1,8 @@
-use crate::cs::cs_builder::{CsBuilder, CsBuilderImpl};
-use crate::cs::traits::gate::FinalizationHintSerialized;
-
 use super::*;
+use crate::cs::{
+    cs_builder::{CsBuilder, CsBuilderImpl},
+    traits::gate::FinalizationHintSerialized,
+};
 
 // y = (x + constant)^k
 
@@ -40,10 +41,7 @@ impl<F: PrimeField, const N: usize> GateConstraintEvaluator<F>
 
     #[inline]
     fn gate_purpose() -> GatePurpose {
-        GatePurpose::Evaluatable {
-            max_constraint_degree: N,
-            num_quotient_terms: 1,
-        }
+        GatePurpose::Evaluatable { max_constraint_degree: N, num_quotient_terms: 1 }
     }
 
     #[inline]
@@ -159,8 +157,8 @@ impl<F: SmallField, const N: usize> Gate<F> for SimpleNonlinearityGate<F, N> {
     }
 
     // it has non-trivial cleanup
-    fn row_finalization_function<CS: ConstraintSystem<F>>(
-    ) -> Option<traits::gate::GateRowCleanupFunction<CS>> {
+    fn row_finalization_function<CS: ConstraintSystem<F>>()
+    -> Option<traits::gate::GateRowCleanupFunction<CS>> {
         let closure = move |cs: &mut CS, hint: &Option<FinalizationHintSerialized>| {
             // we need to fill our witnesses with non-trivial values
 
@@ -256,7 +254,8 @@ impl<F: SmallField, const N: usize> SimpleNonlinearityGate<F, N> {
     >(
         builder: CsBuilder<TImpl, F, GC, TB>,
         placement_strategy: GatePlacementStrategy,
-        // ) -> CsBuilder<TImpl, F, GC::DescendantHolder<Self, SimpleNonlinearityGateTooling<F>>, TB> {
+        // ) -> CsBuilder<TImpl, F, GC::DescendantHolder<Self, SimpleNonlinearityGateTooling<F>>,
+        // TB> {
     ) -> CsBuilder<TImpl, F, (GateTypeEntry<F, Self, SimpleNonlinearityGateTooling<F>>, GC), TB>
     {
         builder.allow_gate(placement_strategy, (), (0, HashMap::with_capacity(16)))
@@ -363,11 +362,7 @@ impl<F: SmallField, const N: usize> SimpleNonlinearityGate<F, N> {
         }
 
         if <CS::Config as CSConfig>::SetupConfig::KEEP_SETUP {
-            let gate = Self {
-                x,
-                y: output_variable,
-                additive_constant: additive_part,
-            };
+            let gate = Self { x, y: output_variable, additive_constant: additive_part };
 
             gate.add_to_cs(cs);
         }

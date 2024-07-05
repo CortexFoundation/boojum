@@ -1,20 +1,20 @@
-use self::traits::GoodAllocator;
-use self::witness::WitnessVec;
+use std::{
+    alloc::Global,
+    any::TypeId,
+    marker::PhantomData,
+    sync::{atomic::AtomicU32, RwLock},
+};
 
+use self::{traits::GoodAllocator, witness::WitnessVec};
 use super::*;
-use crate::config::*;
-use crate::cs::implementations::evaluator_data::*;
-use crate::cs::implementations::setup::FinalizationHintsForProver;
-use crate::cs::traits::gate::GateColumnsCleanupFunction;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::cs::traits::gate::GateRowCleanupFunction;
-use crate::dag::CircuitResolver;
-use crate::dag::DefaultCircuitResolver;
-use std::alloc::Global;
-use std::any::TypeId;
-use std::marker::PhantomData;
-use std::sync::atomic::AtomicU32;
-use std::sync::RwLock;
+use crate::{
+    config::*,
+    cs::{
+        implementations::{evaluator_data::*, setup::FinalizationHintsForProver},
+        traits::gate::{GateColumnsCleanupFunction, GatePlacementStrategy, GateRowCleanupFunction},
+    },
+    dag::{CircuitResolver, DefaultCircuitResolver},
+};
 
 pub type CSDevelopmentAssembly<F, GC, T, CR> =
     CSReferenceImplementation<F, F, DevCSConfig, GC, T, CR>;
@@ -25,7 +25,10 @@ pub const INITIAL_LOOKUP_TABLE_ID_VALUE: u32 = 1;
 
 pub struct CSReferenceImplementation<
     F: SmallField, // over which we define a circuit
-    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>, // over whatever we evaluate gates. It can be vectorized type, or circuit variables
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>, /* over whatever we
+                                                                       * evaluate gates. It can
+                                                                       * be vectorized type, or
+                                                                       * circuit variables */
     CFG: CSConfig,
     GC: GateConfigurationHolder<F>,
     T: StaticToolboxHolder,
@@ -43,17 +46,20 @@ pub struct CSReferenceImplementation<
 
     pub(crate) max_trace_len: usize,
 
-    pub(crate) gates_application_sets: Vec<usize>, // index into gates_ordered_set for general-purpose columns
+    pub(crate) gates_application_sets: Vec<usize>, /* index into gates_ordered_set for
+                                                    * general-purpose columns */
 
     pub(crate) copy_permutation_data: Vec<Vec<Variable>>, // store column-major order
     pub(crate) witness_placement_data: Vec<Vec<Witness>>, // store column-major order
     pub(crate) constants_requested_per_row: Vec<SmallVec<[F; 8]>>, // for general purpose gates
-    pub(crate) constants_for_gates_in_specialized_mode: Vec<Vec<F>>, // for specialized gates we use another mode of placement
+    pub(crate) constants_for_gates_in_specialized_mode: Vec<Vec<F>>, /* for specialized gates we use
+                                                           * another mode of placement */
     pub(crate) lookup_table_marker_into_id: HashMap<TypeId, u32>,
     pub(crate) lookup_tables: Vec<std::sync::Arc<LookupTableWrapper<F>>>,
-    pub(crate) lookup_multiplicities: Vec<std::sync::Arc<Vec<AtomicU32>>>, // per each subarbument (index 0) we have vector of multiplicities for every table
+    pub(crate) lookup_multiplicities: Vec<std::sync::Arc<Vec<AtomicU32>>>, /* per each subarbument (index 0) we have vector of multiplicities for every table */
 
-    // NOTE: it's a storage, it knows nothing about GateTool trait to avoid code to go from Box<dyn GateTool> into Box<dyn Any>
+    // NOTE: it's a storage, it knows nothing about GateTool trait to avoid code to go from Box<dyn
+    // GateTool> into Box<dyn Any>
     pub(crate) dynamic_tools:
         HashMap<TypeId, (TypeId, Box<dyn std::any::Any + Send + Sync + 'static>)>,
     pub(crate) variables_storage: RwLock<CR>,
@@ -81,7 +87,10 @@ pub struct CSReferenceImplementation<
 
 pub struct CSReferenceAssembly<
     F: SmallField, // over which we define a circuit
-    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>, // over whatever we evaluate gates. It can be vectorized type, or circuit variables
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>, /* over whatever we
+                                                                       * evaluate gates. It can
+                                                                       * be vectorized type, or
+                                                                       * circuit variables */
     CFG: CSConfig,
     A: GoodAllocator = Global,
 > {
@@ -93,14 +102,19 @@ pub struct CSReferenceAssembly<
 
     pub max_trace_len: usize,
 
-    pub gates_application_sets: Vec<usize>, // index into gates_ordered_set for general-purpose columns
+    pub gates_application_sets: Vec<usize>, /* index into gates_ordered_set for general-purpose
+                                             * columns */
 
     pub copy_permutation_data: Vec<Vec<Variable>>, // store column-major order
     pub witness_placement_data: Vec<Vec<Witness>>, // store column-major order
     pub constants_requested_per_row: Vec<SmallVec<[F; 8]>>, // for general purpose gates
-    pub constants_for_gates_in_specialized_mode: Vec<Vec<F>>, // for specialized gates we use another mode of placement
+    pub constants_for_gates_in_specialized_mode: Vec<Vec<F>>, /* for specialized gates we use
+                                                               * another mode of placement */
     pub lookup_tables: Vec<std::sync::Arc<LookupTableWrapper<F>>>,
-    pub lookup_multiplicities: Vec<std::sync::Arc<Vec<AtomicU32>>>, // per each subarbument (index 0) we have vector of multiplicities for every table
+    pub lookup_multiplicities: Vec<std::sync::Arc<Vec<AtomicU32>>>, /* per each subarbument
+                                                                     * (index 0) we have vector
+                                                                     * of multiplicities for
+                                                                     * every table */
 
     pub witness: Option<WitnessVec<F, A>>,
 
@@ -115,13 +129,13 @@ pub struct CSReferenceAssembly<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > CSReferenceImplementation<F, P, CFG, GC, T, CR>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> CSReferenceImplementation<F, P, CFG, GC, T, CR>
 {
     fn materialize_witness_vec<A: GoodAllocator>(&mut self) -> WitnessVec<F, A> {
         assert!(
@@ -172,11 +186,7 @@ impl<
             multiplicities
         };
 
-        WitnessVec {
-            public_inputs_locations,
-            all_values,
-            multiplicities,
-        }
+        WitnessVec { public_inputs_locations, all_values, multiplicities }
     }
 
     pub(crate) fn lookups_tables_total_len(&self) -> usize {
@@ -287,11 +297,11 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        A: GoodAllocator,
-    > CSReferenceAssembly<F, P, CFG, A>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    A: GoodAllocator,
+> CSReferenceAssembly<F, P, CFG, A>
 {
     pub(crate) fn lookups_tables_total_len(&self) -> usize {
         self.lookup_tables.iter().map(|el| el.table_size()).sum()

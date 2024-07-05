@@ -1,7 +1,6 @@
-use crate::{dag::primitives::ResolverIx, log};
 use std::collections::HashMap;
 
-use crate::cs::Place;
+use crate::{cs::Place, dag::primitives::ResolverIx, log};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Stats {
@@ -128,10 +127,7 @@ impl Registrar {
                     .min_by_key(|x| x.as_any_index())
                     .unwrap_or(&Place(0))
             );
-            log!(
-                "CRR: current max tracked variable: {:?}",
-                self.max_tracked_variable
-            );
+            log!("CRR: current max tracked variable: {:?}", self.max_tracked_variable);
         }
 
         self.vars.is_empty()

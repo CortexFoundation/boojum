@@ -1,12 +1,12 @@
 use super::*;
-use crate::algebraic_props::round_function::AlgebraicRoundFunction;
-use crate::algebraic_props::sponge::GenericAlgebraicSpongeState;
-use crate::config::*;
-use crate::cs::traits::cs::*;
-use crate::cs::Variable;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::num::Num;
-use crate::gadgets::traits::round_function::CircuitRoundFunction;
+use crate::{
+    algebraic_props::{
+        round_function::AlgebraicRoundFunction, sponge::GenericAlgebraicSpongeState,
+    },
+    config::*,
+    cs::{traits::cs::*, Variable},
+    gadgets::{boolean::Boolean, num::Num, traits::round_function::CircuitRoundFunction},
+};
 
 pub fn simulate_round_function<
     F: SmallField,

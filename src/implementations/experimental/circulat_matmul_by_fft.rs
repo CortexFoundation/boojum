@@ -1,7 +1,6 @@
 use unroll::unroll_for_loops;
 
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::traits::field::Field;
+use crate::field::{goldilocks::GoldilocksField, traits::field::Field};
 
 // ideally we would import https://github.com/facebook/winterfell/blob/main/crypto/src/hash/mds/mds_f64_12x12.rs,
 // but it's not public, so we have to copy-paste
@@ -40,7 +39,8 @@ pub fn goldilocks_mds_matmul_by_fft(state: &mut [GoldilocksField; 12]) {
         // let s_lo = s as u64;
         // let z = (s_hi << 32) - s_hi;
         // let (res, over) = s_lo.overflowing_add(z);
-        // result[r] = GoldilocksField::from_nonreduced_u64(res.wrapping_add(0u32.wrapping_sub(over as u32) as u64));
+        // result[r] = GoldilocksField::from_nonreduced_u64(res.wrapping_add(0u32.wrapping_sub(over
+        // as u32) as u64));
     }
     *state = result;
 }
@@ -142,7 +142,8 @@ pub fn fft2_real(x: [u64; 2]) -> [i64; 2] {
 }
 
 /// Real 2-iFFT over u64 integers.
-/// Division by two to complete the inverse FFT is expected to be performed ***outside*** of this function.
+/// Division by two to complete the inverse FFT is expected to be performed ***outside*** of this
+/// function.
 #[inline(always)]
 pub fn ifft2_real_unreduced(y: [i64; 2]) -> [u64; 2] {
     [(y[0] + y[1]) as u64, (y[0] - y[1]) as u64]
@@ -160,13 +161,14 @@ pub fn fft4_real(x: [u64; 4]) -> (i64, (i64, i64), i64) {
 }
 
 /// Real 4-iFFT over u64 integers.
-/// Division by four to complete the inverse FFT is expected to be performed ***outside*** of this function.
+/// Division by four to complete the inverse FFT is expected to be performed ***outside*** of this
+/// function.
 #[inline(always)]
 pub fn ifft4_real_unreduced(y: (i64, (i64, i64), i64)) -> [u64; 4] {
     let z0 = y.0 + y.2;
     let z1 = y.0 - y.2;
-    let z2 = y.1 .0;
-    let z3 = -y.1 .1;
+    let z2 = y.1.0;
+    let z3 = -y.1.1;
 
     let [x0, x2] = ifft2_real_unreduced([z0, z2]);
     let [x1, x3] = ifft2_real_unreduced([z1, z3]);

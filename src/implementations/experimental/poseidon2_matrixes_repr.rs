@@ -1,11 +1,13 @@
-use crate::field::goldilocks::GoldilocksField;
-use crate::field::traits::field::Field;
-use crate::implementations::poseidon2::params::INNER_ROUNDS_MATRIX_DIAGONAL_ELEMENTS_MINUS_ONE_SHIFTS;
 use unroll::unroll_for_loops;
 
+use crate::{
+    field::{goldilocks::GoldilocksField, traits::field::Field},
+    implementations::poseidon2::params::INNER_ROUNDS_MATRIX_DIAGONAL_ELEMENTS_MINUS_ONE_SHIFTS,
+};
+
 // 64 bit fields usually have a problem with carry-chains, so we can check if doing a little more
-// ops is beneficial, because we if field element is c = a + b * 2^32, then we can perform MDS multiplication
-// (or any linear operation in general) as MDS(c) = MDS(a) + 2^32 * MDS(b)
+// ops is beneficial, because we if field element is c = a + b * 2^32, then we can perform MDS
+// multiplication (or any linear operation in general) as MDS(c) = MDS(a) + 2^32 * MDS(b)
 
 #[inline(always)]
 #[unroll_for_loops]
@@ -55,8 +57,20 @@ fn block_mul_u64(x0: &mut u64, x1: &mut u64, x2: &mut u64, x3: &mut u64) {
 #[inline(always)]
 #[unroll_for_loops]
 pub(crate) fn poseidon2_suggested_mds_mul_u64(state: &mut [u64; 12]) {
-    let [mut x0, mut x1, mut x2, mut x3, mut x4, mut x5, mut x6, mut x7, mut x8, mut x9, mut x10, mut x11] =
-        *state;
+    let [
+        mut x0,
+        mut x1,
+        mut x2,
+        mut x3,
+        mut x4,
+        mut x5,
+        mut x6,
+        mut x7,
+        mut x8,
+        mut x9,
+        mut x10,
+        mut x11,
+    ] = *state;
 
     // percompute subblock results
 

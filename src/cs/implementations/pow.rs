@@ -1,5 +1,4 @@
-use blake2::Blake2s256;
-use blake2::Digest;
+use blake2::{Blake2s256, Digest};
 use sha3::Keccak256;
 
 use super::*;
@@ -70,8 +69,7 @@ impl PoWRunner for Blake2s256 {
             }
         }
 
-        use std::sync::atomic::AtomicU64;
-        use std::sync::atomic::Ordering;
+        use std::sync::atomic::{AtomicU64, Ordering};
 
         let result = std::sync::Arc::new(AtomicU64::new(BLAKE2S_NO_RESULT));
 
@@ -159,8 +157,7 @@ impl PoWRunner for Keccak256 {
             }
         }
 
-        use std::sync::atomic::AtomicU64;
-        use std::sync::atomic::Ordering;
+        use std::sync::atomic::{AtomicU64, Ordering};
 
         let result = std::sync::Arc::new(AtomicU64::new(KECCAK256_NO_RESULT));
 

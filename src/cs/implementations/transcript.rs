@@ -1,8 +1,9 @@
-use crate::field::goldilocks::GoldilocksField;
-use crate::utils::LSBIterator;
-use crate::{cs::traits::GoodAllocator, field::PrimeField};
-
 use super::*;
+use crate::{
+    cs::traits::GoodAllocator,
+    field::{goldilocks::GoldilocksField, PrimeField},
+    utils::LSBIterator,
+};
 
 pub trait Transcript<F: PrimeField>: Clone + Send + Sync + std::fmt::Debug {
     type CompatibleCap: Clone;
@@ -40,8 +41,7 @@ pub trait Transcript<F: PrimeField>: Clone + Send + Sync + std::fmt::Debug {
     }
 }
 
-use crate::algebraic_props::round_function::*;
-use crate::algebraic_props::sponge::*;
+use crate::algebraic_props::{round_function::*, sponge::*};
 
 #[derive(Derivative)]
 #[derivative(Clone, Debug)]
@@ -60,13 +60,13 @@ pub struct AlgebraicSpongeBasedTranscript<
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: AlgebraicRoundFunction<F, AW, SW, CW>,
-        M: AbsorptionModeTrait<F>,
-    > Transcript<F> for AlgebraicSpongeBasedTranscript<F, AW, SW, CW, R, M>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: AlgebraicRoundFunction<F, AW, SW, CW>,
+    M: AbsorptionModeTrait<F>,
+> Transcript<F> for AlgebraicSpongeBasedTranscript<F, AW, SW, CW, R, M>
 {
     type CompatibleCap = [F; CW];
     type TransciptParameters = ();

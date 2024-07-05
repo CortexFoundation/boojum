@@ -1,17 +1,19 @@
-use crate::cs::implementations::fast_serialization::MemcopySerializable;
-use crate::cs::traits::GoodAllocator;
-use std::alloc::Global;
-use std::sync::atomic::AtomicU32;
+use std::{alloc::Global, sync::atomic::AtomicU32};
 
-use super::fast_serialization::read_vec_from_buffer;
-use super::fast_serialization::write_vec_into_buffer;
-use super::*;
-use crate::cs::implementations::hints::*;
-use crate::cs::implementations::polynomial::*;
-use crate::cs::implementations::reference_cs::*;
-
-use crate::config::*;
-use crate::utils::*;
+use super::{
+    fast_serialization::{read_vec_from_buffer, write_vec_into_buffer},
+    *,
+};
+use crate::{
+    config::*,
+    cs::{
+        implementations::{
+            fast_serialization::MemcopySerializable, hints::*, polynomial::*, reference_cs::*,
+        },
+        traits::GoodAllocator,
+    },
+    utils::*,
+};
 
 // even though it's public, it has internal requirements over alignment and
 // can only be constructed by implementations
@@ -48,11 +50,7 @@ where
         let all_values = MemcopySerializable::read_from_buffer(&mut src)?;
         let multiplicities = read_vec_from_buffer(&mut src)?;
 
-        let new = Self {
-            public_inputs_locations,
-            all_values,
-            multiplicities,
-        };
+        let new = Self { public_inputs_locations, all_values, multiplicities };
 
         Ok(new)
     }
@@ -99,11 +97,11 @@ impl<F: SmallField> WitnessSet<F> {
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        A: GoodAllocator,
-    > CSReferenceAssembly<F, P, CFG, A>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    A: GoodAllocator,
+> CSReferenceAssembly<F, P, CFG, A>
 {
     pub(crate) fn materialize_witness_polynomials(
         &mut self,

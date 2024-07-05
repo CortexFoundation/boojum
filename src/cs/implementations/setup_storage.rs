@@ -1,19 +1,18 @@
-use super::*;
-
-use crate::cs::implementations::polynomial::*;
-use crate::cs::traits::GoodAllocator;
-
-use super::utils::*;
-use crate::cs::implementations::polynomial_storage::SetupStorage;
 use std::sync::Arc;
+
+use super::{utils::*, *};
+use crate::cs::{
+    implementations::{polynomial::*, polynomial_storage::SetupStorage},
+    traits::GoodAllocator,
+};
 
 // here we want trivial context bound to use equalities
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        A: GoodAllocator,
-        B: GoodAllocator,
-    > SetupStorage<F, P, A, B>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    A: GoodAllocator,
+    B: GoodAllocator,
+> SetupStorage<F, P, A, B>
 {
     pub fn from_base_trace(
         copy_permutation_columns: Vec<Arc<GenericPolynomial<F, LagrangeForm, P, A>>, B>,

@@ -7,7 +7,8 @@ pub struct Worker {
     pub num_cores: usize,
 }
 
-// For some reason stack size is different in debug/release, and in rust-analyzer and without it, so we enforce it
+// For some reason stack size is different in debug/release, and in rust-analyzer and without it, so
+// we enforce it
 pub const REQUIRED_STACK_SIZE: usize = 8 * 1024 * 1024;
 
 impl Worker {
@@ -29,10 +30,7 @@ impl Worker {
             .build()
             .expect("failed to build thread pool");
 
-        Self {
-            pool,
-            num_cores: num_threads,
-        }
+        Self { pool, num_cores: num_threads }
     }
 
     pub const fn compute_chunk_size(work_size: usize, num_chunks: usize) -> usize {

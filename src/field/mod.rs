@@ -1,8 +1,7 @@
 pub mod goldilocks;
 pub mod traits;
 
-pub use self::traits::field::*;
-pub use self::traits::representation::*;
+pub use self::traits::{field::*, representation::*};
 
 pub fn rand_from_rng<R: rand::Rng, F: SmallField>(rng: &mut R) -> F {
     F::from_u64_unchecked(rng.gen_range(0..F::CHAR))

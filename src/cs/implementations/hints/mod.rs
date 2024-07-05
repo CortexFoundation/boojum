@@ -2,8 +2,8 @@ use super::{fast_serialization::MemcopySerializable, *};
 
 // Hints are some handly artifacts that allow us to speedup the proofs and synthesis
 // For now such hints would be how to copy variable values (where variable index is just an integer)
-// into the places in the trace columns. Another one is how to place witness values into corresponding
-// columns, but those are sparse
+// into the places in the trace columns. Another one is how to place witness values into
+// corresponding columns, but those are sparse
 
 // Dense hint spans every column in full and says which variable to use to put there
 

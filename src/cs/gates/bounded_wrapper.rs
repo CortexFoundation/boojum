@@ -1,6 +1,5 @@
-use crate::field::PrimeField;
-
 use super::*;
+use crate::field::PrimeField;
 
 // This is a wrapper over any gate, that allows us to limit number of applications from above,
 // compared to the "default" automatically computed capacity
@@ -23,11 +22,7 @@ impl<F: PrimeField, W: GateConstraintEvaluator<F>> GateConstraintEvaluator<F>
         let (max_on_row, inner_params) = params;
         let inner = W::new_from_parameters(inner_params);
 
-        Self {
-            max_on_row,
-            inner,
-            _marker: std::marker::PhantomData,
-        }
+        Self { max_on_row, inner, _marker: std::marker::PhantomData }
     }
 
     #[inline(always)]
@@ -105,13 +100,8 @@ impl<F: PrimeField, W: GateConstraintEvaluator<F>> GateConstraintEvaluator<F>
         global_constants: &Self::GlobalConstants<P>,
         ctx: &mut P::Context,
     ) {
-        self.inner.evaluate_once(
-            trace_source,
-            destination,
-            shared_constants,
-            global_constants,
-            ctx,
-        )
+        self.inner
+            .evaluate_once(trace_source, destination, shared_constants, global_constants, ctx)
     }
 }
 

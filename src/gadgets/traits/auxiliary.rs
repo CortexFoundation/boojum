@@ -1,5 +1,4 @@
-use super::allocatable::CSAllocatable;
-use super::*;
+use super::{allocatable::CSAllocatable, *};
 
 pub trait PrettyComparison<F: SmallField>: CSAllocatable<F> {
     fn find_diffs(a: &Self::Witness, b: &Self::Witness) -> Vec<String>;

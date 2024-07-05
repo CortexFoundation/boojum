@@ -1,9 +1,8 @@
+use super::{fri::QuerySource, prover::ProofConfig, *};
 use crate::cs::{
     oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
     traits::GoodAllocator,
 };
-
-use super::{fri::QuerySource, prover::ProofConfig, *};
 
 #[derive(derivative::Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone(bound = ""), Debug(bound = ""), Hash(bound = ""))]
@@ -23,13 +22,7 @@ impl<F: SmallField, H: TreeHasher<F>> SingleRoundQueries<F, H> {
     pub fn transmute_to_another_formal_hasher<HH: TreeHasher<F, Output = H::Output>>(
         self,
     ) -> SingleRoundQueries<F, HH> {
-        let Self {
-            witness_query,
-            stage_2_query,
-            quotient_query,
-            setup_query,
-            fri_queries,
-        } = self;
+        let Self { witness_query, stage_2_query, quotient_query, setup_query, fri_queries } = self;
 
         SingleRoundQueries::<F, HH> {
             witness_query: witness_query.transmute_to_another_formal_hasher(),
@@ -71,10 +64,7 @@ impl<F: SmallField, H: TreeHasher<F>> OracleQuery<F, H> {
         inner_idx: usize,
         num_elements: usize,
     ) -> Self {
-        let mut new = Self {
-            leaf_elements: vec![],
-            proof: vec![],
-        };
+        let mut new = Self { leaf_elements: vec![], proof: vec![] };
 
         source.get_elements(
             lde_factor,
@@ -100,20 +90,13 @@ impl<F: SmallField, H: TreeHasher<F>> OracleQuery<F, H> {
     pub fn transmute_to_another_formal_hasher<HH: TreeHasher<F, Output = H::Output>>(
         self,
     ) -> OracleQuery<F, HH> {
-        let Self {
-            leaf_elements,
-            proof,
-        } = self;
+        let Self { leaf_elements, proof } = self;
 
-        OracleQuery::<F, HH> {
-            leaf_elements,
-            proof: proof as Vec<HH::Output>,
-        }
+        OracleQuery::<F, HH> { leaf_elements, proof: proof as Vec<HH::Output> }
     }
 }
 
-use crate::field::ExtensionField;
-use crate::field::FieldExtension;
+use crate::field::{ExtensionField, FieldExtension};
 
 #[derive(derivative::Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone(bound = ""), Debug(bound = ""), Hash(bound = ""))]

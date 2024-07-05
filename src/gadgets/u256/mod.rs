@@ -1,20 +1,23 @@
-use super::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::field::SmallField;
-use crate::gadgets::blake2s::mixing_function::merge_byte_using_table;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::tables::ByteSplitTable;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::witnessable::CSWitnessable;
-use crate::gadgets::traits::witnessable::WitnessHookable;
-use crate::gadgets::u32::UInt32;
-use crate::gadgets::u512::UInt512;
-use crate::gadgets::u8::UInt8;
 use ethereum_types::U256;
 
-use crate::config::*;
+use super::*;
+use crate::{
+    config::*,
+    cs::traits::cs::{ConstraintSystem, DstBuffer},
+    field::SmallField,
+    gadgets::{
+        blake2s::mixing_function::merge_byte_using_table,
+        boolean::Boolean,
+        tables::ByteSplitTable,
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            witnessable::{CSWitnessable, WitnessHookable},
+        },
+        u32::UInt32,
+        u512::UInt512,
+        u8::UInt8,
+    },
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, Hash)]
@@ -343,19 +346,17 @@ impl<F: SmallField> UInt256<F> {
             if let Some(top_bit) = bit {
                 shifted = merge_byte_using_table::<_, _, 7>(cs, shifted, top_bit);
             }
-            *b = UInt8 {
-                variable: shifted,
-                _marker: std::marker::PhantomData,
-            };
+            *b = UInt8 { variable: shifted, _marker: std::marker::PhantomData };
             bit = Some(new_bit);
         });
         Self::from_le_bytes(cs, bytes)
     }
 }
 
-use crate::cs::Variable;
-use crate::gadgets::traits::castable::Convertor;
-use crate::gadgets::traits::castable::WitnessCastable;
+use crate::{
+    cs::Variable,
+    gadgets::traits::castable::{Convertor, WitnessCastable},
+};
 
 impl<F: SmallField> WitnessCastable<F, [F; 8]> for U256 {
     #[inline]

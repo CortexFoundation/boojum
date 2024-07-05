@@ -1,25 +1,26 @@
-use self::traits::GoodAllocator;
+use std::{alloc::Global, collections::HashSet, sync::Arc};
 
-use super::hints::{DenseVariablesCopyHint, DenseWitnessCopyHint};
-use super::polynomial_storage::{SetupBaseStorage, SetupStorage};
-use super::utils::*;
-use super::verifier::VerificationKey;
-use super::*;
-use crate::config::*;
-use crate::cs::gates::lookup_marker::*;
-use crate::cs::gates::nop_gate::NopGate;
-use crate::cs::implementations::polynomial::*;
-use crate::cs::implementations::reference_cs::*;
-use crate::cs::implementations::verifier::VerificationKeyCircuitGeometry;
-use crate::cs::oracle::merkle_tree::MerkleTreeWithCap;
-use crate::cs::oracle::TreeHasher;
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::dag::CircuitResolver;
-use crate::utils::*;
-use std::alloc::Global;
-use std::collections::HashSet;
-use std::sync::Arc;
+use self::traits::GoodAllocator;
+use super::{
+    hints::{DenseVariablesCopyHint, DenseWitnessCopyHint},
+    polynomial_storage::{SetupBaseStorage, SetupStorage},
+    utils::*,
+    verifier::VerificationKey,
+    *,
+};
+use crate::{
+    config::*,
+    cs::{
+        gates::{lookup_marker::*, nop_gate::NopGate},
+        implementations::{
+            polynomial::*, reference_cs::*, verifier::VerificationKeyCircuitGeometry,
+        },
+        oracle::{merkle_tree::MerkleTreeWithCap, TreeHasher},
+        toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+    },
+    dag::CircuitResolver,
+    utils::*,
+};
 
 fn materialize_x_by_non_residue_polys<
     F: SmallField,
@@ -88,13 +89,13 @@ pub struct FinalizationHintsForProver {
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        GC: GateConfigurationHolder<F>,
-        T: StaticToolboxHolder,
-        CR: CircuitResolver<F, CFG::ResolverConfig>,
-    > CSReferenceImplementation<F, P, CFG, GC, T, CR>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    GC: GateConfigurationHolder<F>,
+    T: StaticToolboxHolder,
+    CR: CircuitResolver<F, CFG::ResolverConfig>,
+> CSReferenceImplementation<F, P, CFG, GC, T, CR>
 {
     pub fn pad_and_shrink(&mut self) -> (usize, FinalizationHintsForProver) {
         // first we pad-cleanup all the gates
@@ -128,10 +129,7 @@ impl<
         assert!(required_rows <= self.max_trace_len);
 
         log!("Required rows {:?}", required_rows);
-        log!(
-            "lookup_tables_total_len = {}",
-            self.lookups_tables_total_len()
-        );
+        log!("lookup_tables_total_len = {}", self.lookups_tables_total_len());
 
         let required_rows = std::cmp::max(required_rows, self.lookups_tables_total_len());
 
@@ -189,26 +187,17 @@ impl<
             .unwrap_or(0);
 
         log!("required size = {}", required_size);
-        log!(
-            "max_copiable_in_specialized_columns = {}",
-            max_copiable_in_specialized_columns
-        );
+        log!("max_copiable_in_specialized_columns = {}", max_copiable_in_specialized_columns);
         log!(
             "max_witnesses_in_general_purpose_columns = {}",
             max_witnesses_in_general_purpose_columns
         );
-        log!(
-            "max_witnesses_in_specialized_columns = {}",
-            max_witnesses_in_specialized_columns
-        );
+        log!("max_witnesses_in_specialized_columns = {}", max_witnesses_in_specialized_columns);
         log!(
             "max_constants_for_general_purpose_gates = {}",
             max_constants_for_general_purpose_gates
         );
-        log!(
-            "max_in_column_for_specialized_gates = {}",
-            max_in_column_for_specialized_gates
-        );
+        log!("max_in_column_for_specialized_gates = {}", max_in_column_for_specialized_gates);
 
         assert!(max_constants_for_general_purpose_gates <= required_size);
 
@@ -410,21 +399,18 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
-        CFG: CSConfig,
-        A: GoodAllocator,
-    > CSReferenceAssembly<F, P, CFG, A>
+    F: SmallField,
+    P: field::traits::field_like::PrimeFieldLikeVectorized<Base = F>,
+    CFG: CSConfig,
+    A: GoodAllocator,
+> CSReferenceAssembly<F, P, CFG, A>
 {
     pub fn create_permutation_polys(
         &self,
         worker: &Worker,
         ctx: &mut P::Context,
     ) -> Vec<GenericPolynomial<F, LagrangeForm, P, Global>> {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         log!("Creating placeholders");
 
@@ -457,8 +443,8 @@ impl<
                 let var_idx = var.as_variable_index();
                 let previous_occurance_data = &mut scratch_space[var_idx as usize];
                 if previous_occurance_data.0 == F::ZERO {
-                    debug_assert!(previous_occurance_data.1 .0 == 0);
-                    debug_assert!(previous_occurance_data.1 .1 == 0);
+                    debug_assert!(previous_occurance_data.1.0 == 0);
+                    debug_assert!(previous_occurance_data.1.1 == 0);
 
                     // it can be zero IFF we never encountered it
                     // In addition we store a point of the first occurance
@@ -520,8 +506,8 @@ impl<
         // - adding selector increases the degree by 1
 
         // Additional constraint is that gates require some number of constants
-        // to evaluate themselves, and we should also to keep to the minimum a number of gate constants
-        // along the path
+        // to evaluate themselves, and we should also to keep to the minimum a number of gate
+        // constants along the path
 
         // We also know the worst case - dense selectors near the root and then gates,
         // but it would lead to potentiall suboptimal evaluation complexity.
@@ -680,11 +666,8 @@ impl<
         // - and then we will divide by vanishing poly, so it's -1 degree
 
         // now we can determine preliminary target - what will be our max degree to try to get
-        let mut target_degree = if max_degree.is_power_of_two() {
-            max_degree
-        } else {
-            max_degree.next_power_of_two()
-        };
+        let mut target_degree =
+            if max_degree.is_power_of_two() { max_degree } else { max_degree.next_power_of_two() };
 
         assert!(
             self.parameters.num_constant_columns >= max_num_constants,
@@ -719,24 +702,14 @@ impl<
             }
         }
 
-        panic!(
-            "Can not find suited placement degree for target degree {}",
-            target_degree
-        );
+        panic!("Can not find suited placement degree for target degree {}", target_degree);
     }
 
     pub fn create_constant_setup_polys(
         &self,
         worker: &Worker,
-    ) -> (
-        Vec<GenericPolynomial<F, LagrangeForm, P, Global>>,
-        TreeNode,
-        usize,
-    ) {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+    ) -> (Vec<GenericPolynomial<F, LagrangeForm, P, Global>>, TreeNode, usize) {
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         let selectors_placement = self.compute_selectors_and_constants_placement();
 
@@ -802,10 +775,7 @@ impl<
             paths_mappings.push(path);
         }
 
-        debug_assert_eq!(
-            self.gates_application_sets.len(),
-            self.constants_requested_per_row.len()
-        );
+        debug_assert_eq!(self.gates_application_sets.len(), self.constants_requested_per_row.len());
         if self.constants_for_gates_in_specialized_mode.len() > 0 {
             debug_assert_eq!(
                 self.gates_application_sets.len(),
@@ -911,10 +881,7 @@ impl<
         &self,
         _worker: &Worker,
     ) -> Vec<GenericPolynomial<F, LagrangeForm, P, Global>> {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         if self.lookup_parameters.lookup_is_allowed() == false {
             return vec![];
@@ -1012,14 +979,11 @@ impl<
         worker: &Worker,
         ctx: &mut P::Context,
     ) -> SetupBaseStorage<F, P, Global, Global> {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         // first we need to ensure that all the general purpose gates
-        // that were allowed actually were encountered in the system. Even though it's not strictly requried,
-        // we still want to make some safety precautions
+        // that were allowed actually were encountered in the system. Even though it's not strictly
+        // requried, we still want to make some safety precautions
 
         // May be we can precompute such index during synthesis instead
 
@@ -1048,7 +1012,10 @@ impl<
                     .evaluators_over_general_purpose_columns[el];
                 not_encountered.push(evaluator.debug_name.clone());
             }
-            panic!("Some evaluators are claimed allowed, but not encountered for general purpose columns: {}", not_encountered.join(", "));
+            panic!(
+                "Some evaluators are claimed allowed, but not encountered for general purpose columns: {}",
+                not_encountered.join(", ")
+            );
         }
 
         log!("Creating constant polys");
@@ -1096,10 +1063,7 @@ impl<
         worker: &Worker,
         ctx: &mut P::Context,
     ) -> (SetupStorage<F, P, Global, Global>, TreeNode, usize, usize) {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         let (constant_columns, gate_placement, min_degree) =
             self.create_constant_setup_polys(worker);
@@ -1135,10 +1099,7 @@ impl<
 
         let precomputation_degree = std::cmp::max(quotient_degree, fri_lde_factor);
 
-        log!(
-            "Will use degree {} for precomputations",
-            precomputation_degree
-        );
+        log!("Will use degree {} for precomputations", precomputation_degree);
 
         // now compute
 
@@ -1182,15 +1143,8 @@ impl<
         cap_size: usize,
         worker: &Worker,
         ctx: &mut P::Context,
-    ) -> (
-        SetupStorage<F, P, Global, Global>,
-        VerificationKey<F, H>,
-        MerkleTreeWithCap<F, H>,
-    ) {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+    ) -> (SetupStorage<F, P, Global, Global>, VerificationKey<F, H>, MerkleTreeWithCap<F, H>) {
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
         let (setup, gate_placement, _min_degree, quotient_degree) =
             self.materialize_setup_storage(fri_lde_factor, worker, ctx);
@@ -1245,27 +1199,17 @@ impl<
             cap_size,
         };
 
-        let vk = VerificationKey {
-            fixed_parameters,
-            setup_merkle_tree_cap: cap,
-        };
+        let vk = VerificationKey { fixed_parameters, setup_merkle_tree_cap: cap };
 
         (setup, vk, setup_tree)
     }
 
     pub fn create_copy_hints(&self) -> (DenseVariablesCopyHint, DenseWitnessCopyHint) {
-        assert!(
-            CFG::SetupConfig::KEEP_SETUP,
-            "CS is not configured to have setup available"
-        );
+        assert!(CFG::SetupConfig::KEEP_SETUP, "CS is not configured to have setup available");
 
-        let vars_hint = DenseVariablesCopyHint {
-            maps: self.copy_permutation_data.clone(),
-        };
+        let vars_hint = DenseVariablesCopyHint { maps: self.copy_permutation_data.clone() };
 
-        let witness_hints = DenseWitnessCopyHint {
-            maps: self.witness_placement_data.clone(),
-        };
+        let witness_hints = DenseWitnessCopyHint { maps: self.witness_placement_data.clone() };
 
         (vars_hint, witness_hints)
     }
@@ -1334,11 +1278,7 @@ impl<
             let evaluator = &self
                 .evaluation_data_over_specialized_columns
                 .evaluators_over_specialized_columns[*evaluator_idx];
-            log!(
-                "Have {} rows of specialized {} gate",
-                num_applications,
-                &evaluator.debug_name
-            );
+            log!("Have {} rows of specialized {} gate", num_applications, &evaluator.debug_name);
         }
     }
 }
@@ -1402,13 +1342,7 @@ impl GateDescription {
         degree: usize,
         needs_selector: bool,
     ) -> Self {
-        Self {
-            gate_idx,
-            num_constants,
-            degree,
-            needs_selector,
-            is_lookup: false,
-        }
+        Self { gate_idx, num_constants, degree, needs_selector, is_lookup: false }
     }
 
     pub(crate) fn degree_at_depth(&self, depth: usize) -> usize {
@@ -1436,10 +1370,9 @@ impl TreeNode {
                     (0, 0)
                 }
             }
-            TreeNode::GateOnly(description) => (
-                description.degree_at_depth(depth),
-                description.num_constants + depth,
-            ),
+            TreeNode::GateOnly(description) => {
+                (description.degree_at_depth(depth), description.num_constants + depth)
+            }
             TreeNode::Fork { left, right } => {
                 let (left_subtree_degree, left_subtree_constants) =
                     left.compute_stats_at_depth(depth + 1);
@@ -1506,10 +1439,8 @@ impl TreeNode {
                 let node_0 = Self::GateOnly(*existing_gate);
                 let node_1 = Self::GateOnly(gate);
 
-                let new = Self::Fork {
-                    left: Box::new(node_0.clone()),
-                    right: Box::new(node_1.clone()),
-                };
+                let new =
+                    Self::Fork { left: Box::new(node_0.clone()), right: Box::new(node_1.clone()) };
 
                 let (resulting_degree, resulting_num_constants) =
                     new.compute_stats_at_depth(current_depth);
@@ -1520,10 +1451,7 @@ impl TreeNode {
                     return Some(new);
                 }
 
-                let new = Self::Fork {
-                    left: Box::new(node_1),
-                    right: Box::new(node_0),
-                };
+                let new = Self::Fork { left: Box::new(node_1), right: Box::new(node_0) };
 
                 let (resulting_degree, resulting_num_constants) =
                     new.compute_stats_at_depth(current_depth);
@@ -1543,10 +1471,7 @@ impl TreeNode {
                     max_num_constants,
                     current_depth + 1,
                 ) {
-                    let new = Self::Fork {
-                        left: Box::new(new_left_node),
-                        right: right.clone(),
-                    };
+                    let new = Self::Fork { left: Box::new(new_left_node), right: right.clone() };
 
                     return Some(new);
                 }
@@ -1557,10 +1482,7 @@ impl TreeNode {
                     max_num_constants,
                     current_depth + 1,
                 ) {
-                    let new = Self::Fork {
-                        left: left.clone(),
-                        right: Box::new(new_right_node),
-                    };
+                    let new = Self::Fork { left: left.clone(), right: Box::new(new_right_node) };
 
                     return Some(new);
                 }

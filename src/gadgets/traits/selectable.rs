@@ -1,9 +1,13 @@
 use std::mem::MaybeUninit;
 
-use crate::cs::gates::{ConstantAllocatableCS, ParallelSelectionGate};
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::field::SmallField;
-use crate::gadgets::boolean::Boolean;
+use crate::{
+    cs::{
+        gates::{ConstantAllocatableCS, ParallelSelectionGate},
+        traits::cs::ConstraintSystem,
+    },
+    field::SmallField,
+    gadgets::boolean::Boolean,
+};
 
 pub trait Selectable<F: SmallField>: Sized {
     /// Selects `a` if `flag` is `true`, and `b` otherwise
@@ -23,10 +27,7 @@ pub trait Selectable<F: SmallField>: Sized {
         _a: &[Self; N],
         _b: &[Self; N],
     ) -> [Self; N] {
-        unimplemented!(
-            "not implemented by default for type {}",
-            std::any::type_name::<Self>()
-        );
+        unimplemented!("not implemented by default for type {}", std::any::type_name::<Self>());
     }
 
     fn select_from_chain<CS: ConstraintSystem<F>>(
@@ -113,8 +114,8 @@ pub fn parallel_select_variables<'a, F: SmallField, CS: ConstraintSystem<F>>(
     if cs.gate_is_allowed::<ParallelSelectionGate<4>>() {
         let mut it = it.array_chunks::<4>();
         for chunk in &mut it {
-            let a = [chunk[0].0 .0, chunk[1].0 .0, chunk[2].0 .0, chunk[3].0 .0];
-            let b = [chunk[0].0 .1, chunk[1].0 .1, chunk[2].0 .1, chunk[3].0 .1];
+            let a = [chunk[0].0.0, chunk[1].0.0, chunk[2].0.0, chunk[3].0.0];
+            let b = [chunk[0].0.1, chunk[1].0.1, chunk[2].0.1, chunk[3].0.1];
             let result = ParallelSelectionGate::select(cs, &a, &b, flag.variable);
             *chunk[0].1 = result[0];
             *chunk[1].1 = result[1];

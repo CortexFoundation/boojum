@@ -1,7 +1,8 @@
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::Variable;
-use crate::field::SmallField;
-use crate::gadgets::traits::allocatable::{CSAllocatable, CSAllocatableExt};
+use crate::{
+    cs::{traits::cs::ConstraintSystem, Variable},
+    field::SmallField,
+    gadgets::traits::allocatable::{CSAllocatable, CSAllocatableExt},
+};
 
 pub trait CircuitEncodable<F: SmallField, const N: usize>:
     'static + Send + Sync + CSAllocatable<F>
@@ -21,10 +22,11 @@ pub trait CircuitVarLengthEncodable<F: SmallField>:
     fn encode_to_buffer<CS: ConstraintSystem<F>>(&self, cs: &mut CS, dst: &mut Vec<Variable>);
 }
 
-// unfortunately default implementation is impossible as compiler can not have constraint "for all N"
+// unfortunately default implementation is impossible as compiler can not have constraint "for all
+// N"
 
-// impl<F: SmallField, const N: usize, T: CircuitEncodable<F, N>> CircuitVarLengthEncodable<F> for T {
-//     #[inline(always)]
+// impl<F: SmallField, const N: usize, T: CircuitEncodable<F, N>> CircuitVarLengthEncodable<F> for T
+// {     #[inline(always)]
 //     fn encoding_length(&self) -> usize {
 //         N
 //     }

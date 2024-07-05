@@ -1,11 +1,13 @@
-use std::cell::UnsafeCell;
-use std::ops::{Add, AddAssign, Sub};
+use std::{
+    cell::UnsafeCell,
+    ops::{Add, AddAssign, Sub},
+};
 
-use crate::cs::{Place, Variable};
-use crate::utils::PipeOp as _;
-
-use super::guide::OrderInfo;
-use super::TrackId;
+use super::{guide::OrderInfo, TrackId};
+use crate::{
+    cs::{Place, Variable},
+    utils::PipeOp as _,
+};
 
 pub struct Values<V, T: Default> {
     pub(crate) variables: Box<[UnsafeCell<(V, Metadata<T>)>]>,
@@ -97,17 +99,11 @@ impl<T: Default> Metadata<T> {
     const RESOLVED_MASK: Mdd = 0b0100_0000_0000_0000;
 
     pub(crate) fn new(tracker: T) -> Self {
-        Self {
-            data: Self::TRACKED_MASK,
-            tracker,
-        }
+        Self { data: Self::TRACKED_MASK, tracker }
     }
 
     pub(crate) fn new_resolved() -> Self {
-        Self {
-            data: Self::TRACKED_MASK | Self::RESOLVED_MASK,
-            tracker: T::default(),
-        }
+        Self { data: Self::TRACKED_MASK | Self::RESOLVED_MASK, tracker: T::default() }
     }
 
     pub fn is_tracked(&self) -> bool {
@@ -134,13 +130,10 @@ struct MetadataDebugHelper {
 
 impl<T: Default> std::fmt::Debug for Metadata<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use std::mem::size_of;
-        use std::mem::transmute_copy;
+        use std::mem::{size_of, transmute_copy};
 
-        let mdh = MetadataDebugHelper {
-            is_resolved: self.is_resolved(),
-            is_tracked: self.is_tracked(),
-        };
+        let mdh =
+            MetadataDebugHelper { is_resolved: self.is_resolved(), is_tracked: self.is_tracked() };
         let tracker: u64;
         unsafe {
             if size_of::<T>() == size_of::<u64>() {

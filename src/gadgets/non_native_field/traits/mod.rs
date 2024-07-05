@@ -1,7 +1,10 @@
-use super::*;
-use crate::gadgets::boolean::Boolean;
-use crate::{cs::traits::cs::ConstraintSystem, gadgets::traits::witnessable::WitnessHookable};
 use std::sync::Arc;
+
+use super::*;
+use crate::{
+    cs::traits::cs::ConstraintSystem,
+    gadgets::{boolean::Boolean, traits::witnessable::WitnessHookable},
+};
 
 pub trait NonNativeField<F: SmallField, T: pairing::ff::PrimeField>:
     'static + Send + Sync + Clone + std::fmt::Debug + WitnessHookable<F>

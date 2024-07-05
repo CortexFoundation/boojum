@@ -1,18 +1,21 @@
-use super::*;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::field::SmallField;
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::traits::allocatable::CSAllocatable;
-use crate::gadgets::traits::allocatable::CSAllocatableExt;
-use crate::gadgets::traits::witnessable::CSWitnessable;
-use crate::gadgets::traits::witnessable::WitnessHookable;
-use crate::gadgets::u256::UInt256;
-use crate::gadgets::u32::UInt32;
-use crate::gadgets::u8::UInt8;
 use ethereum_types::U256;
 
-use crate::config::*;
+use super::*;
+use crate::{
+    config::*,
+    cs::traits::cs::{ConstraintSystem, DstBuffer},
+    field::SmallField,
+    gadgets::{
+        boolean::Boolean,
+        traits::{
+            allocatable::{CSAllocatable, CSAllocatableExt},
+            witnessable::{CSWitnessable, WitnessHookable},
+        },
+        u256::UInt256,
+        u32::UInt32,
+        u8::UInt8,
+    },
+};
 
 #[derive(Derivative)]
 #[derivative(Clone, Copy, Debug, Hash)]
@@ -22,22 +25,22 @@ pub struct UInt512<F: SmallField> {
 
 pub fn decompose_u512_as_u32x16(value: (U256, U256)) -> [u32; 16] {
     [
-        value.0 .0[0] as u32,
-        (value.0 .0[0] >> 32) as u32,
-        value.0 .0[1] as u32,
-        (value.0 .0[1] >> 32) as u32,
-        value.0 .0[2] as u32,
-        (value.0 .0[2] >> 32) as u32,
-        value.0 .0[3] as u32,
-        (value.0 .0[3] >> 32) as u32,
-        value.1 .0[0] as u32,
-        (value.1 .0[0] >> 32) as u32,
-        value.1 .0[1] as u32,
-        (value.1 .0[1] >> 32) as u32,
-        value.1 .0[2] as u32,
-        (value.1 .0[2] >> 32) as u32,
-        value.1 .0[3] as u32,
-        (value.1 .0[3] >> 32) as u32,
+        value.0.0[0] as u32,
+        (value.0.0[0] >> 32) as u32,
+        value.0.0[1] as u32,
+        (value.0.0[1] >> 32) as u32,
+        value.0.0[2] as u32,
+        (value.0.0[2] >> 32) as u32,
+        value.0.0[3] as u32,
+        (value.0.0[3] >> 32) as u32,
+        value.1.0[0] as u32,
+        (value.1.0[0] >> 32) as u32,
+        value.1.0[1] as u32,
+        (value.1.0[1] >> 32) as u32,
+        value.1.0[2] as u32,
+        (value.1.0[2] >> 32) as u32,
+        value.1.0[3] as u32,
+        (value.1.0[3] >> 32) as u32,
     ]
 }
 
@@ -326,9 +329,10 @@ impl<F: SmallField> UInt512<F> {
     }
 }
 
-use crate::cs::Variable;
-use crate::gadgets::traits::castable::Convertor;
-use crate::gadgets::traits::castable::WitnessCastable;
+use crate::{
+    cs::Variable,
+    gadgets::traits::castable::{Convertor, WitnessCastable},
+};
 
 impl<F: SmallField> WitnessCastable<F, [F; 16]> for (U256, U256) {
     #[inline]

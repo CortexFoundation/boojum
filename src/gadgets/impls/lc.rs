@@ -5,11 +5,10 @@ use crate::{
             FmaGateInBaseWithoutConstantParams, ReductionGate, ReductionGateParams,
         },
         traits::cs::ConstraintSystem,
+        Variable,
     },
     field::SmallField,
 };
-
-use crate::cs::Variable;
 
 pub fn linear_combination_collapse<F: SmallField, CS: ConstraintSystem<F>>(
     cs: &mut CS,
@@ -17,7 +16,8 @@ pub fn linear_combination_collapse<F: SmallField, CS: ConstraintSystem<F>>(
     extra: Option<Variable>,
 ) {
     // if we collapse linear combination then in "extra" we should have a logical output,
-    // or any other variable that would have -1 coefficient in the original LC that would be collapsed into 0
+    // or any other variable that would have -1 coefficient in the original LC that would be
+    // collapsed into 0
 
     debug_assert!(input.len() > 0);
 
@@ -32,7 +32,8 @@ pub fn linear_combination_collapse_with_length<F: SmallField, CS: ConstraintSyst
     input_len: usize,
 ) {
     // if we collapse linear combination then in "extra" we should have a logical output,
-    // or any other variable that would have -1 coefficient in the original LC that would be collapsed into 0
+    // or any other variable that would have -1 coefficient in the original LC that would be
+    // collapsed into 0
 
     debug_assert!(input_len > 0);
 
@@ -111,9 +112,7 @@ fn linear_combination_collapse_with_reduction_gate<F: SmallField, CS: Constraint
         let final_var = extra.unwrap_or(zero);
 
         let gate = ReductionGate {
-            params: ReductionGateParams {
-                reduction_constants: [c0, c1, c2, F::ZERO],
-            },
+            params: ReductionGateParams { reduction_constants: [c0, c1, c2, F::ZERO] },
             terms: [v0, v1, v2, zero],
             reduction_result: final_var,
         };
@@ -136,9 +135,7 @@ fn linear_combination_collapse_with_reduction_gate<F: SmallField, CS: Constraint
             let final_var = extra.unwrap_or(cs.allocate_constant(F::ZERO));
 
             let gate = ReductionGate {
-                params: ReductionGateParams {
-                    reduction_constants: [c0, c1, c2, c3],
-                },
+                params: ReductionGateParams { reduction_constants: [c0, c1, c2, c3] },
                 terms: [v0, v1, v2, v3],
                 reduction_result: final_var,
             };
@@ -174,9 +171,7 @@ fn linear_combination_collapse_with_reduction_gate<F: SmallField, CS: Constraint
                 let final_var = extra.unwrap_or(cs.allocate_constant(F::ZERO));
 
                 let gate = ReductionGate {
-                    params: ReductionGateParams {
-                        reduction_constants: [F::ONE, c0, c1, c2],
-                    },
+                    params: ReductionGateParams { reduction_constants: [F::ONE, c0, c1, c2] },
                     terms: [starting_el, v0, v1, v2],
                     reduction_result: final_var,
                 };
@@ -239,9 +234,7 @@ fn linear_combination_collapse_with_reduction_gate<F: SmallField, CS: Constraint
         let one = cs.allocate_constant(F::ONE);
 
         let gate = ReductionGate {
-            params: ReductionGateParams {
-                reduction_constants: [F::ONE, F::ZERO, c0, c1],
-            },
+            params: ReductionGateParams { reduction_constants: [F::ONE, F::ZERO, c0, c1] },
             terms: [starting_el, one, v0, v1],
             reduction_result: final_var,
         };

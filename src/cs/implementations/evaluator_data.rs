@@ -1,8 +1,7 @@
-use super::*;
-
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::*;
 use std::any::TypeId;
+
+use super::*;
+use crate::cs::traits::{evaluator::*, gate::*};
 
 pub struct EvaluationDataOverGeneralPurposeColumns<
     F: SmallField,
@@ -132,10 +131,8 @@ impl<F: SmallField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
     ) {
         let gate_type_id = TypeId::of::<G>();
 
-        let GatePlacementStrategy::UseSpecializedColumns {
-            num_repetitions,
-            share_constants,
-        } = placement_strategy
+        let GatePlacementStrategy::UseSpecializedColumns { num_repetitions, share_constants } =
+            placement_strategy
         else {
             unreachable!()
         };
@@ -175,9 +172,7 @@ impl<F: SmallField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
 
         if share_constants {
             match evaluator.placement_type() {
-                GatePlacementType::MultipleOnRow {
-                    per_chunk_offset: _,
-                } => {}
+                GatePlacementType::MultipleOnRow { per_chunk_offset: _ } => {}
                 GatePlacementType::UniqueOnRow => {
                     panic!("Can not share constants if placement type is unique");
                 }
@@ -194,7 +189,7 @@ impl<F: SmallField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                 + self.total_num_variables_for_specialized_columns,
             witnesses_offset: parameters.num_witness_columns
                 + self.total_num_witnesses_for_specialized_columns,
-            constants_offset: self.total_num_constants_for_specialized_columns, // we use separate vector for them
+            constants_offset: self.total_num_constants_for_specialized_columns, /* we use separate vector for them */
         };
 
         let offset_per_repetition = if share_constants == false {
@@ -211,14 +206,8 @@ impl<F: SmallField, P: field::traits::field_like::PrimeFieldLikeVectorized<Base 
                 }
             };
 
-            assert_eq!(
-                offset_per_repetition.variables_offset,
-                principal_width.num_variables
-            );
-            assert_eq!(
-                offset_per_repetition.witnesses_offset,
-                principal_width.num_witnesses
-            );
+            assert_eq!(offset_per_repetition.variables_offset, principal_width.num_variables);
+            assert_eq!(offset_per_repetition.witnesses_offset, principal_width.num_witnesses);
 
             // offset_per_repetition.variables_offset = principal_width.num_variables;
             // offset_per_repetition.witnesses_offset = principal_width.num_witnesses;

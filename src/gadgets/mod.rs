@@ -1,5 +1,6 @@
-use crate::{cs::Place, field::SmallField};
 use derivative::*;
+
+use crate::{cs::Place, field::SmallField};
 
 pub mod impls;
 

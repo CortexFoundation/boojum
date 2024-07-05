@@ -1,9 +1,10 @@
 use super::*;
-use crate::algebraic_props::sponge::GenericAlgebraicSpongeState;
-use crate::cs::implementations::transcript::Transcript;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::field::goldilocks::GoldilocksField;
-use crate::gadgets::num::Num;
+use crate::{
+    algebraic_props::sponge::GenericAlgebraicSpongeState,
+    cs::{implementations::transcript::Transcript, traits::cs::ConstraintSystem},
+    field::goldilocks::GoldilocksField,
+    gadgets::num::Num,
+};
 
 pub trait CircuitTranscript<F: SmallField>: Clone + Send + Sync + std::fmt::Debug {
     type CircuitCompatibleCap: Clone;
@@ -58,14 +59,10 @@ pub trait CircuitTranscript<F: SmallField>: Clone + Send + Sync + std::fmt::Debu
 }
 
 pub trait RecursiveTranscript<F: SmallField>: Transcript<F> {
-    type CircuitReflection: CircuitTranscript<
-        F,
-        TransciptParameters = <Self as Transcript<F>>::TransciptParameters,
-    >;
+    type CircuitReflection: CircuitTranscript<F, TransciptParameters = <Self as Transcript<F>>::TransciptParameters>;
 }
 
-use crate::gadgets::boolean::Boolean;
-use crate::gadgets::traits::round_function::CircuitRoundFunction;
+use crate::gadgets::{boolean::Boolean, traits::round_function::CircuitRoundFunction};
 
 pub(crate) struct BoolsBuffer<F: SmallField> {
     pub(crate) available: Vec<Boolean<F>>,
@@ -118,12 +115,12 @@ pub struct CircuitAlgebraicSpongeBasedTranscript<
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > CircuitAlgebraicSpongeBasedTranscript<F, AW, SW, CW, R>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> CircuitAlgebraicSpongeBasedTranscript<F, AW, SW, CW, R>
 {
     pub fn try_get_commitment<const N: usize>(&self) -> Option<[Num<F>; N]> {
         if self.sponge.filled == 0 {
@@ -149,12 +146,12 @@ impl<
 }
 
 impl<
-        F: SmallField,
-        const AW: usize,
-        const SW: usize,
-        const CW: usize,
-        R: CircuitRoundFunction<F, AW, SW, CW>,
-    > CircuitTranscript<F> for CircuitAlgebraicSpongeBasedTranscript<F, AW, SW, CW, R>
+    F: SmallField,
+    const AW: usize,
+    const SW: usize,
+    const CW: usize,
+    R: CircuitRoundFunction<F, AW, SW, CW>,
+> CircuitTranscript<F> for CircuitAlgebraicSpongeBasedTranscript<F, AW, SW, CW, R>
 {
     type CircuitCompatibleCap = [Num<F>; CW];
     type TransciptParameters = ();
@@ -234,8 +231,10 @@ impl<
     }
 }
 
-use crate::cs::implementations::transcript::GoldilocksPoisedon2Transcript;
-use crate::implementations::poseidon2::Poseidon2Goldilocks;
+use crate::{
+    cs::implementations::transcript::GoldilocksPoisedon2Transcript,
+    implementations::poseidon2::Poseidon2Goldilocks,
+};
 
 pub type GoldilocksPoisedon2CircuitTranscript =
     CircuitAlgebraicSpongeBasedTranscript<GoldilocksField, 8, 12, 4, Poseidon2Goldilocks>;

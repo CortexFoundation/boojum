@@ -1,15 +1,19 @@
-use super::*;
-use crate::config::*;
-use crate::cs::toolboxes::gate_config::GateConfigurationHolder;
-use crate::cs::toolboxes::static_toolbox::StaticToolboxHolder;
-use crate::cs::traits::cs::ConstraintSystem;
-use crate::cs::traits::cs::DstBuffer;
-use crate::cs::traits::destination_view::EvaluationDestination;
-use crate::cs::traits::evaluator::*;
-use crate::cs::traits::gate::Gate;
-use crate::cs::traits::gate::GatePlacementStrategy;
-use crate::field::PrimeField;
 use std::borrow::Cow;
+
+use super::*;
+use crate::{
+    config::*,
+    cs::{
+        toolboxes::{gate_config::GateConfigurationHolder, static_toolbox::StaticToolboxHolder},
+        traits::{
+            cs::{ConstraintSystem, DstBuffer},
+            destination_view::EvaluationDestination,
+            evaluator::*,
+            gate::{Gate, GatePlacementStrategy},
+        },
+    },
+    field::PrimeField,
+};
 
 pub mod testing_tools;
 
@@ -144,31 +148,17 @@ pub mod zero_check;
 
 pub mod bounded_wrapper;
 
-pub use self::boolean_allocator::*;
-pub use self::bounded_boolean_allocator::*;
-pub use self::bounded_constant_allocator::*;
-pub use self::conditional_swap::*;
-pub use self::constant_allocator::*;
-pub use self::dot_product_gate::*;
-pub use self::fma_gate_in_extension_without_constant::*;
-pub use self::fma_gate_without_constant::*;
-pub use self::nop_gate::*;
-pub use self::parallel_selection::*;
 // pub use self::poseidon::*;
 pub use self::matrix_multiplication_gate::*;
-pub use self::poseidon2::*;
-pub use self::public_input::*;
-pub use self::quadratic_combination::*;
-pub use self::reduction_by_powers_gate::*;
-pub use self::reduction_gate::*;
-pub use self::selection_gate::*;
-pub use self::simple_non_linearity_with_constant::*;
-pub use self::u32_add::*;
-pub use self::u32_fma::*;
-pub use self::u32_sub::*;
-pub use self::u32_tri_add_carry_as_chunk::*;
-pub use self::uintx_add::*;
-pub use self::zero_check::*;
+pub use self::{
+    boolean_allocator::*, bounded_boolean_allocator::*, bounded_constant_allocator::*,
+    conditional_swap::*, constant_allocator::*, dot_product_gate::*,
+    fma_gate_in_extension_without_constant::*, fma_gate_without_constant::*, nop_gate::*,
+    parallel_selection::*, poseidon2::*, public_input::*, quadratic_combination::*,
+    reduction_by_powers_gate::*, reduction_gate::*, selection_gate::*,
+    simple_non_linearity_with_constant::*, u32_add::*, u32_fma::*, u32_sub::*,
+    u32_tri_add_carry_as_chunk::*, uintx_add::*, zero_check::*,
+};
 
 pub type NextGateCounterWithoutParams = Option<(usize, usize)>;
 

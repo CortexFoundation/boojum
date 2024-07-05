@@ -57,6 +57,7 @@ pub use state_vectorized_double::*;
 ))]
 pub mod state_avx512;
 
+use derivative::*;
 #[cfg(all(
     feature = "include_packed_simd",
     target_feature = "avx512bw",
@@ -66,12 +67,12 @@ pub mod state_avx512;
     target_feature = "avx512vl"
 ))]
 pub use state_avx512::*;
-
-use crate::algebraic_props::round_function::*;
-use crate::field::traits::field::Field;
-use crate::implementations::poseidon_goldilocks_params::STATE_WIDTH;
-use derivative::*;
 use unroll::unroll_for_loops;
+
+use crate::{
+    algebraic_props::round_function::*, field::traits::field::Field,
+    implementations::poseidon_goldilocks_params::STATE_WIDTH,
+};
 
 #[derive(Derivative, serde::Serialize, serde::Deserialize)]
 #[derivative(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]

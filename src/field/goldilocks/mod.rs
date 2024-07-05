@@ -2,11 +2,15 @@
 // with extra modifications for compile-time evaluations. Even though we can not use "const trait"
 // for now, one can use "_impl" const fn methods in non-generic contexts
 
-use crate::field::{
-    Field, PrimeField, SmallField, SmallFieldRepresentable, U64RawRepresentable, U64Representable,
-};
-use crate::utils::{assume, branch_hint, split};
 use std::hash::{Hash, Hasher};
+
+use crate::{
+    field::{
+        Field, PrimeField, SmallField, SmallFieldRepresentable, U64RawRepresentable,
+        U64Representable,
+    },
+    utils::{assume, branch_hint, split},
+};
 
 mod extension;
 mod inversion;
@@ -56,21 +60,26 @@ pub mod avx512_impl;
     not(all(target_feature = "avx512f", target_feature = "avx512vl"))
 ))]
 pub use arm_asm_impl::*;
-
 #[cfg(all(
     feature = "include_packed_simd",
     any(target_feature = "neon", target_feature = "avx2"),
     not(all(target_feature = "avx512f", target_feature = "avx512vl"))
 ))]
 pub use arm_asm_packed_impl::*;
-
+#[cfg(all(
+    target_feature = "avx512bw",
+    target_feature = "avx512cd",
+    target_feature = "avx512dq",
+    target_feature = "avx512f",
+    target_feature = "avx512vl"
+))]
+pub use avx512_impl::*;
 #[cfg(not(any(
     all(target_feature = "avx512f", target_feature = "avx512vl"),
     target_feature = "neon",
     target_feature = "avx2"
 )))]
 pub use generic_impl::*;
-
 #[cfg(all(
     target_feature = "avx512f",
     target_feature = "avx512vl",
@@ -82,18 +91,8 @@ pub use generic_impl::*;
 ))]
 pub use x86_64_asm_impl::*;
 
-#[cfg(all(
-    target_feature = "avx512bw",
-    target_feature = "avx512cd",
-    target_feature = "avx512dq",
-    target_feature = "avx512f",
-    target_feature = "avx512vl"
-))]
-pub use avx512_impl::*;
-
 pub use self::extension::GoldilocksExt2;
 use self::inversion::try_inverse_u64;
-
 use super::SqrtField;
 
 const EPSILON: u64 = (1 << 32) - 1;
@@ -330,8 +329,8 @@ impl Field for GoldilocksField {
             // This assume does two things:
             //  1. If compiler knows that either self.0 >= EPSILON - 1 or rhs.0 <= ORDER, then it
             //     can skip this check.
-            //  2. Hints to the compiler how rare this double-underflow is (thus handled better
-            //     with a branch).
+            //  2. Hints to the compiler how rare this double-underflow is (thus handled better with
+            //     a branch).
             assume(self.0 < EPSILON - 1 && other.0 > Self::ORDER);
             branch_hint();
             diff -= EPSILON; // Cannot underflow.
@@ -488,16 +487,13 @@ impl U64RawRepresentable for GoldilocksField {
 
     #[inline(always)]
     fn from_raw_u64_checked(value: u64) -> Option<Self> {
-        if value >= Self::ORDER {
-            None
-        } else {
-            Some(Self(value))
-        }
+        if value >= Self::ORDER { None } else { Some(Self(value)) }
     }
 
     #[inline(always)]
     fn as_raw_u64_array<const N: usize>(input: [Self; N]) -> [u64; N] {
-        // unsafe {std::mem::transmute::<[Self; N], [u64; N]>(input)} // well, compiler is stupid here
+        // unsafe {std::mem::transmute::<[Self; N], [u64; N]>(input)} // well, compiler is stupid
+        // here
         unsafe { *(&input as *const _ as *const [u64; N]) }
     }
 }
@@ -515,16 +511,13 @@ impl U64Representable for GoldilocksField {
 
     #[inline(always)]
     fn from_u64(value: u64) -> Option<Self> {
-        if value >= Self::ORDER {
-            None
-        } else {
-            Some(Self(value))
-        }
+        if value >= Self::ORDER { None } else { Some(Self(value)) }
     }
 
     #[inline(always)]
     fn as_u64_array<const N: usize>(input: [Self; N]) -> [u64; N] {
-        // unsafe {std::mem::transmute::<[Self; N], [u64; N]>(input)} // It would be true after monomorphization only
+        // unsafe {std::mem::transmute::<[Self; N], [u64; N]>(input)} // It would be true after
+        // monomorphization only
         unsafe { *(&input as *const _ as *const [u64; N]) }
     }
 
