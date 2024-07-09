@@ -1,28 +1,27 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::punctuated::Punctuated;
-use syn::{GenericParam, Generics, Ident, WhereClause};
+use syn::{punctuated::Punctuated, GenericParam, Generics, Ident, LitStr, Token, WhereClause};
 
-/// Fetch an attribute string from the derived struct.
-pub(crate) fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
-    for attr in attrs {
-        if let Ok(meta) = attr.parse_meta() {
-            match meta {
-                syn::Meta::NameValue(nv) => {
-                    if nv.path.is_ident(name) {
-                        match nv.lit {
-                            syn::Lit::Str(ref s) => return Some(s.value()),
-                            _ => panic!("attribute {} not found", name),
-                        }
-                    }
-                }
-                _ => panic!("attribute {} not found", name),
-            }
-        }
-    }
+// /// Fetch an attribute string from the derived struct.
+// pub(crate) fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
+//     for attr in attrs {
+//         if let Ok(meta) = attr.parse_meta() {
+//             match meta {
+//                 syn::Meta::NameValue(nv) => {
+//                     if nv.path.is_ident(name) {
+//                         match nv.lit {
+//                             syn::Lit::Str(ref s) => return Some(s.value()),
+//                             _ => panic!("attribute {} not found", name),
+//                         }
+//                     }
+//                 }
+//                 _ => panic!("attribute {} not found", name),
+//             }
+//         }
+//     }
 
-    None
-}
+//     None
+// }
 
 pub(crate) fn merge_where_clauses(a: Option<WhereClause>, b: Option<WhereClause>) -> TokenStream {
     match (a, b) {
@@ -43,21 +42,12 @@ pub(crate) fn merge_where_clauses(a: Option<WhereClause>, b: Option<WhereClause>
 
 pub(crate) fn fetch_attr_from_list(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
     for attr in attrs {
-        if attr.path.is_ident(name) {
-            if let Ok(meta) = attr.parse_meta() {
-                match meta {
-                    syn::Meta::List(ml) => {
-                        if let Some(nv) = ml.nested.first() {
-                            match nv {
-                                syn::NestedMeta::Lit(nl) => match nl {
-                                    syn::Lit::Str(ref s) => return Some(s.value()),
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
-                        }
-                    }
-                    _ => {}
+        if attr.path().is_ident(name) {
+            if let Ok(lits) =
+                attr.parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
+            {
+                if let Some(lit) = lits.first() {
+                    return Some(lit.value());
                 }
             }
         }
@@ -68,14 +58,11 @@ pub(crate) fn fetch_attr_from_list(name: &str, attrs: &[syn::Attribute]) -> Opti
 
 pub(crate) fn fetch_attr_nopanic(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
     for attr in attrs {
-        if let Ok(meta) = attr.parse_meta() {
-            match meta {
+        if attr.path().is_ident(name) {
+            match &attr.meta {
                 syn::Meta::NameValue(nv) => {
-                    if nv.path.is_ident(name) {
-                        match nv.lit {
-                            syn::Lit::Str(ref s) => return Some(s.value()),
-                            _ => {}
-                        }
+                    if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(v), .. }) = &nv.value {
+                        return Some(v.value());
                     }
                 }
                 _ => {}
