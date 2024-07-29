@@ -28,7 +28,6 @@
 #![feature(allocator_api)]
 #![feature(const_mut_refs)]
 #![feature(const_swap)]
-#![feature(inline_const)]
 #![feature(slice_swap_unchecked)]
 #![feature(const_slice_index)]
 #![feature(core_intrinsics)]
@@ -50,9 +49,7 @@
 #![feature(associated_type_defaults)]
 #![feature(trait_alias)]
 #![feature(vec_push_within_capacity)]
-#![feature(return_position_impl_trait_in_trait)]
 #![feature(type_changing_struct_update)]
-#![feature(slice_flatten)]
 #![cfg_attr(feature = "include_packed_simd", feature(stdsimd))]
 
 pub mod algebraic_props;
